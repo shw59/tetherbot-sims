@@ -1,18 +1,16 @@
 """
 tether.py
 
-This file defines a simulation of two robots connected by a tether in PyBullet.
+This file defines a PyBullet simulation of two controllable robots connected by a flexible tethe.
 """
 
 import pybullet as p
 import pybullet_data
-import numpy as np
-import time
 import math
 
 def make_tether(length_0):
     """
-    Return .obj text for a ribbon with length_0 segments.
+    Return .obj text for a tether (essentially a thin cloth) with length_0 segments.
     """
     dy = 1.0  # length of every segment along the tether between each pair of vertices
     dx = 0.01 # half the width of the tether
@@ -30,7 +28,7 @@ def make_tether(length_0):
     
 def make_robot(diameter, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
-    Create a URDF text describing a robot in the form of a disk with specified radius and/or length, mass, and color.
+    Create URDF text describing a cylindrical robot with specified radius and/or length, mass, and color.
     """
     radius = diameter / 2
 
@@ -139,7 +137,7 @@ def make_robot(diameter, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type=
 
 def get_tether_length(tether_id):
     """
-    Return the instantaneous length of the tether.
+    Return the length of the tether at any given time.
     The length is computed as the sum of the distances between pairs of vertices in the tether mesh.
     """
     n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
@@ -155,7 +153,7 @@ def get_tether_length(tether_id):
 
 def get_robot_heading(robot_id):
     """
-    Return heading vector of a robot based on the position of its heading block.
+    Return heading vector [x, y] of a robot based on the position of its heading block.
     """
     robot_pos = p.getLinkState(robot_id, 2)[0]
     head_pos = p.getLinkState(robot_id, 3)[0]
@@ -165,7 +163,7 @@ def get_robot_heading(robot_id):
 
 def get_tether_heading(robot1_id, robot2_id):
     """
-    Return the heading vector of the tether between two robots, 
+    Return the heading vector [x, y] of the tether between two robots, 
     which is just the vector from the first robot to the second.
     """
     robot1_pos = p.getLinkState(robot1_id, 2)[0]
@@ -185,17 +183,19 @@ def get_theta(robot_heading, tether_heading):
 
     return math.degrees(theta) % 360
 
-def move_robot(robot_id, x, y, force=10):
+def move_robot(robot_id, x, y, force=10, err=0.01):
     """
-    Move the robot to a specified position (x, y) with an optionally specified force and rotate its heading (in degrees).
+    Move the robot to a specified position (x, y) with an optionally specified force and positional error tolerance.
     """
-    # amount to move in the x and y directions
+    # amount to move (relative to base position)
     x_move = x - p.getBasePositionAndOrientation(robot_id)[0][0]
     y_move = y - p.getBasePositionAndOrientation(robot_id)[0][1]
 
     # calculate rotation to face direction of movement
-    base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(robot_id)[1])[2]
-    desired_heading = math.atan2(y - p.getLinkState(robot_id, 2)[0][1], x - p.getLinkState(robot_id, 2)[0][0])
+    base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(robot_id)[1])[2] # starting heading
+    y_heading = y - p.getLinkState(robot_id, 2)[0][1] # y_move relative to current position
+    x_heading = x - p.getLinkState(robot_id, 2)[0][0] # x_move relative to current position
+    desired_heading = math.atan2(y_heading, x_heading)
     rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
 
     print(f"base_heading={math.degrees(base_heading):.2f}, "
@@ -203,29 +203,23 @@ def move_robot(robot_id, x, y, force=10):
           f"rotation={math.degrees(rotation):.2f}")
 
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
-
-    p.setJointMotorControl2(robot_id, 2, p.POSITION_CONTROL, targetPosition=rotation, force=force)
-    p.setJointMotorControl2(robot_id, 1, p.POSITION_CONTROL, targetPosition=x_move, force=force)
-    p.setJointMotorControl2(robot_id, 0, p.POSITION_CONTROL, targetPosition=y_move, force=force)
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
                                 targetPositions=[x_move, y_move, rotation], forces=[force]*3)
-    
-    tolerance = 0.01
-    
-    while p.getLinkState(robot_id, 2)[0][0] < x - tolerance or p.getLinkState(robot_id, 2)[0][0] > x + tolerance or \
-          p.getLinkState(robot_id, 2)[0][1] < y - tolerance or p.getLinkState(robot_id, 2)[0][1] > y + tolerance:
+
+    while p.getLinkState(robot_id, 2)[0][0] < x - err or p.getLinkState(robot_id, 2)[0][0] > x + err or \
+          p.getLinkState(robot_id, 2)[0][1] < y - err or p.getLinkState(robot_id, 2)[0][1] > y + err:
         p.getCameraImage(320,200)
         p.stepSimulation()
 
     
 GRAVITYZ = -9.81  # m/s^2
 
-dmtr = 0.2  # diameter of each agent in meters
-mass = 1.0 # mass of each agent in kg
+dmtr = 0.2  # diameter of each robot in meters
+mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
-mu = 2.5  # friction coefficient between agents and plane
+mu = 2.5  # friction coefficient between robots and plane
 
-debugging = False  # set to True to print face positions of tether
+debugging = False  # set to True to print vertex positions of tether
 
 def main():
     p.connect(p.GUI) # connect to PyBullet GUI
@@ -237,10 +231,10 @@ def main():
     p.setGravity(0, 0, GRAVITYZ)
     p.setTimeStep(1./240.)
 
-    plane_orn = [0, 0, 0, 1]  # p.getQuaternionFromEuler([0, 0, 0])
+    # set initial object positions
     tether_pos = [0, 0, 0]  # base position of the tether
-    robot1_pos = [0, -0.5, 0.005]  # position of the first agent
-    robot2_pos = [0, 0.5, 0.005]  # position of the second agent
+    robot1_pos = [0, -0.5, 0.005]  # base position of the first robot
+    robot2_pos = [0, 0.5, 0.005]  # base position of the second robot
 
     # load objects
     tether_filename = "objects/tether.obj"
@@ -253,8 +247,8 @@ def main():
     open(robot_red_filename, "w").write(make_robot(diameter=dmtr, mass=mass, color=(1, 0, 0, 1)))
 
     plane_id = p.loadURDF("plane.urdf")  # each tile is a 1x1 meter square
-    robot1_id = p.loadURDF(robot_blue_filename, robot1_pos, plane_orn)
-    robot2_id = p.loadURDF(robot_red_filename, robot2_pos, plane_orn)
+    robot1_id = p.loadURDF(robot_blue_filename, robot1_pos)
+    robot2_id = p.loadURDF(robot_red_filename, robot2_pos)
     tether_id = p.loadSoftBody(tether_filename, 
                                basePosition = tether_pos, 
                                scale=1, 
@@ -274,10 +268,10 @@ def main():
 
     # anchor the tethers to the robots
     num_verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    p.createSoftBodyAnchor(tether_id, 0, robot1_id, 1)
-    p.createSoftBodyAnchor(tether_id, 1, robot1_id, 1)
-    p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 1)
-    p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 1)
+    # p.createSoftBodyAnchor(tether_id, 0, robot1_id, 1)
+    # p.createSoftBodyAnchor(tether_id, 1, robot1_id, 1)
+    # p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 1)
+    # p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 1)
 
     # apply friction/damping between robots and the plane
     p.changeDynamics(robot1_id, -1, linearDamping=mu)
