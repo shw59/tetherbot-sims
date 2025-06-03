@@ -190,30 +190,40 @@ def move_robot(robot_id, x, y, force=10):
     Move the robot to a specified position (x, y) with an optionally specified force and rotate its heading (in degrees).
     """
     # amount to move in the x and y directions
-    x_move = x - p.getLinkState(robot_id, 2)[0][0]
-    y_move = y - p.getLinkState(robot_id, 2)[0][1]
+    x_move = x - p.getBasePositionAndOrientation(robot_id)[0][0]
+    y_move = y - p.getBasePositionAndOrientation(robot_id)[0][1]
 
     # calculate rotation to face direction of movement
-    hx, hy = get_robot_heading(robot_id)
-    current_heading = math.atan2(hy, hx)
-    desired_heading = math.atan2(y_move, x_move)
-    rotation = (desired_heading - current_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
+    base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(robot_id)[1])[2]
+    desired_heading = math.atan2(y - p.getLinkState(robot_id, 2)[0][1], x - p.getLinkState(robot_id, 2)[0][0])
+    rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
+
+    print(f"base_heading={math.degrees(base_heading):.2f}, "
+          f"desired_heading={math.degrees(desired_heading):.2f}, "
+          f"rotation={math.degrees(rotation):.2f}")
 
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
+
+    p.setJointMotorControl2(robot_id, 2, p.POSITION_CONTROL, targetPosition=rotation, force=force)
+    p.setJointMotorControl2(robot_id, 1, p.POSITION_CONTROL, targetPosition=x_move, force=force)
+    p.setJointMotorControl2(robot_id, 0, p.POSITION_CONTROL, targetPosition=y_move, force=force)
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
                                 targetPositions=[x_move, y_move, rotation], forces=[force]*3)
     
-    while p.getLinkState(robot_id, 2)[0][0] != x or p.getLinkState(robot_id, 2)[0][1] != y:
+    tolerance = 0.01
+    
+    while p.getLinkState(robot_id, 2)[0][0] < x - tolerance or p.getLinkState(robot_id, 2)[0][0] > x + tolerance or \
+          p.getLinkState(robot_id, 2)[0][1] < y - tolerance or p.getLinkState(robot_id, 2)[0][1] > y + tolerance:
         p.getCameraImage(320,200)
         p.stepSimulation()
 
-
+    
 GRAVITYZ = -9.81  # m/s^2
 
 dmtr = 0.2  # diameter of each agent in meters
 mass = 1.0 # mass of each agent in kg
 l_0 = 1   # unstretched/taut length of tether in meters
-mu = 0.5  # friction coefficient between agents and plane
+mu = 2.5  # friction coefficient between agents and plane
 
 debugging = False  # set to True to print face positions of tether
 
@@ -264,14 +274,14 @@ def main():
 
     # anchor the tethers to the robots
     num_verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    # p.createSoftBodyAnchor(tether_id, 0, robot1_id, 1)
-    # p.createSoftBodyAnchor(tether_id, 1, robot1_id, 1)
-    # p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 1)
-    # p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 1)
+    p.createSoftBodyAnchor(tether_id, 0, robot1_id, 1)
+    p.createSoftBodyAnchor(tether_id, 1, robot1_id, 1)
+    p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 1)
+    p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 1)
 
     # apply friction/damping between robots and the plane
-    p.changeDynamics(robot1_id, -1, linearDamping=2.5)
-    p.changeDynamics(robot2_id, -1, linearDamping=2.5)
+    p.changeDynamics(robot1_id, -1, linearDamping=mu)
+    p.changeDynamics(robot2_id, -1, linearDamping=mu)
 
     # debugging prints to get vertex positions on the tether
     if debugging:
@@ -285,31 +295,37 @@ def main():
             pos = data[1][i]
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
-
-    move_robot(robot1_id, 0, -3)
     
+    move_robot(robot1_id, 0, -1, 5)
+    move_robot(robot1_id, -1, -1, 5)
+    move_robot(robot1_id, -1, 0, 5)
+    move_robot(robot1_id, 0, 0, 5)
+    move_robot(robot1_id, 1, 1, 5)
+    move_robot(robot1_id, 1, 0, 5)
+    move_robot(robot1_id, 0, 1, 5)
+
     # main simulation loop
-    # while p.isConnected():
-    #     p.getCameraImage(320,200)
+    while p.isConnected():
+        p.getCameraImage(320,200)
 
-    #     # calculate tether length and strain on every step
-    #     l = get_tether_length(tether_id)
-    #     strain = (l - l_0) / l_0
+        # calculate tether length and strain on every step
+        l = get_tether_length(tether_id)
+        strain = (l - l_0) / l_0
 
-    #     # calculate tether angle relative to each robot's heading
-    #     robot1_heading = get_robot_heading(robot1_id)
-    #     robot2_heading = get_robot_heading(robot2_id)
-    #     tether_heading1_2 = get_tether_heading(robot1_id, robot2_id)
-    #     tether_heading2_1 = get_tether_heading(robot2_id, robot1_id)
-    #     theta1 = get_theta(robot1_heading, tether_heading1_2)
-    #     theta2 = get_theta(robot2_heading, tether_heading2_1)
+        # calculate tether angle relative to each robot's heading
+        robot1_heading = get_robot_heading(robot1_id)
+        robot2_heading = get_robot_heading(robot2_id)
+        tether_heading1_2 = get_tether_heading(robot1_id, robot2_id)
+        tether_heading2_1 = get_tether_heading(robot2_id, robot1_id)
+        theta1 = get_theta(robot1_heading, tether_heading1_2)
+        theta2 = get_theta(robot2_heading, tether_heading2_1)
 
-    #     # display results in the GUI
-    #     p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-    #                         f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-    #                         [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        # display results in the GUI
+        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
-    #     p.stepSimulation()
+        p.stepSimulation()
 
 if __name__ == "__main__":
   main()
