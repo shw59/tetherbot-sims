@@ -36,8 +36,8 @@ p.createSoftBodyAnchor(clothId, 0, -1, -1)
 p.createSoftBodyAnchor(clothId, 1, -1, -1)
 # p.createSoftBodyAnchor(clothId, 8, -1, -1)
 # p.createSoftBodyAnchor(clothId, 9, -1, -1)
-p.createSoftBodyAnchor(clothId, 8, boxId, -1, [0.5,-0.5,0])
-p.createSoftBodyAnchor(clothId, 9, boxId, -1, [-0.5,-0.5,0])
+# p.createSoftBodyAnchor(clothId, 8, boxId, -1, [0.5,-0.5,0])
+# p.createSoftBodyAnchor(clothId, 9, boxId, -1, [-0.5,-0.5,0])
 p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
 debug = True

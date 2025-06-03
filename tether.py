@@ -201,7 +201,11 @@ def move_robot(robot_id, x, y, force=10):
 
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
-                                    targetPositions=[x_move, y_move, rotation], forces=[force]*3)
+                                targetPositions=[x_move, y_move, rotation], forces=[force]*3)
+    
+    while p.getLinkState(robot_id, 2)[0][0] != x or p.getLinkState(robot_id, 2)[0][1] != y:
+        p.getCameraImage(320,200)
+        p.stepSimulation()
 
 
 GRAVITYZ = -9.81  # m/s^2
@@ -282,28 +286,30 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
 
+    move_robot(robot1_id, 0, -3)
+    
     # main simulation loop
-    while p.isConnected():
-        p.getCameraImage(320,200)
+    # while p.isConnected():
+    #     p.getCameraImage(320,200)
 
-        # calculate tether length and strain on every step
-        l = get_tether_length(tether_id)
-        strain = (l - l_0) / l_0
+    #     # calculate tether length and strain on every step
+    #     l = get_tether_length(tether_id)
+    #     strain = (l - l_0) / l_0
 
-        # calculate tether angle relative to each robot's heading
-        robot1_heading = get_robot_heading(robot1_id)
-        robot2_heading = get_robot_heading(robot2_id)
-        tether_heading1_2 = get_tether_heading(robot1_id, robot2_id)
-        tether_heading2_1 = get_tether_heading(robot2_id, robot1_id)
-        theta1 = get_theta(robot1_heading, tether_heading1_2)
-        theta2 = get_theta(robot2_heading, tether_heading2_1)
+    #     # calculate tether angle relative to each robot's heading
+    #     robot1_heading = get_robot_heading(robot1_id)
+    #     robot2_heading = get_robot_heading(robot2_id)
+    #     tether_heading1_2 = get_tether_heading(robot1_id, robot2_id)
+    #     tether_heading2_1 = get_tether_heading(robot2_id, robot1_id)
+    #     theta1 = get_theta(robot1_heading, tether_heading1_2)
+    #     theta2 = get_theta(robot2_heading, tether_heading2_1)
 
-        # display results in the GUI
-        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+    #     # display results in the GUI
+    #     p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+    #                         f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+    #                         [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
-        p.stepSimulation()
+    #     p.stepSimulation()
 
 if __name__ == "__main__":
   main()
