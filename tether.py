@@ -11,7 +11,6 @@ import numpy as np
 import numpy as np
 
 def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
-def make_tether(first_r_pos, second_r_pos, first_r_pos, second_r_pos, length_0, num_segments=5, num_segments=5):
     """
     Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
     Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
