@@ -1,7 +1,8 @@
 """
-tether.py
+unit_tests.py
 
-This file defines a PyBullet simulation of two controllable robots connected by a flexible tethe.
+This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
+It is mostly used for small unit tests involving two different-colored agents.
 """
 
 import pybullet as p
