@@ -80,10 +80,10 @@ def anchor_tether(rope_id, first_id, second_id):
     """
     num_verts, *_ = p.getMeshData(rope_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
-    p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-    p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-    p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-    p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
+    p.createSoftBodyAnchor(rope_id, 0, first_id, 2)
+    p.createSoftBodyAnchor(rope_id, 1, first_id, 2)
+    p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
+    p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
 def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
