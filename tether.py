@@ -205,13 +205,15 @@ def get_robot_heading(robot_id):
 
     return heading[:2]
 
-def get_tether_heading(robot1_id, robot2_id):
+def get_tether_heading(robot_id, tether_id):
     """
     Return the heading vector [x, y] of the tether between two robots, 
     which is just the vector from the first robot to the second.
     """
-    robot1_pos = p.getLinkState(robot1_id, 2)[0]
-    robot2_pos = p.getLinkState(robot2_id, 2)[0]
+    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+    robot1_pos = p.getLinkState(robot_id, 2)[0]
+    robot2_pos = p.getLinkState(robot_id, 2)[0]
     heading = [robot2_pos[i] - robot1_pos[i] for i in range(3)]
 
     return heading[:2]
@@ -255,16 +257,14 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
         p.getCameraImage(320,200)
         p.stepSimulation()
 
-
-
     
 GRAVITYZ = -9.81  # m/s^2
+N = 2 # number of agents to be created
 
 dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
-N = 2 # number of agents to be created
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -277,8 +277,6 @@ def main():
     p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) # disable side bar windows in the GUI
     p.setGravity(0, 0, GRAVITYZ)
     p.setTimeStep(1./240.)
-
-    plane_orn = [0, 0, 0, 1]  # p.getQuaternionFromEuler([0, 0, 0])
 
     # set initial object positions
     # tether_pos = [0, 0, 0]  # base position of the tether
@@ -298,7 +296,7 @@ def main():
     tether_ids = []
 
     for i in range(N):
-        robot_ids.append(make_robot(dmtr, initial_robot_positions[i], plane_orn))
+        robot_ids.append(make_robot(dmtr, initial_robot_positions[i]))
 
     for i in range(N):
         if i < (N - 1):
