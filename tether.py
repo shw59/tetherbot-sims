@@ -80,7 +80,6 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
     heading_block_origin_z = length / 2
 
     # set position of tether heading-indicator block
-    tether_block_origin_y = radius
     tether_block_origin_z = length / 2
 
     urdf_text = f"""<?xml version="1.0"?>
@@ -277,7 +276,6 @@ def main():
     p.setTimeStep(1./240.)
 
     # set initial object positions
-    tether_pos = [0, 0, 0]  # base position of the tether
     robot1_pos = [0, -0.5, 0.005]  # base position of the first robot
     robot2_pos = [0, 0.5, 0.005]  # base position of the second robot
 
@@ -292,10 +290,10 @@ def main():
 
     # anchor the tethers to the robots
     num_verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    p.createSoftBodyAnchor(tether_id, 0, robot1_id, 1)
-    p.createSoftBodyAnchor(tether_id, 1, robot1_id, 1)
-    p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 1)
-    p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 1)
+    p.createSoftBodyAnchor(tether_id, 0, robot1_id, 2)
+    p.createSoftBodyAnchor(tether_id, 1, robot1_id, 2)
+    p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 2)
+    p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 2)
 
     # apply friction/damping between robots and the plane
     p.changeDynamics(robot1_id, -1, linearDamping=mu)
