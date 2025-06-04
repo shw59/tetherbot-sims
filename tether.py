@@ -8,21 +8,28 @@ import pybullet as p
 import pybullet_data
 import math
 import numpy as np
+import numpy as np
 
 def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
-def make_tether(first_r_pos, second_r_pos, length_0, num_segments=5):
+def make_tether(first_r_pos, second_r_pos, first_r_pos, second_r_pos, length_0, num_segments=5, num_segments=5):
     """
     Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
+    Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
     """
+    dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
+    dx = 0.01  # half the width of the tether
     dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
     dx = 0.01  # half the width of the tether
     lines = ["o tether"]
     # vertices
     for i in range(num_segments + 1):
         y = -dy * num_segments/2 + dy * i
+    for i in range(num_segments + 1):
+        y = -dy * num_segments/2 + dy * i
         lines.append(f"v  { dx:.6f} {y:.6f} 0.000000")
         lines.append(f"v {-dx:.6f} {y:.6f} 0.000000")
     # faces
+    for i in range(num_segments):
     for i in range(num_segments):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
@@ -102,6 +109,7 @@ def anchor_tether(rope_id, first_id, second_id):
     
 def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
+    Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     """
     radius = diameter / 2
@@ -257,6 +265,7 @@ def get_robot_heading(robot_id):
     return heading
 
 def get_tether_heading(robot_id, tether_id):
+def get_tether_heading(robot_id, tether_id):
     """
     Return the heading vector [x, y] of an attached tether with respect to the robot's position
     Return the heading vector [x, y] of an attached tether with respect to the robot's position
@@ -313,9 +322,9 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
     desired_heading = math.atan2(y_heading, x_heading)
     rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
 
-    print(f"base_heading={math.degrees(base_heading):.2f}, "
-          f"desired_heading={math.degrees(desired_heading):.2f}, "
-          f"rotation={math.degrees(rotation):.2f}")
+    # print(f"base_heading={math.degrees(base_heading):.2f}, "
+    #       f"desired_heading={math.degrees(desired_heading):.2f}, "
+    #       f"rotation={math.degrees(rotation):.2f}")
 
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
@@ -350,12 +359,15 @@ def set_straight_line(n, spacing):
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
+N = 2 # number of agents to be created
 
 dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 segments = 1 # number of side-flexible segments in the tether
+segments = 1 # number of side-flexible segments in the tether
 mu = 2.5  # friction coefficient between robots and plane
+height = 0.005 # hieght of robot
 height = 0.005 # hieght of robot
 
 debugging = False  # set to True to print vertex positions of tether
@@ -399,9 +411,17 @@ def main():
     # anchors all of the tethers to their respective robots
     for i in range(N-1):
         anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
+    # populates the list of tether objects with tether objects
+    for i in range(N-1):
+        tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=segments))
+
+    # anchors all of the tethers to their respective robots
+    for i in range(N-1):
+        anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
 
     # debugging prints to get vertex positions on the tether
     if debugging:
+        data = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
         data = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
         print("--------------")
         print("data=",data)
