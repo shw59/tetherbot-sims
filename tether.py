@@ -205,16 +205,30 @@ def get_robot_heading(robot_id):
 
     return heading[:2]
 
-def get_tether_heading(robot1_id, robot2_id):
+def get_tether_heading(robot_id, tether_id):
     """
-    Return the heading vector [x, y] of the tether between two robots, 
-    which is just the vector from the first robot to the second.
+    Return the heading vector [x, y] of the tether with respect to the given robot.
     """
-    robot1_pos = p.getLinkState(robot1_id, 2)[0]
-    robot2_pos = p.getLinkState(robot2_id, 2)[0]
-    heading = [robot2_pos[i] - robot1_pos[i] for i in range(3)]
+    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
-    return heading[:2]
+    # get both end vertices of the tether
+    p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(2)]
+    p2 = [(verts[n_verts - 2][k] + verts[n_verts - 1][k]) / 2.0 for k in range(2)]
+
+    # get the robot's position
+    robot_pos = p.getLinkState(robot_id, 2)[0][:2]
+
+    # check which vertex pair is closer and use the second to next pair to calculate heading
+    dist1 = math.dist(robot_pos, p1)
+    dist2 = math.dist(robot_pos, p2)
+    if dist1 < dist2:
+        p1_next = [(verts[1][k] + verts[2][k]) / 2.0 for k in range(2)] # second to end vertex
+        heading = [p1_next[i] - robot_pos[i] for i in range(2)]
+    else:
+        p2_next = [(verts[n_verts - 3][k] + verts[n_verts - 2][k]) / 2.0 for k in range(2)]
+        heading = [p2_next[i] - robot_pos[i] for i in range(2)]
+
+    return heading
 
 def get_theta(robot_heading, tether_heading):
     """
@@ -331,10 +345,10 @@ def main():
         # calculate tether angle relative to each robot's heading
         robot1_heading = get_robot_heading(robot1_id)
         robot2_heading = get_robot_heading(robot2_id)
-        tether_heading1_2 = get_tether_heading(robot1_id, robot2_id)
-        tether_heading2_1 = get_tether_heading(robot2_id, robot1_id)
-        theta1 = get_theta(robot1_heading, tether_heading1_2)
-        theta2 = get_theta(robot2_heading, tether_heading2_1)
+        tether_heading1 = get_tether_heading(robot1_id, tether_id)
+        tether_heading2 = get_tether_heading(robot2_id, tether_id)
+        theta1 = get_theta(robot1_heading, tether_heading1)
+        theta2 = get_theta(robot2_heading, tether_heading2)
 
         # display results in the GUI
         p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
