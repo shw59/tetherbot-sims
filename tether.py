@@ -208,37 +208,6 @@ def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), j
                 <material name="block_color"><color rgba="0 0 1 1"/></material>
             </visual>
         </link>
-
-        <joint name="tether_block_to_base" type="continuous">
-            <parent link="base_link"/>
-            <child link="tether_block"/>
-            <origin xyz="${radius} 0 ${length/2}" rpy="0 0 0"/>
-            <axis xyz="0 0 1"/>
-            <limit effort="0" velocity="1000"/>
-        </joint>
-
-        <link name="tether_block">
-            <visual>
-                <origin xyz="0 {tether_block_origin_y} {tether_block_origin_z}" rpy="0 0 0"/>
-                <geometry>
-                    <box size="0.02 0.01 0.01"/>
-                </geometry>
-                <material name="tether_block_color"><color rgba="1.0 0.2 0.58 1.0"/></material>
-            </visual>
-            
-            <collision>
-                <origin xyz="{tether_block_origin_y} {tether_block_origin_z}" rpy="0 0 0"/>
-                <geometry>
-                    <box size="0.02 0.01 0.01"/>
-                </geometry>
-            </collision>
-
-            <inertial>
-                <origin xyz="0 0 0" rpy="0 0 0"/>
-                <mass value="0.01"/>
-                <inertia ixx="1e-5" iyy="1e-5" izz="1e-5" ixy="0" ixz="0" iyz="0"/>
-            </inertial>
-        </link>
     </robot>
     """
 
@@ -273,10 +242,15 @@ def get_robot_heading(robot_id):
 
     return heading
 
-def get_tether_heading(robot_id):
+def get_tether_heading(robot_id, tether_id):
     """
     Return the heading vector [x, y] of an attached tether with respect to the robot's position
     """
+    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+    # get both end vertices of the tether
+    p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(3)]
+    p2 =  [(verts[n_verts - 2][k] + verts[n_verts - 1][k]) / 2.0 for k in range(3)]
 
     # get the robot's position
     robot_pos = p.getLinkState(robot_id, 2)[0][:2]
