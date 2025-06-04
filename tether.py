@@ -103,26 +103,26 @@ def anchor_tether(rope_id, first_id, second_id):
 
     if r1_x >= r2_x:
         if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 4)
         else:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 4)
     else:
         if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 4)
         else:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 4)
     
 def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
@@ -360,7 +360,6 @@ def set_straight_line(n, spacing):
         positions.append(pos)
 
     return positions
-
 
     
 GRAVITYZ = -9.81  # m/s^2
