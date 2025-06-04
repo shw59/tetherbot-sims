@@ -8,36 +8,29 @@ import pybullet as p
 import pybullet_data
 import math
 import numpy as np
-import numpy as np
 
-def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
+def make_tether(first_r_pos, second_r_pos, length_0, num_segments=5):
     """
     Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
-    Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
     """
-    dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
-    dx = 0.01  # half the width of the tether
     dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
     dx = 0.01  # half the width of the tether
     lines = ["o tether"]
     # vertices
     for i in range(num_segments + 1):
         y = -dy * num_segments/2 + dy * i
-    for i in range(num_segments + 1):
-        y = -dy * num_segments/2 + dy * i
         lines.append(f"v  { dx:.6f} {y:.6f} 0.000000")
         lines.append(f"v {-dx:.6f} {y:.6f} 0.000000")
     # faces
     for i in range(num_segments):
-    for i in range(num_segments):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-    tether_filename = f"objects/{name}.obj"
+    tether_filename = "objects/tether.obj"
     open(tether_filename, "w").write("\n".join(lines))
 
-    tether_x = (robot1_pos[0] + robot2_pos[0])/2
-    tether_y = (robot1_pos[1] + robot2_pos[1])/2
+    tether_x = (first_r_pos[0] + second_r_pos[0])/2
+    tether_y = (first_r_pos[1] + second_r_pos[1])/2
 
     tether_pos = [tether_x, tether_y, 0]
 
@@ -45,13 +38,21 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     first_y = first_r_pos[1]
     second_x = second_r_pos[0]
     second_y = second_r_pos[1]
-    theta = math.atan2(first_y - second_y, first_x - second_x)
+    diff_x = first_x - second_x
+    diff_y = first_y - second_y
 
-    orientation = p.getQuaternionFromEuler([0, 0,-1*theta]) #[0, math.pi/4, 0]
+    if diff_x >= 0:
+        if diff_y >= 0:
+            theta = math.pi - math.atan2(diff_x, diff_y)
+        else:
+            theta = math.atan2(diff_x, -1*diff_y)
+    else:
+        if diff_y >= 0:
+            theta = math.pi + math.atan2(-1*diff_x, diff_y)
+        else:
+            theta = 2*math.pi - (math.atan2(diff_x, diff_y) - math.pi)
 
-    print("theta: " + str(theta))
-
-
+    orientation = p.getQuaternionFromEuler([0, 0, theta]) #[0, 0,-1*theta]
 
     id = p.loadSoftBody(tether_filename, 
                                basePosition = tether_pos, 
@@ -61,7 +62,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=40, 
+                               springElasticStiffness=30, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -78,37 +79,14 @@ def anchor_tether(rope_id, first_id, second_id):
     out of the two given robots
     """
     num_verts, *_ = p.getMeshData(rope_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    r1_x = p.getLinkState(first_id, 2)[0][0]
-    r1_y = p.getLinkState(first_id, 2)[0][1]
-    r2_x = p.getLinkState(second_id, 2)[0][0]
-    r2_y = p.getLinkState(second_id, 2)[0][1]
 
-    if r1_x >= r2_x:
-        if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 4)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 4)
-        else:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 4)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 4)
-    else:
-        if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 4)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 4)
-        else:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 4)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 4)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 4)
+    p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
+    p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
+    p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
+    p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
     
 def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
-    Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     """
     radius = diameter / 2
@@ -119,16 +97,9 @@ def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), j
 
     rgba = " ".join(map(str, color))
 
-    # set position of robot heading-indicator block
-    heading_block_origin_x = radius / 2
-    heading_block_origin_z = length / 2
-    # set position of robot heading-indicator block
-    heading_block_origin_x = radius / 2
-    heading_block_origin_z = length / 2
-
-    # set position of tether heading-indicator block
-    tether_block_origin_y = radius
-    tether_block_origin_z = length / 2
+    # set position of heading-indicator block
+    block_origin_x = radius / 2
+    block_origin_z = length / 2
 
     urdf_text = f"""<?xml version="1.0"?>
     <robot name="disk">
@@ -140,7 +111,7 @@ def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), j
             </inertial>
         </link>
 
-        <joint name="y_to_world" type="prismatic">
+        <joint name="y_to_world" type="{joint_type}">
             <parent link="world"/>
             <child link="y_prismatic"/>
             <axis xyz="0 1 0"/>
@@ -156,7 +127,7 @@ def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), j
             </inertial>
         </link>
 
-        <joint name="x_to_y" type="prismatic">
+        <joint name="x_to_y" type="{joint_type}">
             <parent link="y_prismatic"/>
             <child link="x_prismatic"/>
             <axis xyz="1 0 0"/>
@@ -207,14 +178,12 @@ def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), j
         <joint name= "block_to_base" type="fixed">
             <parent link="base_link"/>
             <child link="heading_block"/>
-            <origin xyz="{heading_block_origin_x} 0 {heading_block_origin_z}" rpy="0 0 0"/>
-            <origin xyz="{heading_block_origin_x} 0 {heading_block_origin_z}" rpy="0 0 0"/>
+            <origin xyz="{block_origin_x} 0 {block_origin_z}" rpy="0 0 0"/>
         </joint>
 
         <link name="heading_block">
             <visual>
-                <origin xyz="{heading_block_origin_x} 0 {heading_block_origin_z}" rpy="0 0 0"/>
-                <origin xyz="{heading_block_origin_x} 0 {heading_block_origin_z}" rpy="0 0 0"/>
+                <origin xyz="{block_origin_x} 0 {block_origin_z}" rpy="0 0 0"/>
                 <geometry>
                     <box size="{radius} 0.01 0.01"/>
                 </geometry>
@@ -224,7 +193,7 @@ def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), j
     </robot>
     """
 
-    robot_blue_filename = f"objects/{name}.urdf"
+    robot_blue_filename = "objects/robot_blue.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
     return p.loadURDF(robot_blue_filename, position)
@@ -239,12 +208,8 @@ def get_tether_length(tether_id):
     length = 0.0
     for i in range(0, n_verts-3, 2):
         # 2-by-2 window: (i,i+1) || (i+2,i+3)
-        p1 = [(verts[i][k] + verts[i+1][k]) / 2.0 for k in range(3)]
+        p1 = [(verts[i][k]   + verts[i+1][k]) / 2.0 for k in range(3)]
         p2 = [(verts[i+2][k] + verts[i+3][k]) / 2.0 for k in range(3)]
-=======
-        p1 = [(verts[i][k] + verts[i+1][k]) / 2.0 for k in range(2)]
-        p2 = [(verts[i+2][k] + verts[i+3][k]) / 2.0 for k in range(2)]
->>>>>>> a29af60 (fixed get_tether_heading to rely on properties of the agent and its tether rather than the position of other agents)
         length += math.dist(p1, p2)
         
     return length
@@ -253,47 +218,24 @@ def get_robot_heading(robot_id):
     """
     Return heading vector [x, y] of a robot based on the position of its heading block.
     """
-    robot_pos = p.getLinkState(robot_id, 2)[0][:2]
-    head_pos = p.getLinkState(robot_id, 3)[0][:2]
-    heading = [head_pos[i] - robot_pos[i] for i in range(2)]
-    robot_pos = p.getLinkState(robot_id, 2)[0][:2]
-    head_pos = p.getLinkState(robot_id, 3)[0][:2]
-    heading = [head_pos[i] - robot_pos[i] for i in range(2)]
+    robot_pos = p.getLinkState(robot_id, 2)[0]
+    head_pos = p.getLinkState(robot_id, 3)[0]
+    heading = [head_pos[i] - robot_pos[i] for i in range(3)]
 
-    return heading
-    return heading
+    return heading[:2]
 
-def get_tether_heading(robot_id, tether_id):
 def get_tether_heading(robot_id, tether_id):
     """
-    Return the heading vector [x, y] of an attached tether with respect to the robot's position
-    Return the heading vector [x, y] of an attached tether with respect to the robot's position
+    Return the heading vector [x, y] of the tether between two robots, 
+    which is just the vector from the first robot to the second.
     """
     n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
-    # get both end vertices of the tether
-    p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(3)]
-    p2 =  [(verts[n_verts - 2][k] + verts[n_verts - 1][k]) / 2.0 for k in range(3)]
+    robot1_pos = p.getLinkState(robot_id, 2)[0]
+    robot2_pos = p.getLinkState(robot_id, 2)[0]
+    heading = [robot2_pos[i] - robot1_pos[i] for i in range(3)]
 
-    # get the robot's position
-    robot_pos = p.getLinkState(robot_id, 2)[0][:2]
-
-<<<<<<< HEAD
-    # get the robot's position
-    robot_pos = p.getLinkState(robot_id, 2)[0][:2]
-=======
-    # check which vertex pair is closer and use the second to next pair to calculate heading
-    dist1 = math.dist(robot_pos, p1)
-    dist2 = math.dist(robot_pos, p2)
-    if dist1 < dist2:
-        p1_next = [(verts[1][k] + verts[2][k]) / 2.0 for k in range(3)] # second to end vertices
-        heading = [p1_next[i] - robot_pos[i] for i in range(2)]
-    else:
-        p2_next = [(verts[n_verts - 3][k] + verts[n_verts - 2][k]) / 2.0 for k in range(3)]
-        heading = [p2_next[i] - robot_pos[i] for i in range(2)]
-
-    return heading
->>>>>>> a29af60 (fixed get_tether_heading to rely on properties of the agent and its tether rather than the position of other agents)
+    return heading[:2]
 
 def get_theta(robot_heading, tether_heading):
     """
@@ -351,6 +293,8 @@ def set_straight_line(n, spacing):
     for i in range(n):
         pos = [0, y[i], height]
         positions.append(pos)
+    
+    # print(positions)
 
     return positions
 
@@ -358,15 +302,11 @@ def set_straight_line(n, spacing):
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
-N = 2 # number of agents to be created
 
 dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
-segments = 1 # number of side-flexible segments in the tether
-segments = 1 # number of side-flexible segments in the tether
 mu = 2.5  # friction coefficient between robots and plane
-height = 0.005 # hieght of robot
 height = 0.005 # hieght of robot
 
 debugging = False  # set to True to print vertex positions of tether
@@ -383,6 +323,9 @@ def main():
 
     # set initial object positions
     # initial_robot_positions = set_straight_line(N, l_0)
+
+    # print(initial_robot_positions)
+    # initial_robot_positions.append([1 ,0, height])
     initial_robot_positions = [[0,0,height],
                                [1, 0, height]]
 
@@ -405,14 +348,7 @@ def main():
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):
-        tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=segments))
-
-    # anchors all of the tethers to their respective robots
-    for i in range(N-1):
-        anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
-    # populates the list of tether objects with tether objects
-    for i in range(N-1):
-        tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=segments))
+        tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=2))
 
     # anchors all of the tethers to their respective robots
     for i in range(N-1):
@@ -420,7 +356,6 @@ def main():
 
     # debugging prints to get vertex positions on the tether
     if debugging:
-        data = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
         data = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
         print("--------------")
         print("data=",data)
@@ -432,34 +367,31 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
     
-    move_robot(robot_ids[0], 1, 1, 5)
-    move_robot(robot_ids[0], -1, 1, 5)
-    move_robot(robot_ids[0], 1, -1, 5)
-    move_robot(robot_ids[0], -1, -1, 5)
+    move_robot(robot_ids[1], 1, 1, 30)
+    move_robot(robot_ids[1], -1, 1, 30)
+    move_robot(robot_ids[1], -1, -1, 30)
+    move_robot(robot_ids[1], 1, -1, 30)
 
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
         # calculate tether length and strain on every step
-<<<<<<< HEAD
-        # l = get_tether_length(tether_ids[0])
-        # strain = (l - l_0) / l_0
-        # l = get_tether_length(tether_ids[0])
-        # strain = (l - l_0) / l_0
+        l = get_tether_length(tether_ids[0])
+        strain = (l - l_0) / l_0
 
         # calculate tether angle relative to each robot's heading
-        # robot1_heading = get_robot_heading(robot_ids[0])
-        # robot2_heading = get_robot_heading(robot_ids[1])
-        # tether_heading1_2 = get_tether_heading(robot_ids[0], robot_ids[1])
-        # tether_heading2_1 = get_tether_heading(robot_ids[1], robot_ids[0])
-        # theta1 = get_theta(robot1_heading, tether_heading1_2)
-        # theta2 = get_theta(robot2_heading, tether_heading2_1)
+        robot1_heading = get_robot_heading(robot_ids[0])
+        robot2_heading = get_robot_heading(robot_ids[1])
+        tether_heading1_2 = get_tether_heading(robot_ids[0], robot_ids[1])
+        tether_heading2_1 = get_tether_heading(robot_ids[1], robot_ids[0])
+        theta1 = get_theta(robot1_heading, tether_heading1_2)
+        theta2 = get_theta(robot2_heading, tether_heading2_1)
 
         # display results in the GUI
-        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-        #                     f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
         p.stepSimulation()
 
