@@ -1,12 +1,13 @@
 """
 tether.py
 
-This file defines a PyBullet simulation of two controllable robots connected by a flexible tethe.
+This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
 """
 
 import pybullet as p
 import pybullet_data
 import math
+import numpy as np
 
 def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     """
@@ -37,12 +38,21 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     first_y = robot1_pos[1]
     second_x = robot2_pos[0]
     second_y = robot2_pos[1]
-    theta = math.atan2(first_y - second_y, first_x - second_x)
+    diff_x = first_x - second_x
+    diff_y = first_y - second_y
 
-    # orientation = p.getQuaternionFromEuler([0, 0,-1*theta]) #[0, math.pi/4, 0]
-    orientation = [0, 0, 0, 1]
+    if diff_x >= 0:
+        if diff_y >= 0:
+            theta = math.pi - math.atan2(diff_x, diff_y)
+        else:
+            theta = math.atan2(diff_x, -1*diff_y)
+    else:
+        if diff_y >= 0:
+            theta = math.pi + math.atan2(-1*diff_x, diff_y)
+        else:
+            theta = 2*math.pi - (math.atan2(diff_x, diff_y) - math.pi)
 
-    print("theta: " + str(theta))
+    orientation = p.getQuaternionFromEuler([0, 0, theta]) #[0, 0,-1*theta]
 
     id = p.loadSoftBody(tether_filename, 
                                basePosition = tether_pos, 
@@ -52,7 +62,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=40, 
+                               springElasticStiffness=30, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -62,10 +72,22 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
     return id
+
+def anchor_tether(rope_id, first_id, second_id):
+    """
+    Anchors the ends of the given tether to which ever robot each end is closer to, 
+    out of the two given robots
+    """
+    num_verts, *_ = p.getMeshData(rope_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+    p.createSoftBodyAnchor(rope_id, 0, first_id, 2)
+    p.createSoftBodyAnchor(rope_id, 1, first_id, 2)
+    p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
+    p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
 def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
-    Creates a cylindrical robot object with specified radius and/or length, mass, and color and returns its corresponding id.
+    Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     """
     radius = diameter / 2
 
@@ -75,12 +97,9 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
 
     rgba = " ".join(map(str, color))
 
-    # set position of robot heading-indicator block
-    heading_block_origin_x = radius / 2
-    heading_block_origin_z = length / 2
-
-    # set position of tether heading-indicator block
-    tether_block_origin_z = length / 2
+    # set position of heading-indicator block
+    block_origin_x = radius / 2
+    block_origin_z = length / 2
 
     urdf_text = f"""<?xml version="1.0"?>
     <robot name="disk">
@@ -159,12 +178,12 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
         <joint name= "block_to_base" type="fixed">
             <parent link="base_link"/>
             <child link="heading_block"/>
-            <origin xyz="{heading_block_origin_x} 0 {heading_block_origin_z}" rpy="0 0 0"/>
+            <origin xyz="{block_origin_x} 0 {block_origin_z}" rpy="0 0 0"/>
         </joint>
 
         <link name="heading_block">
             <visual>
-                <origin xyz="{heading_block_origin_x} 0 {heading_block_origin_z}" rpy="0 0 0"/>
+                <origin xyz="{block_origin_x} 0 {block_origin_z}" rpy="0 0 0"/>
                 <geometry>
                     <box size="{radius} 0.01 0.01"/>
                 </geometry>
@@ -188,8 +207,7 @@ def get_tether_length(tether_id):
 
     length = 0.0
     for i in range(0, n_verts-3, 2):
-        # 2-by-2 window: (i,i+1) || (i+2,i+3)
-        p1 = [(verts[i][k]   + verts[i+1][k]) / 2.0 for k in range(3)]
+        p1 = [(verts[i][k]   + verts[i+1][k]) / 2.0 for k in range(3)] # midpoints between the vertices
         p2 = [(verts[i+2][k] + verts[i+3][k]) / 2.0 for k in range(3)]
         length += math.dist(p1, p2)
         
@@ -201,9 +219,9 @@ def get_robot_heading(robot_id):
     """
     robot_pos = p.getLinkState(robot_id, 2)[0]
     head_pos = p.getLinkState(robot_id, 3)[0]
-    heading = [head_pos[i] - robot_pos[i] for i in range(3)]
+    heading = [head_pos[i] - robot_pos[i] for i in range(2)]
 
-    return heading[:2]
+    return heading
 
 def get_tether_heading(robot_id, tether_id):
     """
@@ -217,7 +235,7 @@ def get_tether_heading(robot_id, tether_id):
 
     # get the robot's position
     robot_pos = p.getLinkState(robot_id, 2)[0][:2]
-
+    
     # check which vertex pair is closer and use the second to next pair to calculate heading
     dist1 = math.dist(robot_pos, p1)
     dist2 = math.dist(robot_pos, p2)
@@ -256,9 +274,9 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
     desired_heading = math.atan2(y_heading, x_heading)
     rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
 
-    print(f"base_heading={math.degrees(base_heading):.2f}, "
-          f"desired_heading={math.degrees(desired_heading):.2f}, "
-          f"rotation={math.degrees(rotation):.2f}")
+    # print(f"base_heading={math.degrees(base_heading):.2f}, "
+    #       f"desired_heading={math.degrees(desired_heading):.2f}, "
+    #       f"rotation={math.degrees(rotation):.2f}")
 
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
@@ -269,13 +287,37 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
         p.getCameraImage(320,200)
         p.stepSimulation()
 
+def set_straight_line(n, spacing):
+    """
+    Returns a list of positions that correspond to n robots seperated by "spacing" distance
+    along the x-axis, centered about zero.
+    """
+    positions = []
+    if (n%2 == 0):
+        left = n/2
+        right = n - left
+        y = np.linspace(-left*spacing, right*spacing, n+1)
+    else:
+        left = round(n/2)
+        right = n - left
+        y = np.linspace(-left*spacing, right*spacing, n+1)
+    for i in range(n):
+        pos = [0, y[i], height]
+        positions.append(pos)
+    
+    # print(positions)
+
+    return positions
+
     
 GRAVITYZ = -9.81  # m/s^2
+N = 2 # number of agents to be created
 
 dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
+height = 0.005 # hieght of robot
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -290,32 +332,41 @@ def main():
     p.setTimeStep(1./240.)
 
     # set initial object positions
-    robot1_pos = [0, -0.5, 0.005]  # base position of the first robot
-    robot2_pos = [0, 0.5, 0.005]  # base position of the second robot
+    # initial_robot_positions = set_straight_line(N, l_0)
 
-    # load objects
-    plane_id = p.loadURDF("plane.urdf")  # each tile is a 1x1 meter square
-    robot1_id = make_robot("robot_blue", dmtr, robot1_pos)
-    robot2_id = make_robot("robot_red", dmtr, robot2_pos, color=(1, 0, 0, 1))
-    tether_id = make_tether("tether", robot1_pos, robot2_pos, l_0)
+    # print(initial_robot_positions)
+    # initial_robot_positions.append([1 ,0, height])
+    initial_robot_positions = [[0,0,height],
+                               [1, 0, height]]
 
-    # set tether color and appearance
-    p.changeVisualShape(tether_id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+    # each tile is a 1x1 meter square
+    plane_id = p.loadURDF("plane.urdf")
 
-    # anchor the tethers to the robots
-    num_verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    p.createSoftBodyAnchor(tether_id, 0, robot1_id, 2)
-    p.createSoftBodyAnchor(tether_id, 1, robot1_id, 2)
-    p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 2)
-    p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 2)
+    # a list of all of the agent objects created
+    robot_ids = []
 
-    # apply friction/damping between robots and the plane
-    p.changeDynamics(robot1_id, -1, linearDamping=mu)
-    p.changeDynamics(robot2_id, -1, linearDamping=mu)
+    # a list of tether objects
+    tether_ids = []
+
+    # populates the list of robot objects with robot objects
+    for i in range(N):
+        robot_ids.append(make_robot(f"robot{i+1}", dmtr, initial_robot_positions[i]))
+
+    # applies friction/damping between robots and the plane
+    for i in range(N):
+        p.changeDynamics(robot_ids[i], -1, linearDamping=mu)
+
+    # populates the list of tether objects with tether objects
+    for i in range(N-1):
+        tether_ids.append(make_tether(f"tether{i+1}", initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=1))
+
+    # anchors all of the tethers to their respective robots
+    for i in range(N-1):
+        anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
 
     # debugging prints to get vertex positions on the tether
     if debugging:
-        data = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        data = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
         print("--------------")
         print("data=",data)
         print(data[0])
@@ -326,27 +377,25 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
     
-    move_robot(robot1_id, 0, -1, 5)
-    move_robot(robot1_id, -1, -1, 5)
-    move_robot(robot1_id, -1, 0, 5)
-    move_robot(robot1_id, 0, 0, 5)
-    move_robot(robot1_id, 1, 1, 5)
-    move_robot(robot1_id, 1, 0, 5)
-    move_robot(robot1_id, 0, 1, 5)
+    # move robots
+    move_robot(robot_ids[1], 1, 1, 30)
+    move_robot(robot_ids[1], -1, 1, 30)
+    move_robot(robot_ids[1], -1, -1, 30)
+    move_robot(robot_ids[1], 1, -1, 30)
 
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
         # calculate tether length and strain on every step
-        l = get_tether_length(tether_id)
+        l = get_tether_length(tether_ids[0])
         strain = (l - l_0) / l_0
 
         # calculate tether angle relative to each robot's heading
-        robot1_heading = get_robot_heading(robot1_id)
-        robot2_heading = get_robot_heading(robot2_id)
-        tether_heading1 = get_tether_heading(robot1_id, tether_id)
-        tether_heading2 = get_tether_heading(robot2_id, tether_id)
+        robot1_heading = get_robot_heading(robot_ids[0])
+        robot2_heading = get_robot_heading(robot_ids[1])
+        tether_heading1 = get_tether_heading(robot_ids[0], tether_ids[0])
+        tether_heading2 = get_tether_heading(robot_ids[1], tether_ids[0])
         theta1 = get_theta(robot1_heading, tether_heading1)
         theta2 = get_theta(robot2_heading, tether_heading2)
 
