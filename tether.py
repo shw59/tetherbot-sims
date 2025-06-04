@@ -8,7 +8,7 @@ import pybullet as p
 import pybullet_data
 import math
 
-def make_tether(length_0):
+def make_tether(first_r_pos, second_r_pos, length_0):
     """
     Return .obj text for a tether (essentially a thin cloth) with length_0 segments.
     """
@@ -24,11 +24,40 @@ def make_tether(length_0):
     for i in range(length_0):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
-    return "\n".join(lines)
+
+    tether_filename = "objects/tether.obj"
+    open(tether_filename, "w").write("\n".join(lines))
+
+    tether_x = (first_r_pos[0] + second_r_pos[0])/2
+    tether_y = (first_r_pos[1] + second_r_pos[1])/2
+
+    tether_pos = [tether_x, tether_y, 0]
+
+
+    id = p.loadSoftBody(tether_filename, 
+                               basePosition = tether_pos, 
+                               scale=1, 
+                               mass=1., 
+                               useNeoHookean=0, 
+                               useBendingSprings=1,
+                               useMassSpring=1, 
+                               springElasticStiffness=40, 
+                               springDampingStiffness=.1,
+                               springDampingAllDirections=1, 
+                               useSelfCollision=0, 
+                               frictionCoeff=0, 
+                               useFaceContact=1)
     
-def make_robot(diameter, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
+    p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+
+    return id
+
+
+    
+    
+def make_robot(diameter, position, plane_or, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
-    Create URDF text describing a cylindrical robot with specified radius and/or length, mass, and color.
+    Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     """
     radius = diameter / 2
 
@@ -133,7 +162,11 @@ def make_robot(diameter, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type=
         </link>
     </robot>
     """
-    return urdf_text
+
+    robot_blue_filename = "objects/robot_blue.urdf"
+    open(robot_blue_filename, "w").write(urdf_text)
+
+    return p.loadURDF(robot_blue_filename, position, plane_or)
 
 def get_tether_length(tether_id):
     """
@@ -211,6 +244,8 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
         p.getCameraImage(320,200)
         p.stepSimulation()
 
+
+
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -218,6 +253,7 @@ dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
+N = 2 # number of agents to be created
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -231,55 +267,74 @@ def main():
     p.setGravity(0, 0, GRAVITYZ)
     p.setTimeStep(1./240.)
 
+    plane_orn = [0, 0, 0, 1]  # p.getQuaternionFromEuler([0, 0, 0])
+
     # set initial object positions
-    tether_pos = [0, 0, 0]  # base position of the tether
-    robot1_pos = [0, -0.5, 0.005]  # base position of the first robot
-    robot2_pos = [0, 0.5, 0.005]  # base position of the second robot
+    # tether_pos = [0, 0, 0]  # base position of the tether
+    # robot1_pos = [0, -0.5, 0.005]  # base position of the first robot
+    # robot2_pos = [0, 0.5, 0.005]  # base position of the second robot
+
+    initial_robot_positions = [[0, -0.5, 0.005],
+                               [0, 0.5, 0.005]]
 
     # load objects
-    tether_filename = "objects/tether.obj"
-    open(tether_filename, "w").write(make_tether(length_0=l_0))
+    # tether_filename = "objects/tether.obj"
+    # open(tether_filename, "w").write(make_tether(length_0=l_0))
 
-    robot_blue_filename = "objects/robot_blue.urdf"
-    open(robot_blue_filename, "w").write(make_robot(diameter=dmtr, mass=mass, color=(0, 0, 1, 1)))
+    # robot_blue_filename = "objects/robot_blue.urdf"
+    # open(robot_blue_filename, "w").write(make_robot(diameter=dmtr, mass=mass, color=(0, 0, 1, 1)))
 
-    robot_red_filename = "objects/robot_red.urdf"
-    open(robot_red_filename, "w").write(make_robot(diameter=dmtr, mass=mass, color=(1, 0, 0, 1)))
+    # robot_red_filename = "objects/robot_red.urdf"
+    # open(robot_red_filename, "w").write(make_robot(diameter=dmtr, mass=mass, color=(1, 0, 0, 1)))
 
     plane_id = p.loadURDF("plane.urdf")  # each tile is a 1x1 meter square
-    robot1_id = p.loadURDF(robot_blue_filename, robot1_pos)
-    robot2_id = p.loadURDF(robot_red_filename, robot2_pos)
-    tether_id = p.loadSoftBody(tether_filename, 
-                               basePosition = tether_pos, 
-                               scale=1, 
-                               mass=1., 
-                               useNeoHookean=0, 
-                               useBendingSprings=1,
-                               useMassSpring=1, 
-                               springElasticStiffness=40, 
-                               springDampingStiffness=.1,
-                               springDampingAllDirections=1, 
-                               useSelfCollision=0, 
-                               frictionCoeff=0, 
-                               useFaceContact=1)
+
+    # a list of all of the agent objects created
+    robot_ids = []
+
+    # a list of tether objects
+    tether_ids = []
+
+    for i in range(N):
+        robot_ids.append(make_robot(dmtr, initial_robot_positions[i], plane_orn))
+
+    for i in range(N):
+        if i < (N - 1):
+            tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0))
+
+    # robot1_id = make_robot(dmtr, robot1_pos, plane_orn)
+    # # robot2_id = make_robot(dmtr, robot2_pos, plane_orn)
+    # tether_id = p.loadSoftBody(tether_filename, 
+    #                            basePosition = tether_pos, 
+    #                            scale=1, 
+    #                            mass=1., 
+    #                            useNeoHookean=0, 
+    #                            useBendingSprings=1,
+    #                            useMassSpring=1, 
+    #                            springElasticStiffness=40, 
+    #                            springDampingStiffness=.1,
+    #                            springDampingAllDirections=1, 
+    #                            useSelfCollision=0, 
+    #                            frictionCoeff=0, 
+    #                            useFaceContact=1)
 
     # set tether color and appearance
-    p.changeVisualShape(tether_id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+    # p.changeVisualShape(tether_id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
     # anchor the tethers to the robots
-    num_verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    # p.createSoftBodyAnchor(tether_id, 0, robot1_id, 1)
-    # p.createSoftBodyAnchor(tether_id, 1, robot1_id, 1)
-    # p.createSoftBodyAnchor(tether_id, num_verts-2, robot2_id, 1)
-    # p.createSoftBodyAnchor(tether_id, num_verts-1, robot2_id, 1)
+    num_verts, *_ = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
+    p.createSoftBodyAnchor(tether_ids[0], 0, robot_ids[0], 1)
+    p.createSoftBodyAnchor(tether_ids[0], 1, robot_ids[0], 1)
+    p.createSoftBodyAnchor(tether_ids[0], num_verts-2, robot_ids[1], 1)
+    p.createSoftBodyAnchor(tether_ids[0], num_verts-1, robot_ids[1], 1)
 
     # apply friction/damping between robots and the plane
-    p.changeDynamics(robot1_id, -1, linearDamping=mu)
-    p.changeDynamics(robot2_id, -1, linearDamping=mu)
+    p.changeDynamics(robot_ids[0], -1, linearDamping=mu)
+    p.changeDynamics(robot_ids[1], -1, linearDamping=mu)
 
     # debugging prints to get vertex positions on the tether
     if debugging:
-        data = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        data = p.getMeshData(tether_ids[0], -1, flags=p.MESH_DATA_SIMULATION_MESH)
         print("--------------")
         print("data=",data)
         print(data[0])
@@ -290,27 +345,27 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
     
-    move_robot(robot1_id, 0, -1, 5)
-    move_robot(robot1_id, -1, -1, 5)
-    move_robot(robot1_id, -1, 0, 5)
-    move_robot(robot1_id, 0, 0, 5)
-    move_robot(robot1_id, 1, 1, 5)
-    move_robot(robot1_id, 1, 0, 5)
-    move_robot(robot1_id, 0, 1, 5)
+    # move_robot(robot1_id, 0, -1, 5)
+    # move_robot(robot1_id, -1, -1, 5)
+    # move_robot(robot1_id, -1, 0, 5)
+    # move_robot(robot1_id, 0, 0, 5)
+    # move_robot(robot1_id, 1, 1, 5)
+    # move_robot(robot1_id, 1, 0, 5)
+    # move_robot(robot1_id, 0, 1, 5)
 
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
         # calculate tether length and strain on every step
-        l = get_tether_length(tether_id)
+        l = get_tether_length(tether_ids[0])
         strain = (l - l_0) / l_0
 
         # calculate tether angle relative to each robot's heading
-        robot1_heading = get_robot_heading(robot1_id)
-        robot2_heading = get_robot_heading(robot2_id)
-        tether_heading1_2 = get_tether_heading(robot1_id, robot2_id)
-        tether_heading2_1 = get_tether_heading(robot2_id, robot1_id)
+        robot1_heading = get_robot_heading(robot_ids[0])
+        robot2_heading = get_robot_heading(robot_ids[1])
+        tether_heading1_2 = get_tether_heading(robot_ids[0], robot_ids[1])
+        tether_heading2_1 = get_tether_heading(robot_ids[1], robot_ids[0])
         theta1 = get_theta(robot1_heading, tether_heading1_2)
         theta2 = get_theta(robot2_heading, tether_heading2_1)
 
