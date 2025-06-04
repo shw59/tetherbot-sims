@@ -87,5 +87,36 @@
                 <material name="block_color"><color rgba="0 0 1 1"/></material>
             </visual>
         </link>
+
+        <joint name="tether_block_to_base" type="continuous">
+            <parent link="base_link"/>
+            <child link="tether_block"/>
+            <origin xyz="$0.1 0 $0.005" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="0" velocity="1000"/>
+        </joint>
+
+        <link name="tether_block">
+            <visual>
+                <origin xyz="0 0.1 0.005" rpy="0 0 0"/>
+                <geometry>
+                    <box size="0.02 0.01 0.01"/>
+                </geometry>
+                <material name="tether_block_color"><color rgba="1.0 0.2 0.58 1.0"/></material>
+            </visual>
+            
+            <collision>
+                <origin xyz="0.1 0.005" rpy="0 0 0"/>
+                <geometry>
+                    <box size="0.02 0.01 0.01"/>
+                </geometry>
+            </collision>
+
+            <inertial>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <mass value="0.01"/>
+                <inertia ixx="1e-5" iyy="1e-5" izz="1e-5" ixy="0" ixz="0" iyz="0"/>
+            </inertial>
+        </link>
     </robot>
     
