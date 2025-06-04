@@ -60,18 +60,6 @@ def make_tether(first_r_pos, second_r_pos, length_0, num_segments=5):
                                useSelfCollision=0, 
                                frictionCoeff=0, 
                                useFaceContact=1)
-                        basePosition = tether_pos, 
-                        scale=1, 
-                        mass=1., 
-                        useNeoHookean=0, 
-                        useBendingSprings=1,
-                        useMassSpring=1, 
-                        springElasticStiffness=100, 
-                        springDampingStiffness=.9,
-                        springDampingAllDirections=1, 
-                        useSelfCollision=0,
-                        frictionCoeff=0, 
-                        useFaceContact=1)
     
     p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
@@ -90,26 +78,26 @@ def anchor_tether(rope_id, first_id, second_id):
 
     if r1_x >= r2_x:
         if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 4)
         else:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 4)
     else:
         if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 4)
         else:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
+            p.createSoftBodyAnchor(rope_id, 0, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, 1, first_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 4)
+            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 4)
     
 def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
@@ -351,7 +339,6 @@ def set_straight_line(n, spacing):
         positions.append(pos)
 
     return positions
-
 
     
 GRAVITYZ = -9.81  # m/s^2
