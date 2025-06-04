@@ -1,7 +1,7 @@
 """
 tether.py
 
-This file defines a PyBullet simulation of two controllable robots connected by a flexible tethe.
+This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
 """
 
 import pybullet as p
