@@ -38,13 +38,21 @@ def make_tether(first_r_pos, second_r_pos, length_0, num_segments=5):
     first_y = first_r_pos[1]
     second_x = second_r_pos[0]
     second_y = second_r_pos[1]
-    theta = math.atan2(first_y - second_y, first_x - second_x)
+    diff_x = first_x - second_x
+    diff_y = first_y - second_y
 
-    orientation = p.getQuaternionFromEuler([0, 0,-1*theta]) #[0, math.pi/4, 0]
+    if diff_x >= 0:
+        if diff_y >= 0:
+            theta = math.pi - math.atan2(diff_x, diff_y)
+        else:
+            theta = math.atan2(diff_x, -1*diff_y)
+    else:
+        if diff_y >= 0:
+            theta = math.pi + math.atan2(-1*diff_x, diff_y)
+        else:
+            theta = 2*math.pi - (math.atan2(diff_x, diff_y) - math.pi)
 
-    print("theta: " + str(theta))
-
-
+    orientation = p.getQuaternionFromEuler([0, 0, theta]) #[0, 0,-1*theta]
 
     id = p.loadSoftBody(tether_filename, 
                                basePosition = tether_pos, 
@@ -54,7 +62,7 @@ def make_tether(first_r_pos, second_r_pos, length_0, num_segments=5):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=40, 
+                               springElasticStiffness=30, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -71,33 +79,11 @@ def anchor_tether(rope_id, first_id, second_id):
     out of the two given robots
     """
     num_verts, *_ = p.getMeshData(rope_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    r1_x = p.getLinkState(first_id, 2)[0][0]
-    r1_y = p.getLinkState(first_id, 2)[0][1]
-    r2_x = p.getLinkState(second_id, 2)[0][0]
-    r2_y = p.getLinkState(second_id, 2)[0][1]
 
-    if r1_x >= r2_x:
-        if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
-        else:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 1)
-    else:
-        if r1_y <= r2_y:
-            p.createSoftBodyAnchor(rope_id, 0, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, first_id, 1)
-        else:
-            p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
-            p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
+    p.createSoftBodyAnchor(rope_id, 0, first_id, 1)
+    p.createSoftBodyAnchor(rope_id, 1, first_id, 1)
+    p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 1)
+    p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 1)
     
 def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
@@ -277,9 +263,9 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
     desired_heading = math.atan2(y_heading, x_heading)
     rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
 
-    print(f"base_heading={math.degrees(base_heading):.2f}, "
-          f"desired_heading={math.degrees(desired_heading):.2f}, "
-          f"rotation={math.degrees(rotation):.2f}")
+    # print(f"base_heading={math.degrees(base_heading):.2f}, "
+    #       f"desired_heading={math.degrees(desired_heading):.2f}, "
+    #       f"rotation={math.degrees(rotation):.2f}")
 
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
@@ -307,6 +293,8 @@ def set_straight_line(n, spacing):
     for i in range(n):
         pos = [0, y[i], height]
         positions.append(pos)
+    
+    # print(positions)
 
     return positions
 
@@ -335,6 +323,9 @@ def main():
 
     # set initial object positions
     # initial_robot_positions = set_straight_line(N, l_0)
+
+    # print(initial_robot_positions)
+    # initial_robot_positions.append([1 ,0, height])
     initial_robot_positions = [[0,0,height],
                                [1, 0, height]]
 
@@ -376,10 +367,10 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
     
-    move_robot(robot_ids[0], 1, 1, 5)
-    move_robot(robot_ids[0], -1, 1, 5)
-    move_robot(robot_ids[0], 1, -1, 5)
-    move_robot(robot_ids[0], -1, -1, 5)
+    move_robot(robot_ids[1], 1, 1, 30)
+    move_robot(robot_ids[1], -1, 1, 30)
+    move_robot(robot_ids[1], -1, -1, 30)
+    move_robot(robot_ids[1], 1, -1, 30)
 
     # main simulation loop
     while p.isConnected():
