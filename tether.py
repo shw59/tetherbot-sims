@@ -8,20 +8,20 @@ import pybullet as p
 import pybullet_data
 import math
 
-def make_tether(first_r_pos, second_r_pos, length_0):
+def make_tether(first_r_pos, second_r_pos, length_0, num_segments=10):
     """
-    Return .obj text for a tether (essentially a thin cloth) with length_0 segments.
+    Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
     """
-    dy = 1.0  # length of every segment along the tether between each pair of vertices
-    dx = 0.01 # half the width of the tether
+    dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
+    dx = 0.01  # half the width of the tether
     lines = ["o tether"]
     # vertices
-    for i in range(length_0 + 1):
-        y = -dy * length_0/2 + dy * i
+    for i in range(num_segments + 1):
+        y = -dy * num_segments/2 + dy * i
         lines.append(f"v  { dx:.6f} {y:.6f} 0.000000")
         lines.append(f"v {-dx:.6f} {y:.6f} 0.000000")
     # faces
-    for i in range(length_0):
+    for i in range(num_segments):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
@@ -32,7 +32,6 @@ def make_tether(first_r_pos, second_r_pos, length_0):
     tether_y = (first_r_pos[1] + second_r_pos[1])/2
 
     tether_pos = [tether_x, tether_y, 0]
-
 
     id = p.loadSoftBody(tether_filename, 
                                basePosition = tether_pos, 
@@ -51,11 +50,8 @@ def make_tether(first_r_pos, second_r_pos, length_0):
     p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
     return id
-
-
     
-    
-def make_robot(diameter, position, plane_or, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
+def make_robot(diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1), joint_type="prismatic"):
     """
     Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
     """
@@ -166,7 +162,7 @@ def make_robot(diameter, position, plane_or, length=.01, mass=1.0, color=(0, 0.5
     robot_blue_filename = "objects/robot_blue.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
-    return p.loadURDF(robot_blue_filename, position, plane_or)
+    return p.loadURDF(robot_blue_filename, position)
 
 def get_tether_length(tether_id):
     """
@@ -194,13 +190,15 @@ def get_robot_heading(robot_id):
 
     return heading[:2]
 
-def get_tether_heading(robot1_id, robot2_id):
+def get_tether_heading(robot_id, tether_id):
     """
     Return the heading vector [x, y] of the tether between two robots, 
     which is just the vector from the first robot to the second.
     """
-    robot1_pos = p.getLinkState(robot1_id, 2)[0]
-    robot2_pos = p.getLinkState(robot2_id, 2)[0]
+    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+    robot1_pos = p.getLinkState(robot_id, 2)[0]
+    robot2_pos = p.getLinkState(robot_id, 2)[0]
     heading = [robot2_pos[i] - robot1_pos[i] for i in range(3)]
 
     return heading[:2]
@@ -244,16 +242,14 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
         p.getCameraImage(320,200)
         p.stepSimulation()
 
-
-
     
 GRAVITYZ = -9.81  # m/s^2
+N = 2 # number of agents to be created
 
 dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
-N = 2 # number of agents to be created
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -266,8 +262,6 @@ def main():
     p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) # disable side bar windows in the GUI
     p.setGravity(0, 0, GRAVITYZ)
     p.setTimeStep(1./240.)
-
-    plane_orn = [0, 0, 0, 1]  # p.getQuaternionFromEuler([0, 0, 0])
 
     # set initial object positions
     # tether_pos = [0, 0, 0]  # base position of the tether
@@ -296,7 +290,7 @@ def main():
     tether_ids = []
 
     for i in range(N):
-        robot_ids.append(make_robot(dmtr, initial_robot_positions[i], plane_orn))
+        robot_ids.append(make_robot(dmtr, initial_robot_positions[i]))
 
     for i in range(N):
         if i < (N - 1):
