@@ -281,6 +281,46 @@ def reached_target_position(robot_id, target_x, target_y, err):
     return (p.getLinkState(robot_id, 2)[0][0] > target_x - err and p.getLinkState(robot_id, 2)[0][0] < target_x + err) and \
            (p.getLinkState(robot_id, 2)[0][1] > target_y - err and p.getLinkState(robot_id, 2)[0][1] < target_y + err)
 
+def get_strain_vector(robot_id, tether_id):
+    """
+    Calculates the vector direction that the robot should move to achieve the goal strain.
+    """
+    len = get_tether_length(tether_id)
+    strain = (len - l_0) / l_0
+
+    strain_diff = strain - goal_strain
+
+    if strain_diff > 0:
+        sign = 1
+    elif strain_diff < 0:
+        sign = -1
+    else:
+        sign = 0
+
+    # The vector from the center of the robot to the point where the tether connects to the robot
+    vector = get_tether_heading(robot_id, tether_id)
+    length_of_vector = math.sqrt((vector[0]**2) + (vector[1]**2))
+    unit_vector = [(1/length_of_vector)*vector[0], (1/length_of_vector)*vector[1]]
+
+    V_t = [sign*(strain_diff**2)*unit_vector[0], sign*(strain_diff**2)*unit_vector[1]]
+
+    return V_t
+
+def new_position_forward_with_strain_1_tether(robot_id, tether_id):
+    """
+    Determines the new position the robot should move to to maintain its tether's goal strain based on 
+    its heading and strain tether.
+    """
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    strain_vector = get_strain_vector(robot_id, tether_id)
+    robot_heading = get_robot_heading(robot_id)
+    resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
+                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+    
+    new_position = [curr_x+resulting_vector[0], curr_y+resulting_vector[1]]
+    
+    return new_position
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -288,6 +328,11 @@ dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
+
+# tether properties
+goal_strain = 0.1
+strain_weight = 4
+heading_weight = 2
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -346,7 +391,7 @@ def main():
     waypoints = [(1, 1), (-1, 1), (-1, -1), (1, -1)]
     target_x, target_y, _ = robot1_pos
     idx = -1
-    err = 0.01 # positional error tolerance
+    err_pos = 0.01 # positional error tolerance
 
     # main simulation loop
     while p.isConnected():
@@ -365,7 +410,7 @@ def main():
                             f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
                             [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
     
-        if reached_target_position(robot1_id, target_x, target_y, err) and (idx + 1) < len(waypoints):
+        if reached_target_position(robot1_id, target_x, target_y, err_pos) and (idx + 1) < len(waypoints):
             idx += 1
             target_x = waypoints[idx][0]
             target_y = waypoints[idx][1]
