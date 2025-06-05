@@ -26,7 +26,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-    tether_filename = f"objects/{name}.obj"
+    tether_filename = f"{name}.obj"
     open(tether_filename, "w").write("\n".join(lines))
 
     tether_x = (robot1_pos[0] + robot2_pos[0])/2
@@ -38,12 +38,21 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     first_y = robot1_pos[1]
     second_x = robot2_pos[0]
     second_y = robot2_pos[1]
-    theta = math.atan2(first_y - second_y, first_x - second_x)
+    diff_x = first_x - second_x
+    diff_y = first_y - second_y
 
-    # orientation = p.getQuaternionFromEuler([0, 0,-1*theta]) #[0, math.pi/4, 0]
-    orientation = [0, 0, 0, 1]
+    if diff_x >= 0:
+        if diff_y >= 0:
+            theta = math.pi - math.atan2(diff_x, diff_y)
+        else:
+            theta = math.atan2(diff_x, -1*diff_y)
+    else:
+        if diff_y >= 0:
+            theta = math.pi + math.atan2(-1*diff_x, diff_y)
+        else:
+            theta = 2*math.pi - (math.atan2(diff_x, diff_y) - math.pi)
 
-    print("theta: " + str(theta))
+    orientation = p.getQuaternionFromEuler([0, 0, theta]) #[0, 0,-1*theta]
 
     id = p.loadSoftBody(tether_filename, 
                                basePosition = tether_pos, 
@@ -53,7 +62,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=40, 
+                               springElasticStiffness=30, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -175,7 +184,7 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
     </robot>
     """
 
-    robot_blue_filename = f"objects/{name}.urdf"
+    robot_blue_filename = f"{name}.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
     return p.loadURDF(robot_blue_filename, position)
@@ -242,7 +251,7 @@ def get_theta(robot_id, tether_id):
 
     return math.degrees(theta) % 360
 
-def move_robot(robot_id, x, y, force=10, err=0.01):
+def move_robot(robot_id, x, y, force=10):
     """
     Move the robot to a specified position (x, y) with an optionally specified force and positional error tolerance.
     """
@@ -265,10 +274,12 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
                                 targetPositions=[x_move, y_move, rotation], forces=[force]*3)
 
-    while p.getLinkState(robot_id, 2)[0][0] < x - err or p.getLinkState(robot_id, 2)[0][0] > x + err or \
-          p.getLinkState(robot_id, 2)[0][1] < y - err or p.getLinkState(robot_id, 2)[0][1] > y + err:
-        p.getCameraImage(320,200)
-        p.stepSimulation()
+def reached_target_position(robot_id, target_x, target_y, err):
+    """
+    Checks the robot's current position against a target position with given error tolerance. Returns true if robot has reached target.
+    """
+    return (p.getLinkState(robot_id, 2)[0][0] > target_x - err and p.getLinkState(robot_id, 2)[0][0] < target_x + err) and \
+           (p.getLinkState(robot_id, 2)[0][1] > target_y - err and p.getLinkState(robot_id, 2)[0][1] < target_y + err)
 
     
 GRAVITYZ = -9.81  # m/s^2
@@ -291,14 +302,14 @@ def main():
     p.setTimeStep(1./240.)
 
     # set initial object positions
-    robot1_pos = [0, -0.5, 0.005]  # base position of the first robot
-    robot2_pos = [0, 0.5, 0.005]  # base position of the second robot
+    robot1_pos = [1, 0, 0.005]  # base position of the first robot
+    robot2_pos = [0, 0, 0.005]  # base position of the second robot
 
     # load objects
     plane_id = p.loadURDF("plane.urdf")  # each tile is a 1x1 meter square
     robot1_id = make_robot("robot_blue", dmtr, robot1_pos)
     robot2_id = make_robot("robot_red", dmtr, robot2_pos, color=(1, 0, 0, 1))
-    tether_id = make_tether("tether", robot1_pos, robot2_pos, l_0)
+    tether_id = make_tether("tether", robot1_pos, robot2_pos, l_0, num_segments=1)
 
     # set tether color and appearance
     p.changeVisualShape(tether_id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
@@ -327,13 +338,15 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
     
-    move_robot(robot1_id, 0, -1, 5)
-    move_robot(robot1_id, -1, -1, 5)
-    move_robot(robot1_id, -1, 0, 5)
-    move_robot(robot1_id, 0, 0, 5)
-    move_robot(robot1_id, 1, 1, 5)
-    move_robot(robot1_id, 1, 0, 5)
-    move_robot(robot1_id, 0, 1, 5)
+    move_robot(robot1_id, 1, 1, 30)
+    move_robot(robot1_id, -1, 1, 30)
+    move_robot(robot1_id, -1, -1, 30)
+    move_robot(robot1_id, 1, -1, 30)
+
+    waypoints = [(1, 1), (-1, 1), (-1, -1), (1, -1)]
+    target_x, target_y, _ = robot1_pos
+    idx = -1
+    err = 0.01 # positional error tolerance
 
     # main simulation loop
     while p.isConnected():
@@ -351,6 +364,13 @@ def main():
         p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
                             f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
                             [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+    
+        if reached_target_position(robot1_id, target_x, target_y, err) and (idx + 1) < len(waypoints):
+            idx += 1
+            target_x = waypoints[idx][0]
+            target_y = waypoints[idx][1]
+            print(target_x, target_y, idx)
+            move_robot(robot1_id, target_x, target_y, force=25)
 
         p.stepSimulation()
 

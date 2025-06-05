@@ -259,9 +259,9 @@ def get_theta(robot_id, tether_id):
 
     return math.degrees(theta) % 360
 
-def move_robot(robot_id, x, y, force=10, err=0.01):
+def move_robot(robot_id, x, y, force=10):
     """
-    Move the robot to a specified position (x, y) with an optionally specified force and positional error tolerance.
+    Move the robot to a specified position (x, y) with an optionally specified force.
     """
     # amount to move (relative to base position)
     x_move = x - p.getBasePositionAndOrientation(robot_id)[0][0]
@@ -274,18 +274,16 @@ def move_robot(robot_id, x, y, force=10, err=0.01):
     desired_heading = math.atan2(y_heading, x_heading)
     rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
 
-    # print(f"base_heading={math.degrees(base_heading):.2f}, "
-    #       f"desired_heading={math.degrees(desired_heading):.2f}, "
-    #       f"rotation={math.degrees(rotation):.2f}")
-
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
                                 targetPositions=[x_move, y_move, rotation], forces=[force]*3)
-
-    while p.getLinkState(robot_id, 2)[0][0] < x - err or p.getLinkState(robot_id, 2)[0][0] > x + err or \
-          p.getLinkState(robot_id, 2)[0][1] < y - err or p.getLinkState(robot_id, 2)[0][1] > y + err:
-        p.getCameraImage(320,200)
-        p.stepSimulation()
+    
+def reached_target_position(robot_id, target_x, target_y, err):
+    """
+    Checks the robot's current position against a target position with given error tolerance. Returns true if robot has reached target.
+    """
+    return (p.getLinkState(robot_id, 2)[0][0] > target_x - err and p.getLinkState(robot_id, 2)[0][0] < target_x + err) and \
+           (p.getLinkState(robot_id, 2)[0][1] > target_y - err and p.getLinkState(robot_id, 2)[0][1] < target_y + err)
 
 def set_straight_line(n, spacing):
     """
@@ -383,6 +381,10 @@ mu = 2.5  # friction coefficient between robots and plane
 height = 0.005 # hieght of robot
 goal_strain = 0.1
 
+# target positions for each agent in the simulation
+target_pos = [(0, 0)] * N
+err = 0.01 # positional error tolerance
+
 debugging = False  # set to True to print vertex positions of tether
 
 def main():
@@ -400,8 +402,12 @@ def main():
 
     # print(initial_robot_positions)
     # initial_robot_positions.append([1 ,0, height])
+    
     initial_robot_positions = [[0,0,height],
                                [0, -1, height]]
+    
+    # list of x-y current target positions for each agent (starts at their initial positions)
+    target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
 
     # each tile is a 1x1 meter square
     plane_id = p.loadURDF("plane.urdf")
@@ -441,7 +447,7 @@ def main():
             uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
             text_uid.append(uid)
     
-    # move robots
+    # move robots in a box formation
     # move_robot(robot_ids[1], 1, 1, 30)
     # move_robot(robot_ids[1], -1, 1, 30)
     # move_robot(robot_ids[1], -1, -1, 30)
@@ -472,6 +478,12 @@ def main():
         p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
                             f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
                             [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        
+        for i in range(N):
+            if reached_target_position(robot_ids[i], target_pos[i][0], target_pos[i][1], err):
+                # calculate and set the next target_pos and call move_robot on it (this is just an example)
+                target_pos[i] = (1, 1)
+                move_robot(robot_ids[i], target_pos[i][0], target_pos[i][1], force=25)
 
         p.stepSimulation()
 
