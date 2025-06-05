@@ -304,11 +304,14 @@ def set_straight_line(n, spacing):
     for i in range(n):
         pos = [0, y[i], height]
         positions.append(pos)
-    
-    # print(positions)
 
     return positions
 
+def angle_difference_vector(robot_id, robot_list_position, robot_list_length, deg_goal):
+    if robot_list_position != 0:
+        if robot_list_position != (robot_list_length - 1):
+            coef = goal 
+    return 0
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
