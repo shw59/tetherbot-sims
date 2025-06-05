@@ -29,6 +29,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     tether_filename = f"{name}.obj"
     open(tether_filename, "w").write("\n".join(lines))
 
+    # tether position should be midpoint of the two robots
     tether_x = (robot1_pos[0] + robot2_pos[0])/2
     tether_y = (robot1_pos[1] + robot2_pos[1])/2
 
