@@ -26,7 +26,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-    tether_filename = f"objects/{name}.obj"
+    tether_filename = f"{name}.obj"
     open(tether_filename, "w").write("\n".join(lines))
 
     tether_x = (robot1_pos[0] + robot2_pos[0])/2
@@ -193,7 +193,7 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
     </robot>
     """
 
-    robot_blue_filename = f"objects/{name}.urdf"
+    robot_blue_filename = f"{name}.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
     return p.loadURDF(robot_blue_filename, position)
