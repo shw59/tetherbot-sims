@@ -307,11 +307,71 @@ def set_straight_line(n, spacing):
 
     return positions
 
-def angle_difference_vector(robot_id, robot_list_position, robot_list_length, deg_goal):
-    if robot_list_position != 0:
-        if robot_list_position != (robot_list_length - 1):
-            coef = goal 
-    return 0
+# def angle_difference_vector_1_tether(robot_id, tether_id, angle_goal):
+#     """
+#     Calculates what direction the robot should move in so that it may attempt to meet its angle goal,
+#     which is given in degrees.
+#     """
+#     angle_diff = angle_goal - get_theta(robot_id, tether_id)
+
+#     print("current theta: " + str(get_theta(robot_id, tether_id)))
+
+#     print("angle_diff: " + str(angle_diff))
+#     if angle_diff < 0:
+#         sign = -1
+#     elif angle_diff > 0:
+#         sign = 1
+#     else:
+#         sign = 0
+
+#     # The vector from the center of the robot to the point where the tether connects to the robot
+#     vector = get_tether_heading(robot_id, tether_id)
+#     length_of_vector = math.sqrt((vector[0]**2) + (vector[1]**2))
+#     unit_vector = [(1/length_of_vector)*vector[0], (1/length_of_vector)*vector[1]]
+    
+#     # Coefficient on output vector
+#     coef = sign*math.sqrt((abs(angle_diff))/(2*math.pi))
+
+#     # Output vector
+#     Va = [coef*unit_vector[0], coef*unit_vector[1]]
+    
+#     return Va
+
+def strain_vector_1_tether(robot_id, tether_id):
+
+    len = get_tether_length(tether_id)
+    strain = (len - l_0) / l_0
+
+    strain_diff = strain - goal_strain
+
+    if strain_diff > 0:
+        sign = 1
+    elif strain_diff < 0:
+        sign = -1
+    else:
+        sign = 0
+
+    # The vector from the center of the robot to the point where the tether connects to the robot
+    vector = get_tether_heading(robot_id, tether_id)
+    length_of_vector = math.sqrt((vector[0]**2) + (vector[1]**2))
+    unit_vector = [(1/length_of_vector)*vector[0], (1/length_of_vector)*vector[1]]
+
+    Vt = [sign*(strain_diff**2)*unit_vector[0], sign*(strain_diff**2)*unit_vector[1]]
+
+    return Vt
+
+def move_forward_with_strain_1_tether(robot_id, tether_id, force=60):
+    strain_weight = 4
+    heading_weight = 2
+    while p.isConnected():
+        curr_x = p.getLinkState(robot_id, 2)[0][0]
+        curr_y = p.getLinkState(robot_id, 2)[0][1]
+        strain_vector = strain_vector_1_tether(robot_id, tether_id)
+        robot_heading = get_robot_heading(robot_id)
+        resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
+                            strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+        move_robot(robot_id, curr_x+resulting_vector[0], curr_y+resulting_vector[1], force)
+
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
@@ -321,6 +381,7 @@ mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
 height = 0.005 # hieght of robot
+goal_strain = 0.1
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -340,7 +401,7 @@ def main():
     # print(initial_robot_positions)
     # initial_robot_positions.append([1 ,0, height])
     initial_robot_positions = [[0,0,height],
-                               [1, 0, height]]
+                               [0, -1, height]]
 
     # each tile is a 1x1 meter square
     plane_id = p.loadURDF("plane.urdf")
@@ -385,6 +446,15 @@ def main():
     # move_robot(robot_ids[1], -1, 1, 30)
     # move_robot(robot_ids[1], -1, -1, 30)
     # move_robot(robot_ids[1], 1, -1, 30)
+
+    # new = strain_vector_1_tether(robot_ids[0], tether_ids[0])
+    
+    # print(new)
+
+    # move_robot(robot_ids[0], new[0], new[1], 30)
+
+    move_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
+
 
     # main simulation loop
     while p.isConnected():
