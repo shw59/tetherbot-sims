@@ -62,7 +62,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=1, 
+                               springElasticStiffness=30, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -338,16 +338,40 @@ def strain_vector_1_tether(robot_id, tether_id):
     return Vt
 
 def move_forward_with_strain_1_tether(robot_id, tether_id, force=60):
-    strain_weight = 4
-    heading_weight = 2
-    while p.isConnected():
-        curr_x = p.getLinkState(robot_id, 2)[0][0]
-        curr_y = p.getLinkState(robot_id, 2)[0][1]
-        strain_vector = strain_vector_1_tether(robot_id, tether_id)
-        robot_heading = get_robot_heading(robot_id)
-        resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
-                            strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
-        move_robot(robot_id, curr_x+resulting_vector[0], curr_y+resulting_vector[1], force)
+    # strain_weight = 4
+    # heading_weight = 2
+    # while p.isConnected():
+    #     curr_x = p.getLinkState(robot_id, 2)[0][0]
+    #     curr_y = p.getLinkState(robot_id, 2)[0][1]
+    #     strain_vector = strain_vector_1_tether(robot_id, tether_id)
+    #     robot_heading = get_robot_heading(robot_id)
+    #     resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
+    #                         strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+    #     move_robot(robot_id, curr_x+resulting_vector[0], curr_y+resulting_vector[1], force)
+    # curr_x = p.getLinkState(robot_id, 2)[0][0]
+    # curr_y = p.getLinkState(robot_id, 2)[0][1]
+    # strain_vector = strain_vector_1_tether(robot_id, tether_id)
+    # robot_heading = get_robot_heading(robot_id)
+    # resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
+    #                     strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+    
+    # print("\n")
+    # print("current x: " + str(curr_x))
+    # print("current y: " + str(curr_y))
+    # print("strain_vector: " + str(strain_vector))
+    # print("robot_heading: " + str(robot_heading))
+    # print("resulting_vector: " + str(resulting_vector))
+    # move_robot(robot_id, curr_x+resulting_vector[0], curr_y+resulting_vector[1], 25)
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    strain_vector = strain_vector_1_tether(robot_id, tether_id)
+    robot_heading = get_robot_heading(robot_id)
+    resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
+                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+    
+    new_position = [curr_x+resulting_vector[0], curr_y+resulting_vector[1]]
+    
+    return new_position
 
     
 GRAVITYZ = -9.81  # m/s^2
@@ -442,6 +466,8 @@ def main():
 
     # move_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
 
+    # print(strain_vector_1_tether(robot_ids[0], tether_ids[0]))
+
 
     # main simulation loop
     while p.isConnected():
@@ -460,20 +486,12 @@ def main():
                             f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
                             [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
         
-        # for i in range(N):
-        #     if reached_target_position(robot_ids[i], target_pos[i][0], target_pos[i][1], err):
-        #         # calculate and set the next target_pos and call move_robot on it (this is just an example)
-        #         target_pos[i] = (1, 1)
-        #         move_robot(robot_ids[i], target_pos[i][0], target_pos[i][1], force=25)
-
-        # if reached_target_strain(tether_ids[0]):
-        curr_x = p.getLinkState(robot_ids[0], 2)[0][0]
-        curr_y = p.getLinkState(robot_ids[0], 2)[0][1]
-        strain_vector = strain_vector_1_tether(robot_ids[0], tether_ids[0])
-        robot_heading = get_robot_heading(robot_ids[0])
-        resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
-                            strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
-        move_robot(robot_ids[0], curr_x+resulting_vector[0], curr_y+resulting_vector[1], 25)
+        
+        if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err):
+        
+            new_pos = move_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
+            target_pos[1] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
             
 
         p.stepSimulation()
