@@ -231,13 +231,13 @@ def get_tether_heading(robot_id, tether_id):
 
     return heading
 
-def get_theta(robot_heading, tether_heading):
+def get_theta(robot_id, tether_id):
     """
     Return the angle between the robot's heading and the tether's heading (in degrees).
     The angle is computed using the dot product.
     """
-    hx, hy = robot_heading
-    tx, ty = tether_heading
+    hx, hy = get_robot_heading(robot_id)
+    tx, ty = get_tether_heading(robot_id, tether_id)
     theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
 
     return math.degrees(theta) % 360
@@ -344,12 +344,8 @@ def main():
         strain = (l - l_0) / l_0
 
         # calculate tether angle relative to each robot's heading
-        robot1_heading = get_robot_heading(robot1_id)
-        robot2_heading = get_robot_heading(robot2_id)
-        tether_heading1 = get_tether_heading(robot1_id, tether_id)
-        tether_heading2 = get_tether_heading(robot2_id, tether_id)
-        theta1 = get_theta(robot1_heading, tether_heading1)
-        theta2 = get_theta(robot2_heading, tether_heading2)
+        theta1 = get_theta(robot1_id, tether_id)
+        theta2 = get_theta(robot2_id, tether_id)
 
         # display results in the GUI
         p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
