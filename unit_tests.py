@@ -430,13 +430,13 @@ def main():
 
     # set initial object positions
     robot_blue_pos = [0, -1, 0.005]  # base position of the first robot
-    robot2_pos = [0, 0, 0.005]  # base position of the second robot
+    robot_red_pos = [0, 0, 0.005]  # base position of the second robot
 
     # load objects
     plane_id = p.loadURDF("plane.urdf")  # each tile is a 1x1 meter square
     robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos)
-    robot_red_id = make_robot("robot_red", dmtr, robot2_pos, color=(1, 0, 0, 1))
-    tether_id = make_tether("tether", robot_blue_pos, robot2_pos, l_0, num_segments=20)
+    robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
+    tether_id = make_tether("tether", robot_blue_pos, robot_red_pos, l_0, num_segments=20)
 
     # anchor the tether to the robots
     anchor_tether(tether_id, robot_blue_id, robot_red_id)
