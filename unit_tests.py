@@ -74,6 +74,18 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
     p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
     return id
+
+def anchor_tether(rope_id, first_id, second_id):
+    """
+    Anchors the ends of the given tether to which ever robot each end is closer to, 
+    out of the two given robots
+    """
+    num_verts, *_ = p.getMeshData(rope_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+    p.createSoftBodyAnchor(rope_id, 0, first_id, 2)
+    p.createSoftBodyAnchor(rope_id, 1, first_id, 2)
+    p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
+    p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
 def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
@@ -426,12 +438,8 @@ def main():
     robot_red_id = make_robot("robot_red", dmtr, robot2_pos, color=(1, 0, 0, 1))
     tether_id = make_tether("tether", robot_blue_pos, robot2_pos, l_0, num_segments=20)
 
-    # anchor the tethers to the robots
-    num_verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-    p.createSoftBodyAnchor(tether_id, 0, robot_blue_id, 2)
-    p.createSoftBodyAnchor(tether_id, 1, robot_blue_id, 2)
-    p.createSoftBodyAnchor(tether_id, num_verts-2, robot_red_id, 2)
-    p.createSoftBodyAnchor(tether_id, num_verts-1, robot_red_id, 2)
+    # anchor the tether to the robots
+    anchor_tether(tether_id, robot_blue_id, robot_red_id)
 
     # apply friction/damping between robots and the plane
     p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
