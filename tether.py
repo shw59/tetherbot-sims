@@ -260,9 +260,15 @@ def get_theta(robot_id, tether_id):
 
     return math.degrees(theta) % 360
 
+def smallest_signed_angle_diff(goal_angle, start_angle):
+    """
+    Computes the smallest rotation needed to go from one angle to another (+ indicates CCW, - indicates CW).
+    """
+    return (goal_angle - start_angle + math.pi) % (2 * math.pi) - math.pi
+
 def move_robot(robot_id, x, y, force=10):
     """
-    Move the robot to a specified position (x, y) with an optionally specified force.
+    Move the robot to a specified position (x, y) with an optionally specified force and positional error tolerance.
     """
     # amount to move (relative to base position)
     x_move = x - p.getBasePositionAndOrientation(robot_id)[0][0]
@@ -270,11 +276,15 @@ def move_robot(robot_id, x, y, force=10):
 
     # calculate rotation to face direction of movement
     base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(robot_id)[1])[2] # starting heading
-    y_heading = y - p.getLinkState(robot_id, 2)[0][1] # y_move relative to current position
-    x_heading = x - p.getLinkState(robot_id, 2)[0][0] # x_move relative to current position
-    desired_heading = math.atan2(y_heading, x_heading)
-    rotation = (desired_heading - base_heading + math.pi) % (2 * math.pi) - math.pi # smallest signed angle difference
+    
+    curr_heading = p.getJointState(robot_id, 2)[0]
 
+    x_curr_pos, y_curr_pos = p.getLinkState(robot_id, 2)[0][:2]
+    desired_heading = math.atan2(y - y_curr_pos, x - x_curr_pos)
+
+    # rotations must be fed into setJointMotorControl function with respect to the base heading, not current heading
+    rotation = base_heading + curr_heading + smallest_signed_angle_diff(desired_heading, curr_heading)
+    
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     p.setJointMotorControlArray(robot_id, joint_indices, p.POSITION_CONTROL,
                                 targetPositions=[x_move, y_move, rotation], forces=[force]*3)
