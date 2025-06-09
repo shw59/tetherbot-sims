@@ -357,6 +357,12 @@ def new_position_forward_with_strain_1_tether(robot_id, tether_id):
     
     return new_position
 
+def turn_around(robot_id):
+    curr_pos = get_robot_heading(robot_id)
+    scale_down = 2
+    new_pos = [-scale_down*curr_pos[0], -scale_down*curr_pos[1]] 
+    return new_pos
+
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
@@ -418,27 +424,40 @@ def main():
     for i in range(N-1):
         anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
 
+    runs = 0
+
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
         # calculate tether length and strain on every step
-        l = get_tether_length(tether_ids[0])
-        strain = (l - l_0) / l_0
+        # l = get_tether_length(tether_ids[0])
+        # strain = (l - l_0) / l_0
 
-        # calculate tether angle relative to each robot's heading
-        theta1 = get_theta(robot_ids[0], tether_ids[0])
-        theta2 = get_theta(robot_ids[1], tether_ids[0])
+        # # calculate tether angle relative to each robot's heading
+        # theta1 = get_theta(robot_ids[0], tether_ids[0])
+        # theta2 = get_theta(robot_ids[1], tether_ids[0])
 
-        # display results in the GUI
-        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        # # display results in the GUI
+        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+        #                     f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
         
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
             new_pos = new_position_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
             target_pos[1] = (new_pos[0], new_pos[1])
             move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
+        
+        if runs == 0:
+            new_pos = turn_around(robot_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+            runs = 1
+        elif reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
+            new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
 
         p.stepSimulation()
 
