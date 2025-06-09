@@ -6,14 +6,15 @@ This file defines the agent class for robot objects.
 
 import pybullet as p
 import math
+from tether import Tether
 
 class Agent:
-    def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, position_0, heading_0, radius, tether, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Initializes an agent object and its position and id attributes.
         """
-        self.position = position_0
-        self.heading = heading_0
+        self.target_position = [0, 0]
+        self.tether_1 = tether
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -123,3 +124,72 @@ class Agent:
         self.id = p.loadURDF(robot_blue_filename, position_0)
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
+
+    def curr_pose(self):
+        """
+        Return the current position and heading of the agent as a list [[x, y], [x_heading, y_heading]].
+        """
+        agent_pos = p.getLinkState(self.id, 2)[0][:2]
+        head_pos = p.getLinkState(self.id, 3)[0][:2]
+        heading = [head_pos[i] - agent_pos[i] for i in range(2)]
+
+        return [agent_pos, heading]
+    
+    def tether_heading(self):
+        """
+        Return the current heading of the agent's tether with respect to the agent's center.
+        """
+        n_verts, verts, *_ = p.getMeshData(self.tether.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+        # get both end vertices of the tether
+        p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(2)]
+        p2 = [(verts[n_verts - 2][k] + verts[n_verts - 1][k]) / 2.0 for k in range(2)]
+
+        # get the agent's position
+        agent_pos = p.getLinkState(self.tether.id, 2)[0][:2]
+        
+        # check which vertex pair is closer and use the second to next pair to calculate heading
+        dist1 = math.dist(agent_pos, p1)
+        dist2 = math.dist(agent_pos, p2)
+        if dist1 < dist2:
+            p1_next = [(verts[1][k] + verts[2][k]) / 2.0 for k in range(2)] # second to end vertex
+            heading = [p1_next[i] - agent_pos[i] for i in range(2)]
+        else:
+            p2_next = [(verts[n_verts - 3][k] + verts[n_verts - 2][k]) / 2.0 for k in range(2)]
+            heading = [p2_next[i] - agent_pos[i] for i in range(2)]
+
+        return heading
+    
+    def theta(self):
+        """
+        Return the angle between the agent's heading and the heading of its tether (in degrees).
+        """
+        hx, hy = self.curr_pose()[1]
+        tx, ty = self.tether_heading()
+        theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
+
+        return math.degrees(theta) % 360
+    
+    def move(self, x, y, force=10):
+        """
+        Move the agent from its current position to a specified [x, y] target position in the world.
+        """
+        # amount to move (relative to base position)
+        x_move = x - p.getBasePositionAndOrientation(self.id)[0][0]
+        y_move = y - p.getBasePositionAndOrientation(self.id)[0][1]
+
+        # calculate rotation to face direction of movement
+        base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
+        
+        curr_heading = p.getJointState(self.id, 2)[0]
+
+        x_curr_pos, y_curr_pos = p.getLinkState(self.id, 2)[0][:2]
+        desired_heading = math.atan2(y - y_curr_pos, x - x_curr_pos)
+
+        # rotations must be fed into setJointMotorControl function with respect to the base heading, not current heading
+        # use smallest signed angle difference and then add the current heading and base heading
+        rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
+        
+        joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
+        p.setJointMotorControlArray(self.id, joint_indices, p.POSITION_CONTROL,
+                                    targetPositions=[x_move, y_move, rotation], forces=[force]*3)

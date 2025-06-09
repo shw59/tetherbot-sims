@@ -47,7 +47,7 @@ class Tether:
         
         p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
     
-    def get_strain(self):
+    def strain(self):
         """
         Return the current strain of the tether object based on its current length.
         """
