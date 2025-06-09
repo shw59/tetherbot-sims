@@ -193,7 +193,7 @@ def make_robot(diameter, position, heading=0, length=.01, mass=1.0, color=(0, 0.
         </link>
     </robot>
     """
-
+    
     robot_blue_filename = f"robot.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
@@ -361,6 +361,11 @@ def new_position_forward_with_strain_1_tether(robot_id, tether_id):
     
     return new_position
 
+def turn_around(robot_id):
+    curr_pos = get_robot_heading(robot_id)
+    scale_down = 2
+    new_pos = [-scale_down*curr_pos[0], -scale_down*curr_pos[1]] 
+    return new_pos
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
@@ -421,6 +426,8 @@ def main():
     # anchors all of the tethers to their respective robots
     for i in range(N-1):
         anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
+        
+    runs = 0
 
     # main simulation loop
     while p.isConnected():
@@ -443,6 +450,16 @@ def main():
             new_pos = new_position_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
             target_pos[1] = (new_pos[0], new_pos[1])
             move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
+        
+        if runs == 0:
+            new_pos = turn_around(robot_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+            runs = 1
+        elif reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
+            new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
 
         p.stepSimulation()
 

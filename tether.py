@@ -62,4 +62,4 @@ class Tether:
         strain = (length - self.length_0) / self.length_0
         
         return strain
-        
+      
