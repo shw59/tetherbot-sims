@@ -497,6 +497,8 @@ def maintain_strain_heading_test_2():
     robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos)
     robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
     tether_id = make_tether("tether", robot_blue_pos, robot_red_pos, l_0, num_segments=20)
+    cube_id = p.loadURDF("cube_small.urdf", [1, -0.5, .01])
+    p.createConstraint(cube_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [1, -0.5, .01])
 
     # anchor the tether to the robots
     anchor_tether(tether_id, robot_blue_id, robot_red_id)
@@ -544,9 +546,9 @@ mu = 2.5  # friction coefficient between robots and plane
 
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
-goal_strain = 0.1
-strain_weight = 4
-heading_weight = 2
+goal_strain = 0.5
+strain_weight = 1
+heading_weight = 1
 
 err_pos = 0.01 # positional error tolerance
 
@@ -569,7 +571,7 @@ def main():
     # waypoints_with_tether_test_ccw()
     # waypoints_with_tether_test_cw()
     # maintain_strain_heading_test()
-    # maintain_strain_heading_test_2()
+    maintain_strain_heading_test_2()
 
 if __name__ == "__main__":
   main()
