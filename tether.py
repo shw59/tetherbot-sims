@@ -8,10 +8,13 @@ import pybullet as p
 import math
 
 class Tether:
-    def __init__(self, l_0, pos_0, orn_0, num_segments=10):
-        self.length_0 = l_0
+    def __init__(self, position_0, length_0, orientation_0, num_segments=10):
+        """
+        Initializes the tether object and its length_0 (unstretched length) and id attributes.
+        """
+        self.length_0 = length_0
 
-        dy = l_0 / num_segments  # length of every segment along the tether between each pair of vertices
+        dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
         dx = 0.01  # half the width of the tether
         lines = ["o tether"]
         # vertices
@@ -28,8 +31,8 @@ class Tether:
         open(tether_filename, "w").write("\n".join(lines))
 
         self.id = p.loadSoftBody(tether_filename, 
-                                basePosition = pos_0, 
-                                baseOrientation = orn_0,
+                                basePosition = position_0, 
+                                baseOrientation = orientation_0,
                                 scale=1, 
                                 mass=1., 
                                 useNeoHookean=0, 
@@ -43,12 +46,6 @@ class Tether:
                                 useFaceContact=1)
         
         p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
-
-    def tether_id(self):
-        """
-        Return the PyBullet-assigned ID associated with the tether object.
-        """
-        return self.id
     
     def get_strain(self):
         """

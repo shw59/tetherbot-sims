@@ -88,7 +88,7 @@ def anchor_tether(rope_id, first_id, second_id):
     p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
     p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
-def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
+def make_robot(name, diameter, position, heading=0, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
     Creates a cylindrical robot object with specified radius and/or length, mass, and color and returns its corresponding id.
     """
@@ -202,7 +202,11 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
     robot_blue_filename = f"{name}.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
-    return p.loadURDF(robot_blue_filename, position)
+    id = p.loadURDF(robot_blue_filename, position)
+
+    p.resetJointState(id, 2, math.radians(heading))
+
+    return id
 
 def get_tether_length(tether_id):
     """
@@ -359,7 +363,7 @@ def waypoints_with_tether_test_ccw():
     p.createConstraint(cube_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0.5, .01])
 
     # anchor the tether to the robots
-    # anchor_tether(tether_id, robot_blue_id, robot_red_id)
+    anchor_tether(tether_id, robot_blue_id, robot_red_id)
 
     # apply friction/damping between robots and the plane
     p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
@@ -516,9 +520,9 @@ def main():
     p.loadURDF("plane.urdf")
 
     """RUN UNIT TESTS (uncomment the one you want to run)"""
-    # waypoints_with_tether_test_ccw()
+    waypoints_with_tether_test_ccw()
     # waypoints_with_tether_test_cw()
-    maintain_strain_heading_test()
+    # maintain_strain_heading_test()
 
 if __name__ == "__main__":
   main()
