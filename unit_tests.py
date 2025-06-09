@@ -443,7 +443,6 @@ def waypoints_with_tether_test_cw():
             idx += 1
             target_x = waypoints[idx][0]
             target_y = waypoints[idx][1]
-            print(target_x, target_y, idx)
             move_robot(robot_blue_id, target_x, target_y, force=25)
 
         p.stepSimulation()
@@ -488,6 +487,53 @@ def maintain_strain_heading_test():
             move_robot(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1], force=60)
 
         p.stepSimulation() 
+
+def maintain_strain_heading_test_2():
+    # set initial object positions
+    robot_blue_pos = [0, -1, 0.005]  # base position of the first robot
+    robot_red_pos = [0, 0, 0.005]  # base position of the second robot
+
+    # load objects
+    robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos)
+    robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
+    tether_id = make_tether("tether", robot_blue_pos, robot_red_pos, l_0, num_segments=20)
+
+    # anchor the tether to the robots
+    anchor_tether(tether_id, robot_blue_id, robot_red_id)
+
+    # apply friction/damping between robots and the plane
+    p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
+    p.changeDynamics(robot_red_id, -1, linearDamping=mu)
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        # calculate tether length and strain on every step
+        l = get_tether_length(tether_id)
+        strain = (l - l_0) / l_0
+
+        # calculate tether angle relative to each robot's heading
+        theta1 = get_theta(robot_blue_id, tether_id)
+        theta2 = get_theta(robot_red_id, tether_id)
+
+        # display results in the GUI
+        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+    
+        if reached_target_position(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1]):
+            new_pos = new_position_forward_with_strain(robot_blue_id, tether_id)
+            robot_blue_pos = (new_pos[0], new_pos[1])
+            move_robot(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1], force=60)
+
+        if reached_target_position(robot_red_id, robot_red_pos[0], robot_red_pos[1]):
+            new_pos = new_position_forward_with_strain(robot_red_id, tether_id)
+            robot_red_pos = (new_pos[0], new_pos[1])
+            move_robot(robot_red_id, robot_red_pos[0], robot_red_pos[1], force=60)
+
+        p.stepSimulation()
+
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -520,9 +566,10 @@ def main():
     p.loadURDF("plane.urdf")
 
     """RUN UNIT TESTS (uncomment the one you want to run)"""
-    waypoints_with_tether_test_ccw()
+    # waypoints_with_tether_test_ccw()
     # waypoints_with_tether_test_cw()
     # maintain_strain_heading_test()
+    # maintain_strain_heading_test_2()
 
 if __name__ == "__main__":
   main()

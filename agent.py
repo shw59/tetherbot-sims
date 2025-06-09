@@ -13,7 +13,7 @@ class Agent:
         """
         Initializes an agent object and its position and id attributes.
         """
-        self.target_position = [0, 0]
+        self.position = [0, 0]
         self.tether_1 = tether
 
         # inertia of a solid cylinder about its own center
