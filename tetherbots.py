@@ -1,5 +1,5 @@
 """
-tether.py
+tetherbots.py
 
 This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
 """
