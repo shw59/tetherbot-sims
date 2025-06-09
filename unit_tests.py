@@ -270,11 +270,29 @@ def get_theta(robot_id, tether_id):
 
     return math.degrees(theta) % 360
 
+def get_sigma(robot_id, tether1_id, tether2_id):
+    """
+    Return the angle between a robot's two tethers. 
+    Just returns theta for one tether if second tether not present.
+    """
+    theta1 = get_theta(robot_id, tether1_id)
+    theta2 = 0
+    if tether2_id is not None:
+        theta2 = get_theta(robot_id, tether2_id)
+    sigma = theta1 - theta2
+
+    return sigma
+
 def smallest_signed_angle_diff(goal_angle, start_angle):
     """
     Computes the smallest rotation needed to go from one angle to another (+ indicates CCW, - indicates CW).
     """
     return (goal_angle - start_angle + math.pi) % (2 * math.pi) - math.pi
+
+def normalize_vector(vec):
+    magnitude = math.sqrt((vec[0]**2)+(vec[1]**2))
+    normalized = [(1/magnitude)*vec[0],(1/magnitude)*vec[1]]
+    return normalized
 
 def move_robot(robot_id, x, y, force=10):
     """
@@ -331,6 +349,28 @@ def get_strain_vector(robot_id, tether_id):
 
     return V_t
 
+def get_gradient_vector(robot_id, target):
+    """
+    Returns the vector pointing towards the target destination,
+    where the vector's magnitude increases the farther from the
+    destination the agent is.
+    """
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    home_x = target[0]
+    home_y = target[1]
+    distance = math.sqrt(((curr_x-home_x)**2)+((curr_y-home_y)**2))
+    if distance >= 10*l_0:
+        scale = 1
+    elif distance >= 2*l_0:
+        scale = 0.5
+    else:
+        scale = 0.1
+    
+    home_vector = [scale*(1/distance)*(home_x - curr_x), scale*(1/distance)*(home_y - curr_y)]
+
+    return home_vector
+
 def new_position_forward_with_strain(robot_id, tether_id):
     """
     Determines the new position the robot should move to to maintain its tether's goal strain based on 
@@ -340,13 +380,29 @@ def new_position_forward_with_strain(robot_id, tether_id):
     curr_y = p.getLinkState(robot_id, 2)[0][1]
     strain_vector = get_strain_vector(robot_id, tether_id)
     robot_heading = get_robot_heading(robot_id)
-    resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
-                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+    resulting_vector = normalize_vector([strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
+                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]])
     
     new_position = [curr_x + resulting_vector[0], curr_y + resulting_vector[1]]
     
     return new_position
 
+def new_position_gradient_with_strain(robot_id, tether_id):
+    """
+    Determines the new position the robot should move to to maintain its tether's goal strain and make progress
+    towards its target position.
+    """
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    strain_vector = get_strain_vector(robot_id, tether_id)
+    gradient = get_gradient_vector(robot_id, gradient_target)
+    resulting_vector = [strain_weight*strain_vector[0] + gradient_weight*gradient[0], 
+                        strain_weight*strain_vector[1] + gradient_weight*gradient[1]]
+    normalized_result = normalize_vector(resulting_vector)
+    
+    new_position = [curr_x+(0.05)*normalized_result[0], curr_y+(0.05)*normalized_result[1]]
+    
+    return new_position
 
 """UNIT TESTS"""
 
@@ -538,6 +594,52 @@ def maintain_strain_heading_test_2():
 
         p.stepSimulation()
 
+def maintain_strain_gradient_test():
+    # set initial object positions
+    robot_blue_pos = [0, -1, 0.005]  # base position of the first robot
+    robot_red_pos = [0, 0, 0.005]  # base position of the second robot
+
+    # load objects
+    robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos)
+    robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
+    tether_id = make_tether("tether", robot_blue_pos, robot_red_pos, l_0, num_segments=20)
+
+    # anchor the tether to the robots
+    anchor_tether(tether_id, robot_blue_id, robot_red_id)
+
+    # apply friction/damping between robots and the plane
+    p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
+    p.changeDynamics(robot_red_id, -1, linearDamping=mu)
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        # calculate tether length and strain on every step
+        l = get_tether_length(tether_id)
+        strain = (l - l_0) / l_0
+
+        # calculate tether angle relative to each robot's heading
+        theta1 = get_theta(robot_blue_id, tether_id)
+        theta2 = get_theta(robot_red_id, tether_id)
+
+        # display results in the GUI
+        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+    
+        if reached_target_position(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1]):
+            new_pos = new_position_gradient_with_strain(robot_blue_id, tether_id)
+            robot_blue_pos = (new_pos[0], new_pos[1])
+            move_robot(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1], force=60)
+
+        if reached_target_position(robot_red_id, robot_red_pos[0], robot_red_pos[1]):
+            new_pos = new_position_gradient_with_strain(robot_red_id, tether_id)
+            robot_red_pos = (new_pos[0], new_pos[1])
+            move_robot(robot_red_id, robot_red_pos[0], robot_red_pos[1], force=60)
+
+        p.stepSimulation()
+
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -549,9 +651,13 @@ mu = 2.5  # friction coefficient between robots and plane
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
 goal_strain = 0.5
-strain_weight = 1
-heading_weight = 1
 
+# vector weights
+strain_weight = 6
+heading_weight = 1
+gradient_weight = 1
+
+gradient_target = [2, 2]
 err_pos = 0.01 # positional error tolerance
 
 debugging = False  # set to True to print vertex positions of tether
@@ -573,7 +679,8 @@ def main():
     # waypoints_with_tether_test_ccw()
     # waypoints_with_tether_test_cw()
     # maintain_strain_heading_test()
-    maintain_strain_heading_test_2()
+    # maintain_strain_heading_test_2()
+    maintain_strain_gradient_test()
 
 if __name__ == "__main__":
   main()

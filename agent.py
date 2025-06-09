@@ -6,18 +6,20 @@ This file defines the agent class for robot objects.
 
 import pybullet as p
 import math
+import numpy as np
 from tether import Tether
 
 class Agent:
+    goal_strain = 0.1
+    goal_gradient = [2, 2]
+    strain_weight, gradient_weight = [6, 1] # [strain, heading/gradient, collision avoidance, angle]
+
     def __init__(self, position_0, heading_0, radius, tether_m, tether_p=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Initializes an agent object and its position and id attributes.
         """
         self.position = [0, 0]
-        self.tethers = []
-        self.tether.append(tether_m)
-        if not tether_p is None:
-            self.tether.append(tether_p)
+        self.tethers = [tether_m, tether_p]
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -128,7 +130,7 @@ class Agent:
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-    def curr_pose(self):
+    def pose(self):
         """
         Return the current position and heading of the agent as a list [[x, y], [x_heading, y_heading]].
         """
@@ -163,31 +165,106 @@ class Agent:
 
         return heading
     
-    def theta(self):
+    def theta(self, tether_num=0):
         """
         Return the angle between the agent's heading and the heading of its tether (in degrees).
         """
-        hx, hy = self.curr_pose()[1]
-        tx, ty = self.tether_heading()
+        hx, hy = self.pose()[1]
+        tx, ty = self.tether_heading(tether_num)
         theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
 
         return math.degrees(theta) % 360
     
-    def move(self, x, y, force=10):
+    def sigma(self):
         """
-        Move the agent from its current position to a specified [x, y] target position in the world.
+        Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
+        """
+        if self.tethers[1] is None:
+            return None
+        theta_m = self.theta(self.tethers[0])
+        theta_p = self.theta(self.tethers[1])
+        sigma = theta_m - theta_p
+
+        return sigma
+    
+    @classmethod
+    def normalize(cls, vec):
+        """
+        Normalize a vector. Must be a numpy array.
+        """
+        norm = np.linalg.norm(vec)
+        if norm == 0:
+            return vec
+        return vec / norm
+    
+    def vector_strain(self, tether_num=0):
+        """
+        Calculates the vector direction that the robot should move to achieve the goal strain/tautness.
+        """
+        strain_diff = self.tether[tether_num].strain() - Agent.goal_strain
+
+        if strain_diff > 0:
+            sign = 1
+        elif strain_diff < 0:
+            sign = -1
+        else:
+            sign = 0
+
+        # The vector from the center of the robot to the point where the tether connects to the robot
+        vector_norm = Agent.normalize(np.array(self.tether_heading(tether_num)))
+        v_t = sign * (strain_diff ** 2) * vector_norm
+
+        return v_t
+    
+    def vector_gradient(self):
+        """
+        Returns the vector pointing towards the target destination, where the vector's magnitude increases the farther from the
+        destination the agent is.
+        """
+        curr_position = self.pose()[0]
+        goal_position = Agent.goal_gradient
+        distance = math.dist(curr_position, goal_position)
+        if distance >= 10 * self.length_0:
+            scale = 1
+        elif distance >= 2 * self.length_0:
+            scale = 0.5
+        else:
+            scale = 0.1
+        
+        v_g = scale * (1/distance) * (np.array(goal_position) - np.array(curr_position))
+
+        return v_g
+    
+    def compute_next_step(self):
+        """
+        Calculates the resultant weighted vector sum and position in which the agent should move next.
+        """
+        curr_position = np.array(self.pose()[0])
+
+        strain_v = self.vector_strain()
+        gradient_v = self.vector_gradient()
+        
+        resulting_vector = Agent.strain_weight * strain_v + Agent.gradient_weight * gradient_v
+        normalized_result = Agent.normalize(resulting_vector)
+        
+        new_position = curr_position + 0.05 * normalized_result
+        
+        return new_position
+    
+    def move(self, target_pos, force=10):
+        """
+        Move the agent from its current position to a specified [x, y] target position in the world. The parameter
+        target_pos should be a numpy array.
         """
         # amount to move (relative to base position)
-        x_move = x - p.getBasePositionAndOrientation(self.id)[0][0]
-        y_move = y - p.getBasePositionAndOrientation(self.id)[0][1]
+        x_move, y_move = target_pos - np.array(p.getBasePositionAndOrientation(self.id)[0][:2])
 
         # calculate rotation to face direction of movement
         base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
-        
         curr_heading = p.getJointState(self.id, 2)[0]
-
-        x_curr_pos, y_curr_pos = p.getLinkState(self.id, 2)[0][:2]
-        desired_heading = math.atan2(y - y_curr_pos, x - x_curr_pos)
+        
+        desired_h_x, desired_h_y = target_pos - np.array(p.getLinkState(self.id, 2)[0][:2])
+        desired_heading = math.atan2(desired_h_y, desired_h_x)
 
         # rotations must be fed into setJointMotorControl function with respect to the base heading, not current heading
         # use smallest signed angle difference and then add the current heading and base heading
