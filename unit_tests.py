@@ -381,23 +381,23 @@ def robot_sense(robot_id, sensing_mode, objects):
         case 0: 
             for i in range(len(objects)):
                 obj_id, obj_pos, obj_type = objects[i]
-                if obj_id != robot_id:
+                dist = math.dist(obj_pos, curr_pos)
+                if obj_id != robot_id and dist <= sensing_radius:
                     heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
-                    dist = math.dist(obj_pos, curr_pos)
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
         case 1:
             for i in range(len(objects)):
-                if obj_id != robot_id:
+                dist = math.dist(obj_pos, curr_pos)
+                if obj_id != robot_id and dist <= sensing_radius:
                     obj_id, obj_pos, obj_type = objects[i]
                     heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
-                    dist = math.dist(obj_pos, curr_pos)
                     sensor_data.append((heading_vec_norm, dist, obj_type))
         case 2:
             for i in range(len(objects)):
                 obj_id, obj_pos, obj_type = objects[i]
-                if obj_id != robot_id and obj_pos != "obstacle":
+                dist = math.dist(obj_pos, curr_pos)
+                if obj_id != robot_id and obj_pos != "obstacle" and dist <= sensing_radius:
                     heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
-                    dist = math.dist(obj_pos, curr_pos)
                     sensor_data.append((heading_vec_norm, dist, "unknown")) # test between if it can or can't distinguish
     
     return sensor_data
@@ -462,9 +462,8 @@ def new_position_forward_with_repulsion(robot_id, sensor_data):
     robot_heading = np.array(get_robot_heading(robot_id))
 
     resulting_vector = repulsion_weight * repulsion_vector + heading_weight * robot_heading
-    normalized_result = normalize_vector(resulting_vector)
     
-    new_position = curr_pos + normalized_result
+    new_position = curr_pos + resulting_vector
     
     return new_position
 
@@ -743,7 +742,7 @@ goal_gradient = [2, 2]
 strain_weight = 6
 heading_weight = 2
 gradient_weight = 1
-repulsion_weight = 1
+repulsion_weight = 4
 
 gradient_target = [2, 2]
 err_pos = 0.01 # positional error tolerance
