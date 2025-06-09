@@ -253,20 +253,29 @@ def get_tether_heading(robot_id, tether_id):
 
     return heading
 
-def get_sigma(robot_id, tether1_id, tether2_id=None):
+def get_theta(robot_id, tether_id):
     """
     Return the angle between the robot's heading and the tether's heading (in degrees).
     The angle is computed using the dot product.
     """
     hx, hy = get_robot_heading(robot_id)
-    tx, ty = get_tether_heading(robot_id, tether1_id)
-    theta1 = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
+    tx, ty = get_tether_heading(robot_id, tether_id)
+    theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
+
+    return math.degrees(theta) % 360
+
+def get_sigma(robot_id, tether1_id, tether2_id):
+    """
+    Return the angle between a robot's two tethers. 
+    Just returns theta for one tether if second tether not present.
+    """
+    theta1 = get_theta(robot_id, tether1_id)
     theta2 = 0
     if tether2_id is not None:
-        tx2, ty2 = get_tether_heading(robot_id, tether2_id)
-        theta2 = math.atan2(hx*ty2 - hy*tx2, hx*tx2 + hy*ty2)
+        theta2 = get_theta(robot_id, tether2_id)
+    sigma = theta1 - theta2
 
-    return math.degrees(theta1 - theta2) % 360
+    return sigma
 
 def smallest_signed_angle_diff(goal_angle, start_angle):
     """
