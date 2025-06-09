@@ -366,14 +366,68 @@ def get_gradient_vector(robot_id):
 
     return v_g
 
+def robot_sense(robot_id, sensing_mode, objects):
+    """
+    Three modes of sensing:
+    0: Robot senses all obstacles, tethers, and robots indistinguishably. Returns list of tuples with unknown type classifications.
+    1: Robot senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
+    2: Robot can only sense robots and tethers, but not obstacles. 
+    The objects list should be a list of tuples in the format (id, [x, y], "tether"/"agent"/"obstacle")
+    Note: The heading vectors in the tuple return are numpy arrays.
+    """
+    curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+    sensor_data = []
+    match sensing_mode:
+        case 0: 
+            for i in range(len(objects)):
+                obj_id, obj_pos, obj_type = objects[i]
+                if obj_id != robot_id:
+                    heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
+                    dist = math.dist(obj_pos, curr_pos)
+                    sensor_data.append((heading_vec_norm, dist, "unknown"))
+        case 1:
+            for i in range(len(objects)):
+                if obj_id != robot_id:
+                    obj_id, obj_pos, obj_type = objects[i]
+                    heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
+                    dist = math.dist(obj_pos, curr_pos)
+                    sensor_data.append((heading_vec_norm, dist, obj_type))
+        case 2:
+            for i in range(len(objects)):
+                obj_id, obj_pos, obj_type = objects[i]
+                if obj_id != robot_id and obj_pos != "obstacle":
+                    heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
+                    dist = math.dist(obj_pos, curr_pos)
+                    sensor_data.append((heading_vec_norm, dist, "unknown")) # test between if it can or can't distinguish
+    
+    return sensor_data
+
+def get_repulsion_vector(sensor_info):
+    """
+    Returns the collision avoidance vector as a Gaussian curve under the assumption that the robot can sense and 
+    avoid other robots, tethers, and obstacles indistinguishably.
+    """
+    amplitude = 8 * dmtr
+    std_dev = dmtr / 2
+    v_r = np.array([0, 0])
+
+    for i in range(len(sensor_info)):
+        u_r, d, obj_type = sensor_info[i]
+        v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r
+        # do something in the case that we can distinguish between robots, tethers, and obstacles
+
+    return v_r
+
 def new_position_forward_with_strain(robot_id, tether_id):
     """
     Determines the new position the robot should move to to maintain its tether's goal strain based on 
     its heading and strain tether.
     """
     curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+
     strain_vector = get_strain_vector(robot_id, tether_id)
     robot_heading = np.array(get_robot_heading(robot_id))
+
     resulting_vector = strain_weight * strain_vector + heading_weight * robot_heading
     normalized_result = normalize_vector(resulting_vector)
     
@@ -395,6 +449,22 @@ def new_position_gradient_with_strain(robot_id, tether_id):
     normalized_result = normalize_vector(resulting_vector)
     
     new_position = curr_position + 0.05 * normalized_result
+    
+    return new_position
+
+def new_position_forward_with_repulsion(robot_id, sensor_data):
+    """
+    Determines the new position the robot should move to go forward but avoid obstacles in its sensing radius.
+    """
+    curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+
+    repulsion_vector = get_repulsion_vector(sensor_data)
+    robot_heading = np.array(get_robot_heading(robot_id))
+
+    resulting_vector = repulsion_weight * repulsion_vector + heading_weight * robot_heading
+    normalized_result = normalize_vector(resulting_vector)
+    
+    new_position = curr_pos + normalized_result
     
     return new_position
 
@@ -627,6 +697,34 @@ def maintain_strain_gradient_test():
 
         p.stepSimulation()
 
+def maintain_forward_avoid_robot_test():
+    # set initial object positions
+    robot_blue_pos = [0, -5, 0.005]  # base position of the first robot
+    robot_red_pos = [0, 0, 0.005]  # base position of the second robot
+
+    # load objects
+    robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos, 90)
+    robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
+
+    # apply friction/damping between robots and the plane
+    p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
+    p.changeDynamics(robot_red_id, -1, linearDamping=mu)
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        # query list of object ids, positions, and type
+        obj_list = [(robot_blue_id, robot_blue_pos[:2], "agent"), (robot_red_id, robot_red_pos[:2], "agent")]
+
+        sensor_data = robot_sense(robot_blue_id, 0, obj_list)
+    
+        if reached_target_position(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1]):
+            robot_blue_pos = new_position_forward_with_repulsion(robot_blue_id, sensor_data)
+            move_robot(robot_blue_id, robot_blue_pos, force=60)
+
+        p.stepSimulation()
+
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -634,6 +732,7 @@ dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 height = 0.005 # height of each robot
 mu = 2.5  # friction coefficient between robots and plane
+sensing_radius = dmtr * 2
 
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
@@ -642,8 +741,9 @@ goal_gradient = [2, 2]
 
 # vector weights
 strain_weight = 6
-heading_weight = 1
+heading_weight = 2
 gradient_weight = 1
+repulsion_weight = 1
 
 gradient_target = [2, 2]
 err_pos = 0.01 # positional error tolerance
@@ -668,7 +768,8 @@ def main():
     # waypoints_with_tether_test_cw()
     # maintain_strain_heading_test()
     # maintain_strain_heading_test_2()
-    maintain_strain_gradient_test()
+    # maintain_strain_gradient_test()
+    maintain_forward_avoid_robot_test()
 
 if __name__ == "__main__":
   main()
