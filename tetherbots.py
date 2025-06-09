@@ -63,7 +63,7 @@ def make_tether(robot1_pos, robot2_pos, length_0, num_segments=10):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=30, 
+                               springElasticStiffness=40, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -354,10 +354,13 @@ def new_position_forward_with_strain_1_tether(robot_id, tether_id):
     curr_y = p.getLinkState(robot_id, 2)[0][1]
     strain_vector = get_strain_vector(robot_id, tether_id)
     robot_heading = get_robot_heading(robot_id)
-    resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0], 
-                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]]
+    gradient = go_home(robot_id, Home)
+    resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0]+gradient_weight*gradient[0], 
+                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]+gradient_weight*gradient[1]]
+    normalized_result = normalize_vector(resulting_vector)
     
-    new_position = [curr_x+resulting_vector[0], curr_y+resulting_vector[1]]
+    
+    new_position = [curr_x+(0.05)*normalized_result[0], curr_y+(0.05)*normalized_result[1]]
     
     return new_position
 
@@ -366,6 +369,32 @@ def turn_around(robot_id):
     scale_down = 2
     new_pos = [-scale_down*curr_pos[0], -scale_down*curr_pos[1]] 
     return new_pos
+
+def go_home(robot_id, home):
+    """
+    Returns the global position pointing towards the origin,
+    where the vector's magnitude increases the farther
+    """
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    home_x = home[0]
+    home_y = home[1]
+    distance = math.sqrt(((curr_x-home_x)**2)+((curr_y-home_y)**2))
+    if distance >= 10*l_0:
+        scale = 1
+    elif distance >= 2*l_0:
+        scale = 0.5
+    else:
+        scale = 0.1
+    
+    home_vector = [scale*(1/distance)*(home_x - curr_x), scale*(1/distance)*(home_y - curr_y)]
+    # new_position = [curr_x + home_vector[0], curr_y + home_vector[1]]
+    return home_vector
+
+def normalize_vector(vec):
+    magnitude = math.sqrt((vec[0]**2)+(vec[1]**2))
+    normalized = [(1/magnitude)*vec[0],(1/magnitude)*vec[1]]
+    return normalized
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
@@ -375,11 +404,13 @@ mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
 height = 0.005 # hieght of robot
+Home = [0, 0]
 
 # tether properties
 goal_strain = 0.1
-strain_weight = 4
-heading_weight = 2
+strain_weight = 6
+heading_weight = 0
+gradient_weight = 1
 
 err_pos = 0.01 # positional error tolerance
 
@@ -396,8 +427,9 @@ def main():
     # set initial object positions
     # initial_robot_positions = set_straight_line(N, l_0)
     
-    initial_robot_positions = [[0,0,height],
-                               [0, -1, height]]
+    initial_robot_positions = [[1,0,height],
+                               [1, -1, height]]
+    # initial_robot_positions = [[1,1,height]]
     
     # list of x-y current target positions for each agent (starts at their initial positions)
     target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
@@ -460,6 +492,12 @@ def main():
             new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
             target_pos[0] = (new_pos[0], new_pos[1])
             move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+
+
+        # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
+        #     new_pos = go_home(robot_ids[0], [-1,1])
+        #     target_pos[0] = (new_pos[0], new_pos[1])
+        #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
 
         p.stepSimulation()
 

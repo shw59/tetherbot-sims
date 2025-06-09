@@ -468,22 +468,24 @@ def maintain_strain_heading_test():
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        # calculate tether length and strain on every step
-        l = get_tether_length(tether_id)
-        strain = (l - l_0) / l_0
+        # # calculate tether length and strain on every step
+        # l = get_tether_length(tether_id)
+        # strain = (l - l_0) / l_0
 
-        # calculate tether angle relative to each robot's heading
-        theta1 = get_theta(robot_blue_id, tether_id)
-        theta2 = get_theta(robot_red_id, tether_id)
+        # # calculate tether angle relative to each robot's heading
+        # theta1 = get_theta(robot_blue_id, tether_id)
+        # theta2 = get_theta(robot_red_id, tether_id)
 
-        # display results in the GUI
-        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        # # display results in the GUI
+        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+        #                     f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
     
         if reached_target_position(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1]):
             new_pos = new_position_forward_with_strain(robot_blue_id, tether_id)
-            robot_blue_pos = (new_pos[0], new_pos[1])
+            # robot_blue_pos = (new_pos[0], new_pos[1])
+            mag = math.sqrt((new_pos[0]**2)+(new_pos[1]**2))
+            robot_blue_pos = (new_pos[0]/mag, new_pos[1]/mag)
             move_robot(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1], force=60)
 
         p.stepSimulation() 
