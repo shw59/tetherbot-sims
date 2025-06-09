@@ -88,7 +88,7 @@ def anchor_tether(rope_id, first_id, second_id):
     p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
     p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
-def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
+def make_robot(name, diameter, position, heading=0, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
     Creates a cylindrical robot object with specified radius and/or length, mass, and color and returns its corresponding id.
     """
@@ -202,7 +202,11 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
     robot_blue_filename = f"{name}.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
-    return p.loadURDF(robot_blue_filename, position)
+    id = p.loadURDF(robot_blue_filename, position)
+
+    p.resetJointState(id, 2, math.radians(heading))
+
+    return id
 
 def get_tether_length(tether_id):
     """
@@ -359,7 +363,7 @@ def waypoints_with_tether_test_ccw():
     p.createConstraint(cube_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0.5, .01])
 
     # anchor the tether to the robots
-    # anchor_tether(tether_id, robot_blue_id, robot_red_id)
+    anchor_tether(tether_id, robot_blue_id, robot_red_id)
 
     # apply friction/damping between robots and the plane
     p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
@@ -439,7 +443,6 @@ def waypoints_with_tether_test_cw():
             idx += 1
             target_x = waypoints[idx][0]
             target_y = waypoints[idx][1]
-            print(target_x, target_y, idx)
             move_robot(robot_blue_id, target_x, target_y, force=25)
 
         p.stepSimulation()
@@ -486,6 +489,55 @@ def maintain_strain_heading_test():
             move_robot(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1], force=60)
 
         p.stepSimulation() 
+
+def maintain_strain_heading_test_2():
+    # set initial object positions
+    robot_blue_pos = [0, -1, 0.005]  # base position of the first robot
+    robot_red_pos = [0, 0, 0.005]  # base position of the second robot
+
+    # load objects
+    robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos)
+    robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
+    tether_id = make_tether("tether", robot_blue_pos, robot_red_pos, l_0, num_segments=20)
+    cube_id = p.loadURDF("cube_small.urdf", [1, -0.5, .01])
+    p.createConstraint(cube_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [1, -0.5, .01])
+
+    # anchor the tether to the robots
+    anchor_tether(tether_id, robot_blue_id, robot_red_id)
+
+    # apply friction/damping between robots and the plane
+    p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
+    p.changeDynamics(robot_red_id, -1, linearDamping=mu)
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        # calculate tether length and strain on every step
+        l = get_tether_length(tether_id)
+        strain = (l - l_0) / l_0
+
+        # calculate tether angle relative to each robot's heading
+        theta1 = get_theta(robot_blue_id, tether_id)
+        theta2 = get_theta(robot_red_id, tether_id)
+
+        # display results in the GUI
+        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+    
+        if reached_target_position(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1]):
+            new_pos = new_position_forward_with_strain(robot_blue_id, tether_id)
+            robot_blue_pos = (new_pos[0], new_pos[1])
+            move_robot(robot_blue_id, robot_blue_pos[0], robot_blue_pos[1], force=60)
+
+        if reached_target_position(robot_red_id, robot_red_pos[0], robot_red_pos[1]):
+            new_pos = new_position_forward_with_strain(robot_red_id, tether_id)
+            robot_red_pos = (new_pos[0], new_pos[1])
+            move_robot(robot_red_id, robot_red_pos[0], robot_red_pos[1], force=60)
+
+        p.stepSimulation()
+
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -496,9 +548,9 @@ mu = 2.5  # friction coefficient between robots and plane
 
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
-goal_strain = 0.1
-strain_weight = 4
-heading_weight = 2
+goal_strain = 0.5
+strain_weight = 1
+heading_weight = 1
 
 err_pos = 0.01 # positional error tolerance
 
@@ -520,7 +572,8 @@ def main():
     """RUN UNIT TESTS (uncomment the one you want to run)"""
     # waypoints_with_tether_test_ccw()
     # waypoints_with_tether_test_cw()
-    maintain_strain_heading_test()
+    # maintain_strain_heading_test()
+    maintain_strain_heading_test_2()
 
 if __name__ == "__main__":
   main()

@@ -9,12 +9,15 @@ import math
 from tether import Tether
 
 class Agent:
-    def __init__(self, position_0, heading_0, radius, tether, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, position_0, heading_0, radius, tether_m, tether_p=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Initializes an agent object and its position and id attributes.
         """
         self.position = [0, 0]
-        self.tether_1 = tether
+        self.tethers = []
+        self.tether.append(tether_m)
+        if not tether_p is None:
+            self.tether.append(tether_p)
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -135,18 +138,18 @@ class Agent:
 
         return [agent_pos, heading]
     
-    def tether_heading(self):
+    def tether_heading(self, tether_num=0):
         """
         Return the current heading of the agent's tether with respect to the agent's center.
         """
-        n_verts, verts, *_ = p.getMeshData(self.tether.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = p.getMeshData(self.tether[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         # get both end vertices of the tether
         p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(2)]
         p2 = [(verts[n_verts - 2][k] + verts[n_verts - 1][k]) / 2.0 for k in range(2)]
 
         # get the agent's position
-        agent_pos = p.getLinkState(self.tether.id, 2)[0][:2]
+        agent_pos = p.getLinkState(self.id, 2)[0][:2]
         
         # check which vertex pair is closer and use the second to next pair to calculate heading
         dist1 = math.dist(agent_pos, p1)

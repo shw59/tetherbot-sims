@@ -1,5 +1,5 @@
 """
-tether.py
+tetherbots.py
 
 This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
 """
@@ -9,7 +9,7 @@ import pybullet_data
 import math
 import numpy as np
 
-def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
+def make_tether(robot1_pos, robot2_pos, length_0, num_segments=10):
     """
     Create a tether and returns its corresponding id with length_0 meters and num_segments segments.
     """
@@ -26,7 +26,7 @@ def make_tether(name, robot1_pos, robot2_pos, length_0, num_segments=10):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-    tether_filename = f"{name}.obj"
+    tether_filename = f"tether.obj"
     open(tether_filename, "w").write("\n".join(lines))
 
     # tether position should be midpoint of the two robots
@@ -86,9 +86,9 @@ def anchor_tether(rope_id, first_id, second_id):
     p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
     p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
-def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
+def make_robot(diameter, position, heading=0, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
-    Returns the id of a cylindrical robot object with specified radius and/or length, mass, and color.
+    Returns the id of a cylindrical robot object with specified position, heading (degrees), radius and/or length, mass, and color.
     """
     radius = diameter / 2
 
@@ -193,11 +193,15 @@ def make_robot(name, diameter, position, length=.01, mass=1.0, color=(0, 0.5, 1,
         </link>
     </robot>
     """
-
-    robot_blue_filename = f"{name}.urdf"
+    
+    robot_blue_filename = f"robot.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
-    return p.loadURDF(robot_blue_filename, position)
+    id = p.loadURDF(robot_blue_filename, position)
+
+    p.resetJointState(id, 2, math.radians(heading)) # set robot heading
+
+    return id
 
 def get_tether_length(tether_id):
     """
@@ -368,7 +372,7 @@ def turn_around(robot_id):
 
 def go_home(robot_id, home):
     """
-    Returns the global a position pointing towards the origin,
+    Returns the global position pointing towards the origin,
     where the vector's magnitude increases the farther
     """
     curr_x = p.getLinkState(robot_id, 2)[0][0]
@@ -391,7 +395,6 @@ def normalize_vector(vec):
     magnitude = math.sqrt((vec[0]**2)+(vec[1]**2))
     normalized = [(1/magnitude)*vec[0],(1/magnitude)*vec[1]]
     return normalized
-
     
 GRAVITYZ = -9.81  # m/s^2
 N = 2 # number of agents to be created
@@ -442,7 +445,7 @@ def main():
 
     # populates the list of robot objects with robot objects
     for i in range(N):
-        robot_ids.append(make_robot(f"robot{i+1}", dmtr, initial_robot_positions[i]))
+        robot_ids.append(make_robot(dmtr, initial_robot_positions[i]))
 
     # applies friction/damping between robots and the plane
     for i in range(N):
@@ -450,12 +453,12 @@ def main():
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):
-        tether_ids.append(make_tether(f"tether{i+1}", initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=1))
+        tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=1))
 
     # anchors all of the tethers to their respective robots
     for i in range(N-1):
         anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
-
+        
     runs = 0
 
     # main simulation loop
@@ -463,18 +466,17 @@ def main():
         p.getCameraImage(320,200)
 
         # calculate tether length and strain on every step
-        # l = get_tether_length(tether_ids[0])
-        # strain = (l - l_0) / l_0
+        l = get_tether_length(tether_ids[0])
+        strain = (l - l_0) / l_0
 
-        # # calculate tether angle relative to each robot's heading
-        # theta1 = get_theta(robot_ids[0], tether_ids[0])
-        # theta2 = get_theta(robot_ids[1], tether_ids[0])
+        # calculate tether angle relative to each robot's heading
+        theta1 = get_theta(robot_ids[0], tether_ids[0])
+        theta2 = get_theta(robot_ids[1], tether_ids[0])
 
-        # # display results in the GUI
-        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-        #                     f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
-
+        # display results in the GUI
+        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
+                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
         
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
             new_pos = new_position_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
@@ -500,4 +502,4 @@ def main():
         p.stepSimulation()
 
 if __name__ == "__main__":
-  main()
+    main()
