@@ -243,11 +243,10 @@ class Agent:
 
         strain_v = self.vector_strain()
         gradient_v = self.vector_gradient()
-        
+
         resulting_vector = Agent.strain_weight * strain_v + Agent.gradient_weight * gradient_v
-        normalized_result = Agent.normalize(resulting_vector)
         
-        new_position = curr_position + 0.05 * normalized_result
+        new_position = curr_position + resulting_vector
         
         return new_position
     

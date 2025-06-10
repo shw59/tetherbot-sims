@@ -366,6 +366,32 @@ def get_gradient_vector(robot_id):
 
     return v_g
 
+def get_closest_point_distance(robot_id, object_id, object_type):
+    """
+    Returns the closest point from another object (tether, agent, or obstacle) to the agent.
+    """
+    curr_pos = p.getLinkState(robot_id, 2)[0][:2]
+    closest_points = []
+    match object_type:
+        case "agent":
+            closest_points = p.getClosestPoints(robot_id, object_id, 500000, linkIndexA=2, linkIndexB=2)
+        case "tether":
+            closest_points = p.getContactPoints(robot_id, object_id, linkIndexA=2, linkIndexB=-1)
+            if closest_points:
+                print(closest_points[0][6])
+                return sensing_radius
+        case "obstacle":
+            closest_points = p.getClosestPoints(robot_id, object_id, 500000, linkIndexA=2, linkIndexB=-1)
+    if closest_points:
+        nearest_dist = math.dist(curr_pos, closest_points[0][6][:2])
+        for point in closest_points:
+            dist = math.dist(curr_pos, point[6][:2])
+            # dist = point[8]
+            if dist < nearest_dist:
+                nearest_dist = dist
+        return nearest_dist
+    return float('inf')
+
 def robot_sense(robot_id, sensing_mode, objects):
     """
     Three modes of sensing:
@@ -381,21 +407,21 @@ def robot_sense(robot_id, sensing_mode, objects):
         case 0: 
             for i in range(len(objects)):
                 obj_id, obj_pos, obj_type = objects[i]
-                dist = math.dist(obj_pos, curr_pos)
+                dist = get_closest_point_distance(robot_id, obj_id, obj_type)
                 if obj_id != robot_id and dist <= sensing_radius:
                     heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
         case 1:
             for i in range(len(objects)):
-                dist = math.dist(obj_pos, curr_pos)
+                obj_id, obj_pos, obj_type = objects[i]
+                dist = get_closest_point_distance(robot_id, obj_id, obj_type)
                 if obj_id != robot_id and dist <= sensing_radius:
-                    obj_id, obj_pos, obj_type = objects[i]
                     heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
                     sensor_data.append((heading_vec_norm, dist, obj_type))
         case 2:
             for i in range(len(objects)):
                 obj_id, obj_pos, obj_type = objects[i]
-                dist = math.dist(obj_pos, curr_pos)
+                dist = get_closest_point_distance(robot_id, obj_id, obj_type)
                 if obj_id != robot_id and obj_pos != "obstacle" and dist <= sensing_radius:
                     heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
                     sensor_data.append((heading_vec_norm, dist, "unknown")) # test between if it can or can't distinguish
@@ -407,7 +433,7 @@ def get_repulsion_vector(sensor_info):
     Returns the collision avoidance vector as a Gaussian curve under the assumption that the robot can sense and 
     avoid other robots, tethers, and obstacles indistinguishably.
     """
-    amplitude = 8 * dmtr
+    amplitude = 50 * dmtr
     std_dev = dmtr / 2
     v_r = np.array([0, 0])
 
@@ -696,14 +722,22 @@ def maintain_strain_gradient_test():
 
         p.stepSimulation()
 
-def maintain_forward_avoid_robot_test():
+def maintain_forward_avoid_collision_test():
     # set initial object positions
-    robot_blue_pos = [0, -5, 0.005]  # base position of the first robot
-    robot_red_pos = [0, 0, 0.005]  # base position of the second robot
+    robot_blue_pos = [0, 0, 0.005]  # base position of the first robot
+    robot_red_pos = [0, 2, 0.005]  # base position of the second robot
+    cube_pos = [0, -2, 0.5]
 
     # load objects
     robot_blue_id = make_robot("robot_blue", dmtr, robot_blue_pos, 90)
     robot_red_id = make_robot("robot_red", dmtr, robot_red_pos, color=(1, 0, 0, 1))
+    tether_id = make_tether("tether", [1, 1, 0.005], [2, 1, 0.005], 1)
+    cube_id = p.loadURDF("cube.urdf", cube_pos)
+    p.createConstraint(cube_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], cube_pos)
+
+    # query list of object ids, positions, and type
+    obj_list = [(robot_blue_id, robot_blue_pos[:2], "agent"), (robot_red_id, robot_red_pos[:2], "agent"),
+                (cube_id, cube_pos[:2], "obstacle"), (tether_id, [1.5, 1], "tether")]
 
     # apply friction/damping between robots and the plane
     p.changeDynamics(robot_blue_id, -1, linearDamping=mu)
@@ -712,9 +746,6 @@ def maintain_forward_avoid_robot_test():
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
-
-        # query list of object ids, positions, and type
-        obj_list = [(robot_blue_id, robot_blue_pos[:2], "agent"), (robot_red_id, robot_red_pos[:2], "agent")]
 
         sensor_data = robot_sense(robot_blue_id, 0, obj_list)
     
@@ -731,7 +762,7 @@ dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 height = 0.005 # height of each robot
 mu = 2.5  # friction coefficient between robots and plane
-sensing_radius = dmtr * 2
+sensing_radius = dmtr * 5
 
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
@@ -768,7 +799,7 @@ def main():
     # maintain_strain_heading_test()
     # maintain_strain_heading_test_2()
     # maintain_strain_gradient_test()
-    maintain_forward_avoid_robot_test()
+    maintain_forward_avoid_collision_test()
 
 if __name__ == "__main__":
   main()
