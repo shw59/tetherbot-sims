@@ -67,19 +67,4 @@ class Tether:
         """
         return (self.length() - self.length_0) / self.length_0
     
-    def position(self):
-        """
-        Return the rough midpoint position of the tether object.
-        """
-        n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-
-        # find the index of the midpoint pair of vertices (upper if not exact middle)
-        n_pairs = n_verts // 2
-        mid_pair_idx = n_pairs // 2
-        v1 = 2 * mid_pair_idx
-        v2 = v1 + 1
-
-        # return the midpoint of that pair (middle of the tether width)
-        return [(verts[v1][k] + verts[v2][k]) / 2.0 for k in range(2)]
-        
         

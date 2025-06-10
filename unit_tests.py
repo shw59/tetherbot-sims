@@ -259,6 +259,21 @@ def get_tether_heading(robot_id, tether_id):
 
     return heading
 
+def get_tether_pos(tether_id):
+    """
+    Return the rough midpoint position of the tether object.
+    """
+    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+    # find the index of the midpoint pair of vertices (upper if not exact middle)
+    n_pairs = n_verts // 2
+    mid_pair_idx = n_pairs // 2
+    v1 = 2 * mid_pair_idx
+    v2 = v1 + 1
+
+    # return the midpoint of that pair (middle of the tether width)
+    return [(verts[v1][k] + verts[v2][k]) / 2.0 for k in range(2)]
+
 def get_theta(robot_id, tether_id):
     """
     Return the angle between the robot's heading and the tether's heading (in degrees).
@@ -366,6 +381,36 @@ def get_gradient_vector(robot_id):
 
     return v_g
 
+def get_repulsion_vector(sensor_info):
+    """
+    Returns the collision avoidance vector as a Gaussian curve given close-range sensor data.
+    """
+    amplitude = 3 * dmtr
+    std_dev = dmtr / 2
+    v_r = np.array([0, 0])
+
+    for i in range(len(sensor_info)):
+        u_r, d, obj_type = sensor_info[i]
+        v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r
+        # do something in the case that we can distinguish between robots, tethers, and obstacles
+
+    return v_r
+
+def get_tether_collision_vertices(tether_id, anchor_radius):
+    """
+    Given a specified anchor radius, return a list of valid global vertex positions in which collisions with are valid.
+    """
+    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH) 
+    segment_length = get_tether_length(tether_id) / (n_verts / 2 - 1) # length of each tether segment
+    anchor_radius_num_verts = int(anchor_radius // segment_length + 1) # number of vertex pairs within one anchor radius length
+    lower_idx, upper_idx = (anchor_radius_num_verts * 2, n_verts - anchor_radius_num_verts * 2)
+
+    valid_verts = []
+    for i in range(lower_idx, upper_idx + 1):
+        valid_verts.append(verts[i][:2])
+
+    return valid_verts
+
 def get_closest_point_distance(robot_id, object_id, object_type):
     """
     Returns the closest point and distance from another object (tether, agent, or obstacle) to the agent as a tuple.
@@ -374,16 +419,25 @@ def get_closest_point_distance(robot_id, object_id, object_type):
     closest_points = []
     match object_type:
         case "tether":
-            closest_points = p.getContactPoints(robot_id, object_id, linkIndexA=3, linkIndexB=-1)
             # _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-            # closest_point = verts[0][:2]
-            # nearest_dist = math.dist(curr_pos, closest_point)
+            # closest_point = [float('inf'), float('inf')]
+            # nearest_dist = float('inf')
             # for vert in verts:
             #     dist = math.dist(curr_pos, vert[:2])
-            #     if dist < nearest_dist:
+            #     if dist < nearest_dist and dist > tether_anchor_radius:
             #         nearest_dist = dist
             #         closest_point = vert[:2]
-            return closest_points[0][6][:2], math.dist(curr_pos, closest_points[0][6][:2])
+            # return closest_point, nearest_dist
+            contact_points = p.getContactPoints(robot_id, object_id, linkIndexA=2, linkIndexB=-1)
+            if contact_points:
+                print(contact_points[0][6][:2])
+                tether_collision_radius = get_tether_length(object_id) / 2
+                tether_pos = get_tether_pos(object_id)
+                for point in contact_points:
+                    _, _, _, _, _, _, contact_pos, *_ = point
+                    contact_pos = contact_pos[:2]
+                    if math.dist(contact_pos, tether_pos) <= tether_collision_radius:
+                        return contact_pos, math.dist(curr_pos, contact_pos)
         case "agent":
             closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
         case "obstacle":
@@ -431,22 +485,6 @@ def robot_sense(robot_id, objects, sensing_mode=0):
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
 
     return sensor_data
-
-def get_repulsion_vector(sensor_info):
-    """
-    Returns the collision avoidance vector as a Gaussian curve under the assumption that the robot can sense and 
-    avoid other robots, tethers, and obstacles indistinguishably.
-    """
-    amplitude = 50 * dmtr
-    std_dev = dmtr / 2
-    v_r = np.array([0, 0])
-
-    for i in range(len(sensor_info)):
-        u_r, d, obj_type = sensor_info[i]
-        v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r
-        # do something in the case that we can distinguish between robots, tethers, and obstacles
-
-    return v_r
 
 def new_position_forward_with_strain(robot_id, tether_id):
     """
@@ -507,9 +545,10 @@ def new_position_forward_with_repulsion_strain(robot_id, tether_id, sensor_data)
     robot_heading = np.array(get_robot_heading(robot_id))
 
     resulting_vector = strain_weight * strain_vector + heading_weight * robot_heading + repulsion_weight * repulsion_vector
-    normalized_result = normalize_vector(resulting_vector)
     
-    new_position = curr_pos + normalized_result
+    new_position = curr_pos + resulting_vector
+
+    print(repulsion_vector, resulting_vector)
     
     return new_position
 
@@ -810,12 +849,10 @@ def maintain_strain_heading_repulsion_test():
         # query list of object ids, positions, and type
         obj_list = [(robot_blue_id, p.getLinkState(robot_blue_id, 2)[0][:2], "agent"), 
                     (robot_red_id, p.getLinkState(robot_red_id, 2)[0][:2], "agent"),
-                    (cube_id, p.getBasePositionAndOrientation(cube_id), "obstacle"), 
+                    (cube_id, p.getBasePositionAndOrientation(cube_id)[0][:2], "obstacle"), 
                     (tether_id, [0, 0], "tether")]
         
         sensor_data = robot_sense(robot_blue_id, obj_list, 1)
-
-        print(sensor_data)
 
         # display results in the GUI
         p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
@@ -846,10 +883,10 @@ goal_strain = 0.2
 goal_gradient = [2, 2]
 
 # vector weights
-strain_weight = 4
+strain_weight = 2
 heading_weight = 4
 gradient_weight = 5
-repulsion_weight = 2
+repulsion_weight = 6
 
 gradient_target = [2, 2]
 err_pos = 0.01 # positional error tolerance
@@ -875,8 +912,8 @@ def main():
     # maintain_strain_heading_test()
     # maintain_strain_heading_test_2()
     # maintain_strain_gradient_test()
-    # maintain_forward_avoid_collision_test()
-    maintain_strain_heading_repulsion_test()
+    maintain_forward_avoid_collision_test()
+    # maintain_strain_heading_repulsion_test()
 
 if __name__ == "__main__":
   main()
