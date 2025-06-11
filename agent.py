@@ -15,15 +15,14 @@ class Agent:
     gradient_source = [2, 2]
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1] # [strain, heading/gradient, collision avoidance, tether angle]
 
-    def __init__(self, position_0, heading_0, radius, goal_delta, tether_m, tether_p=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, goal_angle, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
-        Initializes an agent object and its position and id attributes.
+        Initializes an agent object and its position, id, radius, sensing radius, and desired angle attributes.
         """
         self.next_position = position_0
-        self.tethers = [tether_m, tether_p]
         self.radius = radius
         self.sensing_radius = radius * 4
-        self.desired_angle = goal_delta
+        self.desired_angle = goal_angle
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -133,6 +132,12 @@ class Agent:
         self.id = p.loadURDF(robot_blue_filename, position_0)
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
+
+    def instantiate_tethers(self, tether_m, tether_p=None):
+        """
+        Instantiate tether object(s) for the agent.
+        """
+        self.tethers = [tether_m, tether_p]
 
     def pose(self):
         """
@@ -317,7 +322,7 @@ class Agent:
     
     def compute_next_step(self):
         """
-        Calculates and sets the position in which the agent should move next based on the resultant weighted vector sum.
+        Calculates and sets the next position the agent should move to based on the resultant weighted vector sum.
         """
         curr_position = np.array(self.pose()[0])
 
