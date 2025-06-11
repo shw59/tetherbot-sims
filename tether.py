@@ -74,6 +74,4 @@ class Tether:
         n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         return n_verts, verts
-    
-
         
