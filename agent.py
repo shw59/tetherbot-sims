@@ -175,7 +175,7 @@ class Agent:
 
         return math.degrees(theta) % 360
     
-    def sigma(self):
+    def delta(self):
         """
         Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
         """
@@ -183,19 +183,9 @@ class Agent:
             return None
         theta_m = self.theta(self.tethers[0])
         theta_p = self.theta(self.tethers[1])
-        sigma = theta_m - theta_p
+        delta = theta_m - theta_p
 
-        return sigma
-    
-    @classmethod
-    def normalize(cls, vec):
-        """
-        Normalize a vector. Must be a numpy array.
-        """
-        norm = np.linalg.norm(vec)
-        if norm == 0:
-            return vec
-        return vec / norm
+        return delta
     
     def vector_strain(self, tether_num=0):
         """
