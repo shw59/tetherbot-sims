@@ -507,8 +507,10 @@ def new_position_forward_with_strain_1_tether(robot_id, tether_id):
     strain_vector = get_strain_vector(robot_id, tether_id)
     robot_heading = get_robot_heading(robot_id)
     gradient = go_home(robot_id, Home)
-    resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0]+gradient_weight*gradient[0], 
-                        strain_weight*strain_vector[1]+heading_weight*robot_heading[1]+gradient_weight*gradient[1]]
+    # resulting_vector = [strain_weight*strain_vector[0]+heading_weight*robot_heading[0]+gradient_weight*gradient[0], 
+    #                     strain_weight*strain_vector[1]+heading_weight*robot_heading[1]+gradient_weight*gradient[1]]
+    resulting_vector = [strain_weight*strain_vector[0]+gradient_weight*gradient[0], 
+                        strain_weight*strain_vector[1]+gradient_weight*gradient[1]]
     normalized_result = normalize_vector(resulting_vector)
     
     
@@ -532,6 +534,9 @@ def go_home(robot_id, home):
     home_x = home[0]
     home_y = home[1]
     distance = math.sqrt(((curr_x-home_x)**2)+((curr_y-home_y)**2))
+    if distance == 0:
+        distance = 1
+
     if distance >= 10*l_0:
         scale = 1
     elif distance >= 2*l_0:
@@ -556,6 +561,33 @@ def get_magnitude(vector):
     Returns the magnitude a two-dimensional vector
     """
     return math.sqrt((vector[0]**2) + (vector[1]**2))
+
+def calculate_new_position(robot_id, tether1_id, tether2_id, goal_delta):
+    """
+    This is to calculate the resulting vector of a robot that has two tethers, a goal angle, 
+    and a global gradient.
+    """
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    strain_vector1 = get_strain_vector(robot_id, tether1_id)
+    strain_vector2 = get_strain_vector(robot_id, tether2_id)
+    tot_strain_vector = [strain_vector1[0]+strain_vector2[0], strain_vector1[1]+strain_vector2[1]]
+    robot_heading = get_robot_heading(robot_id)
+    gradient = go_home(robot_id, Home)
+
+    direction_vector = get_sigma_vector(robot_id, tether1_id, tether2_id, goal_delta)
+    # curr_x = p.getLinkState(robot_id, 2)[0][0]
+    # curr_y = p.getLinkState(robot_id, 2)[0][1]
+
+    resulting_vector = [strain_weight*tot_strain_vector[0]+gradient_weight*gradient[0]+angle_weight*direction_vector[0], 
+                        strain_weight*tot_strain_vector[1]+gradient_weight*gradient[1]+angle_weight*direction_vector[1]]
+    normalized_result = normalize_vector(resulting_vector)
+    
+    
+    position = [curr_x+(0.03)*normalized_result[0], curr_y+(0.03)*normalized_result[1]]
+
+    return position
+
     
 GRAVITYZ = -9.81  # m/s^2
 N = 3 # number of agents to be created
@@ -565,13 +597,14 @@ mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
 height = 0.005 # hieght of robot
-Home = [0, 0]
+Home = [-1, -1]
 
 # tether properties
 goal_strain = 0.1
 strain_weight = 6
 heading_weight = 0
-gradient_weight = 1
+gradient_weight = 2
+angle_weight = 5
 
 err_pos = 0.01 # positional error tolerance
 err_delta = 5 # delta error tolerance
@@ -631,6 +664,16 @@ def main():
     while p.isConnected():
         p.getCameraImage(320,200)
 
+        if runs%100 == 0:
+            # calculate tether angle relative to each robot's heading
+            sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
+            # theta2 = get_theta(robot_ids[1], tether_ids[0])
+
+            # display results in the GUI
+            p.addUserDebugText(f"sigma = {sigma1:.2f} deg \n",
+                                [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        
+
         # # calculate tether length and strain on every step
         # l = get_tether_length(tether_ids[0])
         # strain = (l - l_0) / l_0
@@ -650,10 +693,21 @@ def main():
         
 
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
-            new_pos = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 90)
-            # print(new_pos)
+            new_pos = calculate_new_position(robot_ids[1], tether_ids[0], tether_ids[1], 90)
             target_pos[1] = (new_pos[0], new_pos[1])
             move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
+
+        if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
+            new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+
+        if reached_target_position(robot_ids[2], target_pos[2][0], target_pos[2][1], err_pos):
+            new_pos = new_position_forward_with_strain_1_tether(robot_ids[2], tether_ids[1])
+            target_pos[2] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[2], target_pos[2][0], target_pos[2][1], force=60)
+
+        runs = runs + 1
         
         # if runs == 0:
         #     new_pos = turn_around(robot_ids[0])
