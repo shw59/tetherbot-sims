@@ -67,4 +67,12 @@ class Tether:
         """
         return (self.length() - self.length_0) / self.length_0
     
+    def get_verts(self):
+        """
+        Return the tether's number of vertices and the mesh vertices themselves as a tuple (n_verts, verts).
+        """
+        n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+
+        return n_verts, verts
+    
         
