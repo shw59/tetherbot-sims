@@ -46,10 +46,10 @@ class Tether:
                                 useFaceContact=1)
         
         p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
-    
-    def strain(self):
+
+    def length(self):
         """
-        Return the current strain of the tether object based on its current length.
+        Return the current length of the tether.
         """
         n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
@@ -59,7 +59,12 @@ class Tether:
             p2 = [(verts[i+2][k] + verts[i+3][k]) / 2.0 for k in range(3)]
             length += math.dist(p1, p2)
 
-        strain = (length - self.length_0) / self.length_0
-        
-        return strain
+        return length
+    
+    def strain(self):
+        """
+        Return the current strain of the tether object based on its current length.
+        """
+        return (self.length() - self.length_0) / self.length_0
+    
         

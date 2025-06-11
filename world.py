@@ -1,7 +1,9 @@
 """
 world.py
 
-This file sets up the environment to run the simulations, 
-inlcuding all of the robots and the tethers.
+This file sets up the environment to run the simulation, 
+including all robots, tethers, and obstacles.
 """
 
+import pybullet as p
+import pybullet_data
