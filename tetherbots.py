@@ -86,12 +86,10 @@ def anchor_tether(rope_id, first_id, second_id):
     p.createSoftBodyAnchor(rope_id, num_verts-2, second_id, 2)
     p.createSoftBodyAnchor(rope_id, num_verts-1, second_id, 2)
     
-def make_robot(diameter, position, heading=0, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
+def make_robot(radius, position, heading=0, length=.01, mass=1.0, color=(0, 0.5, 1, 1)):
     """
     Returns the id of a cylindrical robot object with specified position, heading (degrees), radius and/or length, mass, and color.
     """
-    radius = diameter / 2
-
     # inertia of a solid cylinder about its own center
     ixx = iyy = (1/12) * mass * (3 * radius**2 + length**2)
     izz = 0.5 * mass * radius**2
@@ -253,6 +251,17 @@ def get_tether_heading(robot_id, tether_id):
 
     return heading
 
+def get_theta(robot_id, tether_id):
+    """
+    Return the angle between the robot's heading and the tether's heading (in degrees).
+    The angle is computed using the dot product.
+    """
+    hx, hy = get_robot_heading(robot_id)
+    tx, ty = get_tether_heading(robot_id, tether_id)
+    theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
+
+    return math.degrees(theta) % 360
+  
 def smallest_signed_angle_diff(goal_angle, start_angle):
     """
     Computes the smallest rotation needed to go from one angle to another (+ indicates CCW, - indicates CW).
@@ -551,7 +560,7 @@ def get_magnitude(vector):
 GRAVITYZ = -9.81  # m/s^2
 N = 3 # number of agents to be created
 
-dmtr = 0.2  # diameter of each robot in meters
+radius = 0.1  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
 l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
@@ -600,7 +609,7 @@ def main():
 
     # populates the list of robot objects with robot objects
     for i in range(N):
-        robot_ids.append(make_robot(dmtr, initial_robot_positions[i]))
+        robot_ids.append(make_robot(radius, initial_robot_positions[i]))
 
     # applies friction/damping between robots and the plane
     for i in range(N):
