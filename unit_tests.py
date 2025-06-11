@@ -2,7 +2,7 @@
 unit_tests.py
 
 This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
-It is mostly used for small unit tests involving two different-colored agents.
+It contains small unit tests involving two different-colored agents for clarity.
 """
 
 import pybullet as p
@@ -394,20 +394,20 @@ def get_repulsion_vector(sensor_info):
 
     return v_r
 
-def get_tether_collision_vertices(tether_id, anchor_radius):
-    """
-    Given a specified anchor radius, return a list of valid global vertex positions in which collisions with are valid.
-    """
-    n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH) 
-    segment_length = get_tether_length(tether_id) / (n_verts / 2 - 1) # length of each tether segment
-    anchor_radius_num_verts = int(anchor_radius // segment_length + 1) # number of vertex pairs within one anchor radius length
-    lower_idx, upper_idx = (anchor_radius_num_verts * 2, n_verts - anchor_radius_num_verts * 2)
+# def get_tether_collision_vertices(tether_id, anchor_radius):
+#     """
+#     Given a specified anchor radius, return a list of valid global vertex positions in which collisions with are valid.
+#     """
+#     n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH) 
+#     segment_length = get_tether_length(tether_id) / (n_verts / 2 - 1) # length of each tether segment
+#     anchor_radius_num_verts = int(anchor_radius // segment_length + 1) # number of vertex pairs within one anchor radius length
+#     lower_idx, upper_idx = (anchor_radius_num_verts * 2, n_verts - anchor_radius_num_verts * 2)
 
-    valid_verts = []
-    for i in range(lower_idx, upper_idx + 1):
-        valid_verts.append(verts[i][:2])
+#     valid_verts = []
+#     for i in range(lower_idx, upper_idx + 1):
+#         valid_verts.append(verts[i][:2])
 
-    return valid_verts
+#     return valid_verts
 
 def get_closest_point_distance(robot_id, object_id, object_type):
     """
@@ -426,16 +426,6 @@ def get_closest_point_distance(robot_id, object_id, object_type):
                     nearest_dist = dist
                     closest_point = vert[:2]
             return closest_point, nearest_dist
-            # contact_points = p.getContactPoints(robot_id, object_id, linkIndexA=2, linkIndexB=-1)
-            # if contact_points:
-            #     print(contact_points[0][6][:2])
-            #     tether_collision_radius = get_tether_length(object_id) / 2
-            #     tether_pos = get_tether_pos(object_id)
-            #     for point in contact_points:
-            #         _, _, _, _, _, _, contact_pos, *_ = point
-            #         contact_pos = contact_pos[:2]
-            #         if math.dist(contact_pos, tether_pos) <= tether_collision_radius:
-            #             return contact_pos, math.dist(curr_pos, contact_pos)
         case "agent":
             closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
         case "obstacle":

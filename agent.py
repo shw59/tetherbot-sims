@@ -1,25 +1,29 @@
 """
 agent.py
 
-This file defines the agent class for robot objects.
+This file defines the agent class.
 """
 
 import pybullet as p
 import math
 import numpy as np
 from tether import Tether
+import utils
 
 class Agent:
-    goal_strain = 0.1
-    goal_gradient = [2, 2]
-    strain_weight, gradient_weight = [6, 1] # [strain, heading/gradient, collision avoidance, angle]
+    desired_strain = 0.1
+    gradient_source = [2, 2]
+    angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1] # [strain, heading/gradient, collision avoidance, tether angle]
 
-    def __init__(self, position_0, heading_0, radius, tether_m, tether_p=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, position_0, heading_0, radius, goal_delta, tether_m, tether_p=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Initializes an agent object and its position and id attributes.
         """
-        self.position = [0, 0]
+        self.next_position = position_0
         self.tethers = [tether_m, tether_p]
+        self.radius = radius
+        self.sensing_radius = radius * 4
+        self.desired_angle = goal_delta
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -175,7 +179,7 @@ class Agent:
 
         return math.degrees(theta) % 360
     
-    def sigma(self):
+    def delta(self):
         """
         Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
         """
@@ -183,25 +187,86 @@ class Agent:
             return None
         theta_m = self.theta(self.tethers[0])
         theta_p = self.theta(self.tethers[1])
-        sigma = theta_m - theta_p
+        delta = theta_m - theta_p
 
-        return sigma
+        return delta
     
-    @classmethod
-    def normalize(cls, vec):
+    def robot_sense_close_range(self, obj_list, sensing_mode=0):
         """
-        Normalize a vector. Must be a numpy array.
+        Three modes of close-range sensing:
+        0: Robot senses all obstacles, tethers, and robots indistinguishably. Returns list of tuples with unknown type classifications.
+        1: Robot senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
+        2: Robot can only sense robots and tethers, but not obstacles. 
+
+        The object list provided should be a list of tuples in the format (id, [x, y], "tether"/"agent"/"obstacle"). The returned list sensor
+        data contains the format (u_r normal vector as numpy array, distance, object type)
         """
-        norm = np.linalg.norm(vec)
-        if norm == 0:
-            return vec
-        return vec / norm
+        # helper function
+        def get_closest_point_distance(self, obj_id, obj_type):
+            """
+            Returns the closest global coordinate point and distance as (closest_point, dist) from another object to the agent.
+            """
+            curr_pos = p.getLinkState(self.id, 2)[0][:2]
+            closest_points = []
+            match obj_type:
+                case "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
+                    _, verts, *_ = p.getMeshData(obj_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+                    closest_point = [float('inf'), float('inf')]
+                    nearest_dist = float('inf')
+                    for vert in verts:
+                        dist = math.dist(curr_pos, vert[:2])
+                        if dist < nearest_dist:
+                            nearest_dist = dist
+                            closest_point = vert[:2]
+
+                    return closest_point, nearest_dist
+                case "agent":
+                    closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=2)
+                case "obstacle":
+                    closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+            if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
+                closest_point = closest_points[0][6][:2]
+                nearest_dist = math.dist(curr_pos, closest_point)
+                for point in closest_points:
+                    dist = math.dist(curr_pos, point[6][:2])
+                    if dist < nearest_dist:
+                        nearest_dist = dist
+                        closest_point = point[6][:2]
+
+                return closest_point, nearest_dist
+            
+            return [float('inf'), float('inf')], float('inf')
+        
+        curr_pos = np.array(p.getLinkState(self.id, 2)[0][:2])
+        sensor_data = []
+
+        for obj in obj_list:
+            obj_id, obj_pos, obj_type = obj
+            closest_point, dist = get_closest_point_distance(obj_id, obj_type)
+            if obj_id != self.id and dist <= self.sensing_radius:
+                if obj_type == "tether" and dist >= self.radius:
+                    u_r = utils.normalize_vector(curr_pos - np.array(closest_point))
+                elif obj_type != "tether":
+                    u_r = utils.normalize_vector(curr_pos - np.array(obj_pos))
+                else:
+                    continue
+
+                match sensing_mode:
+                    case 0:
+                        sensor_data.append((u_r, dist, "unknown"))
+                    case 1:
+                        sensor_data.append((u_r, dist, obj_type))
+                    case 2:
+                        if obj_type != "obstacle":
+                            sensor_data.append((u_r, dist, "unknown"))
+
+        return sensor_data
     
-    def vector_strain(self, tether_num=0):
+    def compute_vector_strain(self, tether_num=0):
         """
         Calculates the vector direction that the robot should move to achieve the goal strain/tautness.
         """
-        strain_diff = self.tether[tether_num].strain() - Agent.goal_strain
+        strain_diff = self.tether[tether_num].strain() - Agent.desired_strain
 
         if strain_diff > 0:
             sign = 1
@@ -211,18 +276,18 @@ class Agent:
             sign = 0
 
         # The vector from the center of the robot to the point where the tether connects to the robot
-        vector_norm = Agent.normalize(np.array(self.tether_heading(tether_num)))
+        vector_norm = utils.normalize(np.array(self.tether_heading(tether_num)))
         v_t = sign * (strain_diff ** 2) * vector_norm
 
         return v_t
     
-    def vector_gradient(self):
+    def compute_vector_gradient(self):
         """
         Returns the vector pointing towards the target destination, where the vector's magnitude increases the farther from the
         destination the agent is.
         """
         curr_position = self.pose()[0]
-        goal_position = Agent.goal_gradient
+        goal_position = Agent.gradient_source
         distance = math.dist(curr_position, goal_position)
         if distance >= 10 * self.length_0:
             scale = 1
@@ -235,20 +300,34 @@ class Agent:
 
         return v_g
     
+    def compute_vector_repulsion(self, cr_sensor_data):
+        """
+        Returns the repulsion vector given close-range sensor data.
+        """
+        amplitude = 3 * self.radius
+        std_dev = self.radius
+        v_r = np.array([0, 0])
+
+        for i in range(len(cr_sensor_data)):
+            u_r, d, obj_type = cr_sensor_data[i]
+            v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r # Gaussian
+            # do something here if the obj_type is not "unknown"
+
+        return v_r
+    
     def compute_next_step(self):
         """
-        Calculates the resultant weighted vector sum and position in which the agent should move next.
+        Calculates and sets the position in which the agent should move next based on the resultant weighted vector sum.
         """
         curr_position = np.array(self.pose()[0])
 
-        strain_v = self.vector_strain()
-        gradient_v = self.vector_gradient()
+        v_strain = self.vector_strain()
+        v_gradient = self.vector_gradient()
+        v_repulsion = self.vector_repulsion()
 
-        resulting_vector = Agent.strain_weight * strain_v + Agent.gradient_weight * gradient_v
+        resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
         
-        new_position = curr_position + resulting_vector
-        
-        return new_position
+        self.next_position = curr_position + resulting_vector
     
     def move(self, target_pos, force=10):
         """
