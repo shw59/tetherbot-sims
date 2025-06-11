@@ -1,7 +1,7 @@
 """
 agent.py
 
-This file defines the agent class for robot objects.
+This file defines the agent class.
 """
 
 import pybullet as p
