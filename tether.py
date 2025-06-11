@@ -1,7 +1,7 @@
 """
 tether.py
 
-This file defines the Tether class for tether objects.
+This file defines the Tether class.
 """
 
 import pybullet as p

@@ -334,6 +334,9 @@ class Agent:
         resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
         
         self.next_position = curr_position + resulting_vector
+
+    def update(self): # feedback control? idk still need to figure out how this will work in context of the main simulation loop
+        pass
     
     def move(self, target_pos, force=10):
         """

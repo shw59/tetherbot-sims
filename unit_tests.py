@@ -1,7 +1,7 @@
 """
 unit_tests.py
 
-This file defines a suite of unit tests in PyBullet with groups of two or three robots tethered together.
+This file defines a suite of unit tests in PyBullet for tetherbot simulation functionality.
 """
 
 import pybullet as p
