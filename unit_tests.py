@@ -897,10 +897,11 @@ def main():
     # load plane
     p.loadURDF("plane.urdf")
 
-    # Wall dimensions
+    # wall dimensions
     wall_height = 0.2
     thickness = 0.01
     half_length = 5
+    half_width = 7
 
     # Create 4 walls around the perimeter
     def create_wall(pos, half_extents):
@@ -916,13 +917,13 @@ def main():
         return wall
 
     # +X wall
-    create_wall([half_length, 0, wall_height / 2], [thickness, half_length, wall_height / 2])
+    create_wall([half_length, 0, wall_height / 2], [thickness, half_width, wall_height / 2])
     # -X wall
-    create_wall([-half_length, 0, wall_height / 2], [thickness, half_length, wall_height / 2])
+    create_wall([-half_length, 0, wall_height / 2], [thickness, half_width, wall_height / 2])
     # +Y wall
-    create_wall([0, half_length, wall_height / 2], [half_length, thickness, wall_height / 2])
+    create_wall([0, half_width, wall_height / 2], [half_length, thickness, wall_height / 2])
     # -Y wall
-    create_wall([0, -half_length, wall_height / 2], [half_length, thickness, wall_height / 2])
+    create_wall([0, -half_width, wall_height / 2], [half_length, thickness, wall_height / 2])
 
     """RUN UNIT TESTS (uncomment the one you want to run)"""
     # waypoints_with_tether_test_ccw()
