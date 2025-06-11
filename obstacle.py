@@ -14,3 +14,4 @@ class Obstacle:
         
     def get_pose(self):
         pass
+

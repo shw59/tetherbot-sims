@@ -356,3 +356,4 @@ class Agent:
         joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
         p.setJointMotorControlArray(self.id, joint_indices, p.POSITION_CONTROL,
                                     targetPositions=[x_move, y_move, rotation], forces=[force]*3)
+        
