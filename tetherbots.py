@@ -63,7 +63,7 @@ def make_tether(robot1_pos, robot2_pos, length_0, num_segments=10):
                                useNeoHookean=0, 
                                useBendingSprings=1,
                                useMassSpring=1, 
-                               springElasticStiffness=40, 
+                               springElasticStiffness=.1, 
                                springDampingStiffness=.1,
                                springDampingAllDirections=1, 
                                useSelfCollision=0, 
@@ -253,17 +253,6 @@ def get_tether_heading(robot_id, tether_id):
 
     return heading
 
-def get_theta(robot_id, tether_id):
-    """
-    Return the angle between the robot's heading and the tether's heading (in degrees).
-    The angle is computed using the dot product.
-    """
-    hx, hy = get_robot_heading(robot_id)
-    tx, ty = get_tether_heading(robot_id, tether_id)
-    theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
-
-    return math.degrees(theta) % 360
-
 def smallest_signed_angle_diff(goal_angle, start_angle):
     """
     Computes the smallest rotation needed to go from one angle to another (+ indicates CCW, - indicates CW).
@@ -345,6 +334,160 @@ def get_strain_vector(robot_id, tether_id):
 
     return V_t
 
+def get_sigma(robot_id, tether1_id, tether2_id=None):
+    """
+    Return the angle between the robot's heading and the tether's heading (in degrees).
+    The angle is computed using the dot product.
+    """
+    hx, hy = get_robot_heading(robot_id)
+    tx, ty = get_tether_heading(robot_id, tether1_id)
+    theta1 = math.degrees(math.atan2(hx*ty - hy*tx, hx*tx + hy*ty))
+    theta2 = 0
+    if tether2_id is not None:
+        tx2, ty2 = get_tether_heading(robot_id, tether2_id)
+        theta2 = math.degrees(math.atan2(hx*ty2 - hy*tx2, hx*tx2 + hy*ty2))
+    
+    if theta1 < 0:
+        theta1 = 360+theta1
+
+    if theta2 < 0:
+        theta2 = 360+theta2
+
+    if round(theta2, 2) == 0:
+        theta2 = 360
+ 
+    sigma = (theta1 - theta2)
+
+    if sigma < 0:
+        sigma = 360 + sigma
+
+    return sigma
+
+def get_sigma_vector(robot_id, tether1_id, tether2_id, goal_sig):
+    """
+    Calculates which direction the robot should move in so that it can
+    attempt to reach its sigma goal
+    """
+    sigma = get_sigma(robot_id, tether1_id, tether2_id)
+
+    tether1_heading = get_tether_heading(robot_id, tether1_id)
+    tether2_heading = get_tether_heading(robot_id, tether2_id)
+    unit1 = normalize_vector(tether1_heading)
+    unit2= normalize_vector(tether2_heading)
+    summed_units = [unit1[0]+unit2[0], unit1[1]+unit2[1]]
+    abs_value_of_summed = get_magnitude(summed_units)
+
+    difference = goal_sig - sigma
+
+    abs_difference = abs(difference)
+
+    vector = [0,0]
+
+    if (abs_difference > err_delta):
+
+        # as the unit vectors begin to cancel each other out (in 180 degree position), the angle vector will go to zero
+        # not because the goal has been met, but because the unit vectors cancel. To avoid any stalling that the robot
+        # may experience, I push the robot through 180 degree difference if that is not the goal degree difference of the
+        # delta, which I determine from the first conditional in the if-statement below
+        if (abs_difference > 10) and (-0.5 <= (unit1[0]+unit2[0]) <= 0.5) and (-0.5 <= (unit1[1]+unit2[1]) <= 0.5):
+
+            hx, hy = get_robot_heading(robot_id)
+
+            vector = [20*hx, 20*hy]
+    
+            # return vector
+        else:
+            if (sigma < 180) and (sigma > goal_sig):
+                sign = -1
+            elif (sigma < 180) and (sigma < goal_sig):
+                sign = 1
+            elif (sigma > 180) and (sigma < goal_sig):
+                sign = -1
+            else:
+                sign = 1
+
+            coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(abs_value_of_summed)
+
+            vector = [coefficient*summed_units[0], coefficient*summed_units[1]]
+
+        return vector
+    else:
+        return vector
+
+    # if abs_difference > err_delta:
+    #     if ((difference <= -10) or (difference >= 10)) and (-0.5 <= (unit1[0]+unit2[0]) <= 0.5) and (-0.5 <= (unit1[1]+unit2[1]) <= 0.5):
+            
+    #         hx, hy = get_robot_heading(robot_id)
+    #         vector = [20*hx, 20*hy]
+    
+    #         return vector
+    #     elif (sigma < 0) and (goal_sig < 0) and (sigma < goal_sig):
+    #         sign = -1
+
+    #         coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(abs_value_of_summed)
+
+    #         vector = [coefficient*summed_units[0], coefficient*summed_units[1]]
+            
+    #         return vector
+    #     else:
+    #         if difference < 0:
+    #             sign = -1
+    #         else:
+    #             sign = 1
+            
+    #         # if (difference >= 0 ) and (difference < 90):
+    #         #     sign = -1*sign
+
+    #         # if (difference <= 0) and (difference > -90):
+    #         #     sign = -1*sign
+
+    #         # if sigma > 180:
+    #         #     sign = -1*sign
+
+    #         # if (90 < sigma < 270):
+    #         #     sign = -1*sign
+    #         # if sigma < difference:
+    #         #     sign = 1
+    #         # else:
+    #         #     sign = 1
+            
+    #         # print(sigma)
+    #         # print(sign)
+
+            
+            
+    #         coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(abs_value_of_summed)
+
+    #         vector = [coefficient*summed_units[0], coefficient*summed_units[1]]
+
+    #         # print("sigma: " + str(sigma))
+    #         # print("difference: " + str(difference))
+    #         # print("vector: " + str(vector))
+    #         # print("\n")
+            
+    #         return vector
+    # else:
+    #     # print("sigma: " + str(sigma))
+    #     # print("difference: " + str(difference))
+    #     # print("vector: " + str(vector))
+    #     # print("\n")
+
+    #     return vector
+    
+def new_position_for_sigma_goal(robot_id, tether1_id, tether2_id, goal_sigma):
+    """
+    Calculates where the given robot should move in order to get closer to
+    attaining its sigma goal.
+    """
+    direction_vector = get_sigma_vector(robot_id, tether1_id, tether2_id, goal_sigma)
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    # normalized_result = normalize_vector(direction_vector)
+
+    new_position = [curr_x+(0.01)*direction_vector[0], curr_y+(0.01)*direction_vector[1]]
+
+    return new_position
+
 def new_position_forward_with_strain_1_tether(robot_id, tether_id):
     """
     Determines the new position the robot should move to to maintain its tether's goal strain based on 
@@ -360,7 +503,7 @@ def new_position_forward_with_strain_1_tether(robot_id, tether_id):
     normalized_result = normalize_vector(resulting_vector)
     
     
-    new_position = [curr_x+(0.05)*normalized_result[0], curr_y+(0.05)*normalized_result[1]]
+    new_position = [curr_x+(0.03)*normalized_result[0], curr_y+(0.03)*normalized_result[1]]
     
     return new_position
 
@@ -392,12 +535,21 @@ def go_home(robot_id, home):
     return home_vector
 
 def normalize_vector(vec):
-    magnitude = math.sqrt((vec[0]**2)+(vec[1]**2))
+    """
+    Takes any vector and returns a normalized vector
+    """
+    magnitude = get_magnitude(vec)
     normalized = [(1/magnitude)*vec[0],(1/magnitude)*vec[1]]
     return normalized
+
+def get_magnitude(vector):
+    """
+    Returns the magnitude a two-dimensional vector
+    """
+    return math.sqrt((vector[0]**2) + (vector[1]**2))
     
 GRAVITYZ = -9.81  # m/s^2
-N = 2 # number of agents to be created
+N = 3 # number of agents to be created
 
 dmtr = 0.2  # diameter of each robot in meters
 mass = 1.0 # mass of each robot in kg
@@ -413,6 +565,7 @@ heading_weight = 0
 gradient_weight = 1
 
 err_pos = 0.01 # positional error tolerance
+err_delta = 5 # delta error tolerance
 
 def main():
     p.connect(p.GUI) # connect to PyBullet GUI
@@ -427,9 +580,11 @@ def main():
     # set initial object positions
     # initial_robot_positions = set_straight_line(N, l_0)
     
-    initial_robot_positions = [[1,0,height],
-                               [1, -1, height]]
+    initial_robot_positions = [[0,0,height],
+                               [0,1, height],
+                               [1,1, height]]
     # initial_robot_positions = [[1,1,height]]
+    # initial_robot_positions = set_straight_line(N, l_0)
     
     # list of x-y current target positions for each agent (starts at their initial positions)
     target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
@@ -461,37 +616,55 @@ def main():
         
     runs = 0
 
+    # print(get_sigma(robot_ids[1], tether_ids[0], tether_ids[1]))
+
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        # calculate tether length and strain on every step
-        l = get_tether_length(tether_ids[0])
-        strain = (l - l_0) / l_0
+        # # calculate tether length and strain on every step
+        # l = get_tether_length(tether_ids[0])
+        # strain = (l - l_0) / l_0
 
-        # calculate tether angle relative to each robot's heading
-        theta1 = get_theta(robot_ids[0], tether_ids[0])
-        theta2 = get_theta(robot_ids[1], tether_ids[0])
+        # # calculate tether angle relative to each robot's heading
+        # sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
+        # # theta2 = get_theta(robot_ids[1], tether_ids[0])
 
-        # display results in the GUI
-        p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-                            f"theta_blue = {theta1:.2f} deg\n theta_red = {theta2:.2f} deg",
-                            [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        # # calculates the direction the robot should move in to achieve the 
+        # # goal delta
+        # new_vector = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 270)
+
+        # # display results in the GUI
+        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+        #                     f"sigma = {sigma1:.2f} deg \n x_comp = {new_vector[0]:.2f} \n y_comp ={new_vector[1]:.2f} \n",
+        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
         
+
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
-            new_pos = new_position_forward_with_strain_1_tether(robot_ids[1], tether_ids[0])
+            new_pos = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 90)
+            # print(new_pos)
             target_pos[1] = (new_pos[0], new_pos[1])
             move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
         
-        if runs == 0:
-            new_pos = turn_around(robot_ids[0])
-            target_pos[0] = (new_pos[0], new_pos[1])
-            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
-            runs = 1
-        elif reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
-            new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
-            target_pos[0] = (new_pos[0], new_pos[1])
-            move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+        # if runs == 0:
+        #     new_pos = turn_around(robot_ids[0])
+        #     target_pos[0] = (new_pos[0], new_pos[1])
+        #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+        #     runs = 1
+        # elif reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
+        #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
+        #     target_pos[0] = (new_pos[0], new_pos[1])
+        #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
+
+
+        # if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
+        #     new_pos = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 150)
+        #     target_pos[1] = (new_pos[0], new_pos[1])
+        #     # print(get_sigma(robot_ids[1], tether_ids[0], tether_ids[1]))
+        #     # print("\n")
+        #     move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
+
+
 
 
         # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
