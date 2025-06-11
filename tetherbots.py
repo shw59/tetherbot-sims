@@ -1,7 +1,7 @@
 """
 tetherbots.py
 
-This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
+This file defines a PyBullet simulation of two disk-shaped controllable robots connected by a flexible tether.
 """
 
 import pybullet as p

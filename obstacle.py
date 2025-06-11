@@ -1,7 +1,7 @@
 """
 obstacle.py
 
-This file defines the obstacle class.
+This file defines the Obstacle class.
 """
 
 import pybullet as p

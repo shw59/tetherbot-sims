@@ -1,7 +1,7 @@
 """
 utils.py
 
-This utilities file contains useful math functions that may be needed for calculations in other class member functions.
+This utilities file contains useful math functions for calculations in other class member functions.
 """
 
 import numpy as np
