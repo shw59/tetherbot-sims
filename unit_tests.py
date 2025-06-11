@@ -206,6 +206,26 @@ def make_robot(name, radius, position, heading=0, length=.01, mass=1.0, color=(0
 
     return id
 
+def set_straight_line(n, spacing):
+    """
+    Returns a list of positions that correspond to n robots seperated by "spacing" distance
+    along the x-axis, centered about zero.
+    """
+    positions = []
+    if (n%2 == 0):
+        left = n/2
+        right = n - left
+        y = np.linspace(-left*spacing, right*spacing, n+1)
+    else:
+        left = round(n/2)
+        right = n - left
+        y = np.linspace(-left*spacing, right*spacing, n+1)
+    for i in range(n):
+        pos = [0, y[i], height]
+        positions.append(pos)
+
+    return positions
+
 def get_tether_length(tether_id):
     """
     Return the length of the tether at any given time.
@@ -283,18 +303,34 @@ def get_theta(robot_id, tether_id):
 
     return math.degrees(theta) % 360
 
-def get_delta(robot_id, tether1_id, tether2_id):
+def get_delta(robot_id, tether1_id, tether2_id=None):
     """
-    Return the angle between a robot's two tethers. 
-    Just returns theta for one tether if second tether not present.
+    Return the angle between the robot's heading and the tether's heading (in degrees).
+    The angle is computed using the dot product.
     """
-    theta1 = get_theta(robot_id, tether1_id)
+    hx, hy = get_robot_heading(robot_id)
+    tx, ty = get_tether_heading(robot_id, tether1_id)
+    theta1 = math.degrees(math.atan2(hx*ty - hy*tx, hx*tx + hy*ty))
     theta2 = 0
     if tether2_id is not None:
-        theta2 = get_theta(robot_id, tether2_id)
-    sigma = theta1 - theta2
+        tx2, ty2 = get_tether_heading(robot_id, tether2_id)
+        theta2 = math.degrees(math.atan2(hx*ty2 - hy*tx2, hx*tx2 + hy*ty2))
+    
+    if theta1 < 0:
+        theta1 = 360+theta1
 
-    return sigma
+    if theta2 < 0:
+        theta2 = 360+theta2
+
+    if round(theta2, 2) == 0:
+        theta2 = 360
+ 
+    delta = (theta1 - theta2)
+
+    if delta < 0:
+        delta = 360 + delta
+
+    return delta
 
 def smallest_signed_angle_diff(goal_angle, start_angle):
     """
@@ -307,6 +343,12 @@ def normalize_vector(vec):
     if norm == 0:
         return vec
     return vec / norm
+
+def get_magnitude(vector):
+    """
+    Returns the magnitude a two-dimensional vector
+    """
+    return math.sqrt((vector[0]**2) + (vector[1]**2))
 
 def move_robot(robot_id, target_pos, force=10):
     """
@@ -337,6 +379,57 @@ def reached_target_position(robot_id, target_x, target_y):
     """
     return (p.getLinkState(robot_id, 2)[0][0] > target_x - err_pos and p.getLinkState(robot_id, 2)[0][0] < target_x + err_pos) and \
            (p.getLinkState(robot_id, 2)[0][1] > target_y - err_pos and p.getLinkState(robot_id, 2)[0][1] < target_y + err_pos)
+
+def get_delta_vector(robot_id, tether1_id, tether2_id, goal_sig):
+    """
+    Calculates which direction the robot should move in so that it can
+    attempt to reach its delta goal
+    """
+    delta = get_delta(robot_id, tether1_id, tether2_id)
+
+    tether1_heading = get_tether_heading(robot_id, tether1_id)
+    tether2_heading = get_tether_heading(robot_id, tether2_id)
+    unit1 = normalize_vector(tether1_heading)
+    unit2= normalize_vector(tether2_heading)
+    summed_units = [unit1[0]+unit2[0], unit1[1]+unit2[1]]
+    abs_value_of_summed = get_magnitude(summed_units)
+
+    difference = goal_sig - delta
+
+    abs_difference = abs(difference)
+
+    vector = [0,0]
+
+    if (abs_difference > err_delta):
+
+        # as the unit vectors begin to cancel each other out (in 180 degree position), the angle vector will go to zero
+        # not because the goal has been met, but because the unit vectors cancel. To avoid any stalling that the robot
+        # may experience, I push the robot through 180 degree difference if that is not the goal degree difference of the
+        # delta, which I determine from the first conditional in the if-statement below
+        if (abs_difference > 10) and (-0.5 <= (unit1[0]+unit2[0]) <= 0.5) and (-0.5 <= (unit1[1]+unit2[1]) <= 0.5):
+
+            hx, hy = get_robot_heading(robot_id)
+
+            vector = [20*hx, 20*hy]
+    
+            # return vector
+        else:
+            if (delta < 180) and (delta > goal_sig):
+                sign = -1
+            elif (delta < 180) and (delta < goal_sig):
+                sign = 1
+            elif (delta > 180) and (delta < goal_sig):
+                sign = -1
+            else:
+                sign = 1
+
+            coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(abs_value_of_summed)
+
+            vector = [coefficient*summed_units[0], coefficient*summed_units[1]]
+
+        return vector
+    else:
+        return vector
 
 def get_strain_vector(robot_id, tether_id):
     """
@@ -393,21 +486,6 @@ def get_repulsion_vector(sensor_info):
         # do something in the case that we can distinguish between robots, tethers, and obstacles
 
     return v_r
-
-# def get_tether_collision_vertices(tether_id, anchor_radius):
-#     """
-#     Given a specified anchor radius, return a list of valid global vertex positions in which collisions with are valid.
-#     """
-#     n_verts, verts, *_ = p.getMeshData(tether_id, -1, flags=p.MESH_DATA_SIMULATION_MESH) 
-#     segment_length = get_tether_length(tether_id) / (n_verts / 2 - 1) # length of each tether segment
-#     anchor_radius_num_verts = int(anchor_radius // segment_length + 1) # number of vertex pairs within one anchor radius length
-#     lower_idx, upper_idx = (anchor_radius_num_verts * 2, n_verts - anchor_radius_num_verts * 2)
-
-#     valid_verts = []
-#     for i in range(lower_idx, upper_idx + 1):
-#         valid_verts.append(verts[i][:2])
-
-#     return valid_verts
 
 def get_closest_point_distance(robot_id, object_id, object_type):
     """
@@ -540,6 +618,57 @@ def new_position_forward_with_repulsion_strain(robot_id, tether_id, sensor_data)
     print(repulsion_vector, resulting_vector)
     
     return new_position
+
+def new_position_angle_goal(robot_id, tether1_id, tether2_id, goal_delta):
+    """
+    Calculates where the given robot should move in order to get closer to
+    attaining its delta goal.
+    """
+    direction_vector = get_delta_vector(robot_id, tether1_id, tether2_id, goal_delta)
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    # normalized_result = normalize_vector(direction_vector)
+
+    new_position = [curr_x+(0.01)*direction_vector[0], curr_y+(0.01)*direction_vector[1]]
+
+    return new_position
+
+def new_position_strain(robot_id, tether_id):
+    """
+    Determines the new position the robot should move to to maintain its tether's goal strain based on its tether strain.
+    """
+    curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+
+    strain_vector = get_strain_vector(robot_id, tether_id)
+
+    resulting_vector = strain_weight * strain_vector
+    
+    new_position = curr_pos + resulting_vector
+    
+    return new_position
+
+def new_position_gradient_with_angle_strain(robot_id, tether1_id, tether2_id, goal_delta):
+    """
+    This is to calculate the resulting vector of a robot that has two tethers, a goal angle, 
+    and a global gradient.
+    """
+    curr_x = p.getLinkState(robot_id, 2)[0][0]
+    curr_y = p.getLinkState(robot_id, 2)[0][1]
+    strain_vector1 = get_strain_vector(robot_id, tether1_id)
+    strain_vector2 = get_strain_vector(robot_id, tether2_id)
+    tot_strain_vector = [strain_vector1[0]+strain_vector2[0], strain_vector1[1]+strain_vector2[1]]
+    gradient = get_gradient_vector(robot_id)
+
+    direction_vector = get_delta_vector(robot_id, tether1_id, tether2_id, goal_delta)
+
+    resulting_vector = [strain_weight*tot_strain_vector[0]+gradient_weight*gradient[0]+angle_weight*direction_vector[0], 
+                        strain_weight*tot_strain_vector[1]+gradient_weight*gradient[1]+angle_weight*direction_vector[1]]
+    normalized_result = normalize_vector(resulting_vector)
+    
+    
+    position = np.array([curr_x+(0.03)*normalized_result[0], curr_y+(0.03)*normalized_result[1]])
+
+    return position
 
 """UNIT TESTS"""
 
@@ -859,6 +988,147 @@ def maintain_strain_heading_repulsion_test():
             move_robot(robot_red_id, robot_red_pos, force=60)
         p.stepSimulation()
 
+def achieve_goal_angle_test():
+    N = 3
+
+    # set initial object positions
+    # initial_robot_positions = set_straight_line(N, l_0)
+    
+    initial_robot_positions = [[0, 0, height],
+                               [0, 1, height],
+                               [1, 1, height]]
+    # initial_robot_positions = [[1,1,height]]
+    # initial_robot_positions = set_straight_line(N, l_0)
+    
+    # list of x-y current target positions for each agent (starts at their initial positions)
+    target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
+
+    # a list of all of the agent objects created
+    robot_ids = []
+
+    # a list of tether objects
+    tether_ids = []
+
+    # populates the list of robot objects with robot objects
+    for i in range(N):
+        robot_ids.append(make_robot(f"robot{i}", radius, initial_robot_positions[i]))
+
+    # applies friction/damping between robots and the plane
+    for i in range(N):
+        p.changeDynamics(robot_ids[i], -1, linearDamping=mu)
+
+    # populates the list of tether objects with tether objects
+    for i in range(N-1):
+        tether_ids.append(make_tether(f"tether{i}", initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=1))
+
+    # anchors all of the tethers to their respective robots
+    for i in range(N-1):
+        anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
+        
+    runs = 0
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        if runs%100 == 0:
+            # calculate tether angle relative to each robot's heading
+            delta1 = get_delta(robot_ids[1], tether_ids[0], tether_ids[1])
+            # theta2 = get_theta(robot_ids[1], tether_ids[0])
+
+            # display results in the GUI
+            p.addUserDebugText(f"delta = {delta1:.2f} deg \n",
+                                [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+        if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1]):
+            new_pos = new_position_angle_goal(robot_ids[1], tether_ids[0], tether_ids[1], goal_delta)
+            target_pos[1] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[1], np.array(target_pos[1]), force=60)
+
+        if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1]):
+            new_pos = new_position_strain(robot_ids[0], tether_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], np.array(target_pos[0]), force=60)
+
+        if reached_target_position(robot_ids[2], target_pos[2][0], target_pos[2][1]):
+            new_pos = new_position_strain(robot_ids[2], tether_ids[1])
+            target_pos[2] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[2], np.array(target_pos[2]), force=60)
+
+        runs = runs + 1
+
+        p.stepSimulation()
+
+def achieve_goal_angle_with_gradient_strain_test():
+    N = 3
+
+    # set initial object positions
+    # initial_robot_positions = set_straight_line(N, l_0)
+    
+    initial_robot_positions = [[0, 0,height],
+                               [0, 1, height],
+                               [1, 1, height]]
+    # initial_robot_positions = [[1,1,height]]
+    # initial_robot_positions = set_straight_line(N, l_0)
+    
+    # list of x-y current target positions for each agent (starts at their initial positions)
+    target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
+
+    # a list of all of the agent objects created
+    robot_ids = []
+
+    # a list of tether objects
+    tether_ids = []
+
+    # populates the list of robot objects with robot objects
+    for i in range(N):
+        robot_ids.append(make_robot(f"robot{i}", radius, initial_robot_positions[i]))
+
+    # applies friction/damping between robots and the plane
+    for i in range(N):
+        p.changeDynamics(robot_ids[i], -1, linearDamping=mu)
+
+    # populates the list of tether objects with tether objects
+    for i in range(N-1):
+        tether_ids.append(make_tether(f"tether{i}", initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=1))
+
+    # anchors all of the tethers to their respective robots
+    for i in range(N-1):
+        anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
+        
+    runs = 0
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        if runs%100 == 0:
+            # calculate tether angle relative to each robot's heading
+            delta1 = get_delta(robot_ids[1], tether_ids[0], tether_ids[1])
+            # theta2 = get_theta(robot_ids[1], tether_ids[0])
+
+            # display results in the GUI
+            p.addUserDebugText(f"delta = {delta1:.2f} deg \n",
+                                [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+        if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1]):
+            new_pos = new_position_gradient_with_angle_strain(robot_ids[1], tether_ids[0], tether_ids[1], goal_delta)
+            target_pos[1] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[1], np.array(target_pos[1]), force=60)
+
+        if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1]):
+            new_pos = new_position_gradient_with_strain(robot_ids[0], tether_ids[0])
+            target_pos[0] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[0], np.array(target_pos[0]), force=60)
+
+        if reached_target_position(robot_ids[2], target_pos[2][0], target_pos[2][1]):
+            new_pos = new_position_gradient_with_strain(robot_ids[2], tether_ids[1])
+            target_pos[2] = (new_pos[0], new_pos[1])
+            move_robot(robot_ids[2], np.array(target_pos[2]), force=60)
+
+        runs = runs + 1
+
+        p.stepSimulation()
     
 GRAVITYZ = -9.81  # m/s^2
 
@@ -872,8 +1142,10 @@ sensing_radius = radius * 4
 l_0 = 1   # unstretched/taut length of tether in meters
 goal_strain = 0.2
 goal_gradient = [2, 2]
+goal_delta = 90
 
 # vector weights
+angle_weight = 10
 strain_weight = 5
 heading_weight = 4
 gradient_weight = 5
@@ -881,6 +1153,7 @@ repulsion_weight = 5
 
 gradient_target = [2, 2]
 err_pos = 0.01 # positional error tolerance
+err_delta = 5 # delta error tolerance
 
 debugging = False  # set to True to print vertex positions of tether
 
@@ -932,7 +1205,9 @@ def main():
     # maintain_strain_heading_test_2()
     # maintain_strain_gradient_test()
     # maintain_forward_avoid_collision_test()
-    maintain_strain_heading_repulsion_test()
+    # maintain_strain_heading_repulsion_test()
+    achieve_goal_angle_test()
+    achieve_goal_angle_with_gradient_strain_test()
 
 if __name__ == "__main__":
   main()
