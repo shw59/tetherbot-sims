@@ -11,19 +11,19 @@ from tether import Tether
 import utils
 
 class Agent:
-    label = "agent"
     desired_strain = 0.1
-    gradient_source = None
+    gradient_source = [2, 2]
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1] # [strain, heading/gradient, collision avoidance, tether angle]
 
-    def __init__(self, goal_angle, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, position_0, heading_0, radius, goal_delta, tether_m, tether_p=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
-        Initializes an agent object and its position, id, radius, sensing radius, and desired angle attributes.
+        Initializes an agent object and its position and id attributes.
         """
         self.next_position = position_0
+        self.tethers = [tether_m, tether_p]
         self.radius = radius
         self.sensing_radius = radius * 4
-        self.desired_angle = goal_angle
+        self.desired_angle = goal_delta
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -134,13 +134,7 @@ class Agent:
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-    def instantiate_tethers(self, tether_m, tether_p=None):
-        """
-        Instantiate tether object(s) for the agent.
-        """
-        self.tethers = [tether_m, tether_p]
-
-    def get_pose(self):
+    def pose(self):
         """
         Return the current position and heading of the agent as a list [[x, y], [x_heading, y_heading]].
         """
@@ -150,7 +144,7 @@ class Agent:
 
         return [agent_pos, heading]
     
-    def get_tether_heading(self, tether_num=0):
+    def tether_heading(self, tether_num=0):
         """
         Return the current heading of the agent's tether with respect to the agent's center.
         """
@@ -175,7 +169,7 @@ class Agent:
 
         return heading
     
-    def get_theta(self, tether_num=0):
+    def theta(self, tether_num=0):
         """
         Return the angle between the agent's heading and the heading of its tether (in degrees).
         """
@@ -185,7 +179,7 @@ class Agent:
 
         return math.degrees(theta) % 360
     
-    def get_delta(self):
+    def delta(self):
         """
         Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
         """
@@ -204,10 +198,9 @@ class Agent:
         1: Robot senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
         2: Robot can only sense robots and tethers, but not obstacles. 
 
-        The returned list sensor data contains the format (u_r normal vector as numpy array, distance, object type)
+        The object list provided should be a list of tuples in the format (id, [x, y], "tether"/"agent"/"obstacle"). The returned list sensor
+        data contains the format (u_r normal vector as numpy array, distance, object type)
         """
-        from obstacle import Obstacle
-
         # helper function
         def get_closest_point_distance(self, obj_id, obj_type):
             """
@@ -248,12 +241,13 @@ class Agent:
         sensor_data = []
 
         for obj in obj_list:
-            closest_point, dist = get_closest_point_distance(obj.id, obj.label)
-            if obj.id != self.id and dist <= self.sensing_radius:
-                if obj.label == "tether" and dist >= self.radius:
+            obj_id, obj_pos, obj_type = obj
+            closest_point, dist = get_closest_point_distance(obj_id, obj_type)
+            if obj_id != self.id and dist <= self.sensing_radius:
+                if obj_type == "tether" and dist >= self.radius:
                     u_r = utils.normalize_vector(curr_pos - np.array(closest_point))
-                elif obj.label != "tether":
-                    u_r = utils.normalize_vector(curr_pos - np.array(obj.get_pose()))
+                elif obj_type != "tether":
+                    u_r = utils.normalize_vector(curr_pos - np.array(obj_pos))
                 else:
                     continue
 
@@ -261,9 +255,9 @@ class Agent:
                     case 0:
                         sensor_data.append((u_r, dist, "unknown"))
                     case 1:
-                        sensor_data.append((u_r, dist, obj.label))
+                        sensor_data.append((u_r, dist, obj_type))
                     case 2:
-                        if obj.label != "obstacle":
+                        if obj_type != "obstacle":
                             sensor_data.append((u_r, dist, "unknown"))
 
         return sensor_data
@@ -323,7 +317,7 @@ class Agent:
     
     def compute_next_step(self):
         """
-        Calculates and sets the next position the agent should move to based on the resultant weighted vector sum.
+        Calculates and sets the position in which the agent should move next based on the resultant weighted vector sum.
         """
         curr_position = np.array(self.pose()[0])
 
