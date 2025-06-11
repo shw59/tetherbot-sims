@@ -1,8 +1,7 @@
 """
 unit_tests.py
 
-This file defines a PyBullet simulation of two controllable robots connected by a flexible tether.
-It contains small unit tests involving two different-colored agents for clarity.
+This file defines a suite of unit tests in PyBullet with groups of two or three robots tethered together.
 """
 
 import pybullet as p

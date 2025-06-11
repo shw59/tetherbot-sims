@@ -11,3 +11,6 @@ class Obstacle:
 
     def __init__(self, shape, position, orientation, fixed=True):
         pass
+        
+    def get_pose(self):
+        pass

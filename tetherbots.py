@@ -482,6 +482,87 @@ def get_sigma_vector(robot_id, tether1_id, tether2_id, goal_sig):
     #     # print("\n")
 
     #     return vector
+
+def get_repulsion_vector(sensor_info):
+    """
+    Returns the collision avoidance vector as a Gaussian curve given close-range sensor data.
+    """
+    amplitude = 3 * radius
+    std_dev = radius
+    v_r = np.array([0, 0])
+
+    for i in range(len(sensor_info)):
+        u_r, d, obj_type = sensor_info[i]
+        v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r
+        # do something in the case that we can distinguish between robots, tethers, and obstacles
+
+    return v_r
+
+def get_closest_point_distance(robot_id, object_id, object_type):
+    """
+    Returns the closest point and distance from another object (tether, agent, or obstacle) to the agent as a tuple.
+    """
+    curr_pos = p.getLinkState(robot_id, 2)[0][:2]
+    closest_points = []
+    match object_type:
+        case "tether":
+            _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+            closest_point = [float('inf'), float('inf')]
+            nearest_dist = float('inf')
+            for vert in verts:
+                dist = math.dist(curr_pos, vert[:2])
+                if dist < nearest_dist:
+                    nearest_dist = dist
+                    closest_point = vert[:2]
+            return closest_point, nearest_dist
+        case "agent":
+            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
+        case "obstacle":
+            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+    if closest_points:
+        closest_point = closest_points[0][6][:2]
+        nearest_dist = math.dist(curr_pos, closest_point)
+        for point in closest_points:
+            dist = math.dist(curr_pos, point[6][:2])
+            if dist < nearest_dist:
+                nearest_dist = dist
+                closest_point = point[6][:2]
+        return closest_point, nearest_dist
+    return [float('inf'), float('inf')], float('inf')
+
+def robot_sense(robot_id, objects, sensing_mode=0):
+    """
+    Three modes of sensing:
+    0: Robot senses all obstacles, tethers, and robots indistinguishably. Returns list of tuples with unknown type classifications.
+    1: Robot senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
+    2: Robot can only sense robots and tethers, but not obstacles. 
+    The objects list should be a list of tuples in the format (id, [x, y], "tether"/"agent"/"obstacle").
+    Note: The heading vectors in the tuple return are numpy arrays.
+    """
+    curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+    sensor_data = []
+
+    for i in range(len(objects)):
+        obj_id, obj_pos, obj_type = objects[i]
+        closest_point, dist = get_closest_point_distance(robot_id, obj_id, obj_type)
+        if obj_id != robot_id and dist <= sensing_radius:
+            if obj_type == "tether" and dist >= radius:
+                heading_vec_norm = normalize_vector(curr_pos - np.array(closest_point))
+            elif obj_type != "tether":
+                heading_vec_norm = normalize_vector(curr_pos - np.array(obj_pos))
+            else:
+                continue
+
+            match sensing_mode:
+                case 0:
+                    sensor_data.append((heading_vec_norm, dist, "unknown"))
+                case 1:
+                    sensor_data.append((heading_vec_norm, dist, obj_type))
+                case 2:
+                    if obj_type != "obstacle":
+                        sensor_data.append((heading_vec_norm, dist, "unknown"))
+
+    return sensor_data
     
 def new_position_for_sigma_goal(robot_id, tether1_id, tether2_id, goal_sigma):
     """
@@ -548,6 +629,39 @@ def go_home(robot_id, home):
     # new_position = [curr_x + home_vector[0], curr_y + home_vector[1]]
     return home_vector
 
+def new_position_forward_with_repulsion(robot_id, sensor_data):
+    """
+    Determines the new position the robot should move to go forward but avoid obstacles in its sensing radius.
+    """
+    curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+
+    repulsion_vector = get_repulsion_vector(sensor_data)
+    robot_heading = np.array(get_robot_heading(robot_id))
+
+    resulting_vector = repulsion_weight * repulsion_vector + heading_weight * robot_heading
+    
+    new_position = curr_pos + resulting_vector
+    
+    return new_position
+
+def new_position_forward_with_repulsion_strain(robot_id, tether_id, sensor_data):
+    """
+    Determines new position the robot should move to to maintain heading, strain, and also avoid obstacles if necessary.
+    """
+    curr_pos = np.array(p.getLinkState(robot_id, 2)[0][:2])
+
+    strain_vector = get_strain_vector(robot_id, tether_id)
+    repulsion_vector = get_repulsion_vector(sensor_data)
+    robot_heading = np.array(get_robot_heading(robot_id))
+
+    resulting_vector = strain_weight * strain_vector + heading_weight * robot_heading + repulsion_weight * repulsion_vector
+    
+    new_position = curr_pos + resulting_vector
+
+    print(repulsion_vector, resulting_vector)
+    
+    return new_position
+
 def normalize_vector(vec):
     """
     Takes any vector and returns a normalized vector
@@ -598,6 +712,7 @@ l_0 = 1   # unstretched/taut length of tether in meters
 mu = 2.5  # friction coefficient between robots and plane
 height = 0.005 # hieght of robot
 Home = [-1, -1]
+sensing_radius = radius * 4
 
 # tether properties
 goal_strain = 0.1
@@ -605,6 +720,7 @@ strain_weight = 6
 heading_weight = 0
 gradient_weight = 2
 angle_weight = 5
+repulsion_weight = 5
 
 err_pos = 0.01 # positional error tolerance
 err_delta = 5 # delta error tolerance
