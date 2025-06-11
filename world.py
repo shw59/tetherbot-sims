@@ -123,3 +123,4 @@ class World:
             if obj.label == "agent":
                 obj.gradient_source = source_pos
                 break
+            
