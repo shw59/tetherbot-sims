@@ -27,7 +27,7 @@ class Tether:
             a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
             lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-        tether_filename = f"tether.obj"
+        tether_filename = f"objects/tether.obj"
         open(tether_filename, "w").write("\n".join(lines))
 
         self.id = p.loadSoftBody(tether_filename, 

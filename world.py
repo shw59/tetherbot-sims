@@ -15,9 +15,9 @@ from obstacle import Obstacle
 GRAVITYZ = -9.81
 
 class World:
-    def __init__(self, length, width, time_step = 1./240.):
+    def __init__(self, length, width, time_step=1/240):
         """
-        Initialize the simulation world with length and width boundary dimensions that will contain all objects.
+        Initialize the simulation world with length and width boundary dimensions and a time step length for each iteration of the simulation.
         """
         self.obj_list = []
         self.agent_list = []
@@ -116,8 +116,14 @@ class World:
 
         return tether
     
-    def create_obstacle(self):
-        pass
+    def create_obstacle(self, shape, position, heading, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), fixed=True):
+        """
+        Adds an obstacle to the simulation world and returns its object.
+        """
+        obstacle = Obstacle(shape, position, heading, mass, length, width, height, color, fixed)
+        self.obj_list.append(obstacle)
+
+        return obstacle
     
     def set_gradient_source(self, source_pos):
         """

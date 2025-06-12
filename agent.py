@@ -130,10 +130,10 @@ class Agent:
         </robot>
         """
 
-        robot_blue_filename = f"agent.urdf"
-        open(robot_blue_filename, "w").write(urdf_text)
+        filename = f"objects/agent.urdf"
+        open(filename, "w").write(urdf_text)
 
-        self.id = p.loadURDF(robot_blue_filename, position_0)
+        self.id = p.loadURDF(filename, position_0)
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
@@ -249,6 +249,7 @@ class Agent:
                 closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=2)
             elif obj_type == "obstacle":
                 closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
                 nearest_dist = math.dist(curr_pos, closest_point)
@@ -271,7 +272,7 @@ class Agent:
                 if obj.label == "tether" and dist >= self.radius:
                     u_r = utils.normalize(curr_pos - np.array(closest_point))
                 elif obj.label != "tether":
-                    u_r = utils.normalize(curr_pos - np.array(obj.get_pose()))
+                    u_r = utils.normalize(curr_pos - np.array(obj.get_pose()[0]))
                 else:
                     continue
 
@@ -289,7 +290,10 @@ class Agent:
         """
         Calculates the vector direction that the robot should move to achieve the goal strain/tautness.
         """
-        strain_diff = self.tether[tether_num].strain() - Agent.desired_strain
+        if self.tethers[tether_num] is None:
+            return None
+        
+        strain_diff = self.tethers[tether_num].strain() - Agent.desired_strain
 
         if strain_diff > 0:
             sign = 1
@@ -386,41 +390,37 @@ class Agent:
                 else:
                     sign = 1
 
-                coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(magnitude_of_summed_nomralized_headings)
+                coefficient = sign * math.sqrt((abs_difference)/(10 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
-                vector = [coefficient*summed_normalized_tether_headings[0], coefficient*summed_normalized_tether_headings[1]]
+                vector = [coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]]
             
             return vector
         else:
             return vector
-
-
     
-    def compute_next_step(self, cr_sensor_data):
+    def compute_next_step(self, cr_sensor_data=[]):
         """
-        Calculates and sets the next position the agent should move to based on the resultant weighted vector sum.
+        Calculates and sets the next position the agent should move to based on the resultant weighted vector sum and its current close-range sensor data.
         """
         curr_position = np.array(self.pose()[0])
-
-        if self.tethers[1] == None:
-            v_strain = self.compute_vector_strain(0)
-            v_gradient = self.compute_vector_gradient()
-            v_repulsion = self.compute_vector_repulsion(cr_sensor_data)
-
-            resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
         
-            self.next_position = curr_position + resulting_vector
-        
-        else:
+        try: # if agent has one tether instantiated
+            tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
+            v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
+            v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
+            v_angle = np.array([0, 0])
+        except ValueError: # if agent has two tethers instantiated
             v_m_strain = self.compute_vector_strain(0)
             v_p_strain = self.compute_vector_strain(1)
-            v_gradient = self.compute_vector_gradient()
-            v_repulsion = self.compute_vector_repulsion()
             v_angle = self.compute_vector_angle()
 
-            resulting_vector = Agent.strain_weight * ( v_m_strain + v_p_strain ) + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
-            
-            self.next_position = curr_position + resulting_vector
+        v_gradient = self.compute_vector_gradient()
+        v_repulsion = self.compute_vector_repulsion(cr_sensor_data)
+
+        resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
+                           + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+        
+        self.next_position = curr_position + resulting_vector
     
     def move_to(self, target_pos, force=10):
         """
@@ -449,9 +449,8 @@ class Agent:
         """
         Checks to see if the robot's current position is the target position
         """
-
         position = self.get_pose[0]
 
         return ( ( position[0] > self.next_position[0] - Agent.err_pos) and ( position[0] > self.next_position[0] - Agent.err_pos) ) and \
-                ( ( position[1] > self.next_position[1] - Agent.err_pos) and ( position[1] > self.next_position[1] - Agent.err_pos) )
+               ( ( position[1] > self.next_position[1] - Agent.err_pos) and ( position[1] > self.next_position[1] - Agent.err_pos) )
         
