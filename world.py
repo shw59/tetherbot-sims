@@ -101,6 +101,8 @@ class World:
 
         tether = Tether(tether_pos, tether_length_0, orientation, num_segments=10) # create the tether object
         self.obj_list.append(tether)
+        agent_1.instantiate_p_tether(tether)
+        agent_2.instantiate_m_tether(tether)
 
         # anchor the tether to the two agents
         n_verts, _ = tether.get_verts()
