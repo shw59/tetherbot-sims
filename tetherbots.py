@@ -552,14 +552,13 @@ def robot_sense(robot_id, objects, sensing_mode=0):
             else:
                 continue
 
-            match sensing_mode:
-                case 0:
+            if sensing_mode == 0:
+                sensor_data.append((heading_vec_norm, dist, "unknown"))
+            elif sensing_mode == 1:
+                sensor_data.append((heading_vec_norm, dist, obj_type))
+            elif sensing_mode == 2:
+                if obj_type != "obstacle":
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
-                case 1:
-                    sensor_data.append((heading_vec_norm, dist, obj_type))
-                case 2:
-                    if obj_type != "obstacle":
-                        sensor_data.append((heading_vec_norm, dist, "unknown"))
 
     return sensor_data
     

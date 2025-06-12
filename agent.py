@@ -256,14 +256,13 @@ class Agent:
                 else:
                     continue
 
-                match sensing_mode:
-                    case 0:
+                if sensing_mode == 0:
+                    sensor_data.append((u_r, dist, "unknown"))
+                elif sensing_mode == 1:
+                    sensor_data.append((u_r, dist, obj.label))
+                elif sensing_mode == 2:
+                    if obj.label != "obstacle":
                         sensor_data.append((u_r, dist, "unknown"))
-                    case 1:
-                        sensor_data.append((u_r, dist, obj.label))
-                    case 2:
-                        if obj.label != "obstacle":
-                            sensor_data.append((u_r, dist, "unknown"))
 
         return sensor_data
     

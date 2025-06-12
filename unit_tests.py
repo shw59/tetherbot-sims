@@ -540,14 +540,13 @@ def robot_sense(robot_id, objects, sensing_mode=0):
             else:
                 continue
 
-            match sensing_mode:
-                case 0:
+            if sensing_mode == 0:
+                sensor_data.append((heading_vec_norm, dist, "unknown"))
+            elif sensing_mode == 1:
+                sensor_data.append((heading_vec_norm, dist, obj_type))
+            elif sensing_mode == 2:
+                if obj_type != "obstacle":
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
-                case 1:
-                    sensor_data.append((heading_vec_norm, dist, obj_type))
-                case 2:
-                    if obj_type != "obstacle":
-                        sensor_data.append((heading_vec_norm, dist, "unknown"))
 
     return sensor_data
 
@@ -1034,8 +1033,15 @@ def achieve_goal_angle_test():
             delta1 = get_delta(robot_ids[1], tether_ids[0], tether_ids[1])
             # theta2 = get_theta(robot_ids[1], tether_ids[0])
 
+            # calculate tether length and strain on every step
+            l1 = get_tether_length(tether_ids[0])
+            strain1 = (l1 - l_0) / l_0
+            
+            l2 = get_tether_length(tether_ids[1])
+            strain2 = (l2 - l_0) / l_0
+
             # display results in the GUI
-            p.addUserDebugText(f"delta = {delta1:.2f} deg \n",
+            p.addUserDebugText(f"delta = {delta1:.2f} deg \n strain1 = {strain1:.2f} \n strain2 = {strain2:.2f}",
                                 [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1]):
@@ -1104,9 +1110,16 @@ def achieve_goal_angle_with_gradient_strain_test():
             # calculate tether angle relative to each robot's heading
             delta1 = get_delta(robot_ids[1], tether_ids[0], tether_ids[1])
             # theta2 = get_theta(robot_ids[1], tether_ids[0])
+            
+            # calculate tether length and strain on every step
+            l1 = get_tether_length(tether_ids[0])
+            strain1 = (l1 - l_0) / l_0
+            
+            l2 = get_tether_length(tether_ids[1])
+            strain2 = (l2 - l_0) / l_0
 
             # display results in the GUI
-            p.addUserDebugText(f"delta = {delta1:.2f} deg \n",
+            p.addUserDebugText(f"delta = {delta1:.2f} deg \n strain1 = {strain1:.2f} \n strain2 = {strain2:.2f}",
                                 [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1]):
@@ -1139,15 +1152,15 @@ sensing_radius = radius * 4
 
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
-goal_strain = 0.2
+goal_strain = 0.1
 goal_gradient = [2, 2]
 goal_delta = 90
 
 # vector weights
-angle_weight = 10
-strain_weight = 5
-heading_weight = 4
-gradient_weight = 5
+angle_weight = 5
+strain_weight = 6
+heading_weight = 0
+gradient_weight = 2
 repulsion_weight = 5
 
 gradient_target = [2, 2]
