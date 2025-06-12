@@ -20,6 +20,7 @@ class World:
         Initialize the simulation world with length and width boundary dimensions that will contain all objects.
         """
         self.obj_list = []
+        self.agent_list = []
 
         p.connect(p.GUI) # connect to PyBullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # add pybullet_data to search path
@@ -68,6 +69,7 @@ class World:
         """
         agent = Agent(goal_angle, position_0, heading_0, radius, mass, color, height)
         self.obj_list.append(agent)
+        self.agent_list.append(agent)
 
         return agent
     
