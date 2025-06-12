@@ -423,65 +423,6 @@ def get_sigma_vector(robot_id, tether1_id, tether2_id, goal_sig):
     else:
         return vector
 
-    # if abs_difference > err_delta:
-    #     if ((difference <= -10) or (difference >= 10)) and (-0.5 <= (unit1[0]+unit2[0]) <= 0.5) and (-0.5 <= (unit1[1]+unit2[1]) <= 0.5):
-            
-    #         hx, hy = get_robot_heading(robot_id)
-    #         vector = [20*hx, 20*hy]
-    
-    #         return vector
-    #     elif (sigma < 0) and (goal_sig < 0) and (sigma < goal_sig):
-    #         sign = -1
-
-    #         coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(abs_value_of_summed)
-
-    #         vector = [coefficient*summed_units[0], coefficient*summed_units[1]]
-            
-    #         return vector
-    #     else:
-    #         if difference < 0:
-    #             sign = -1
-    #         else:
-    #             sign = 1
-            
-    #         # if (difference >= 0 ) and (difference < 90):
-    #         #     sign = -1*sign
-
-    #         # if (difference <= 0) and (difference > -90):
-    #         #     sign = -1*sign
-
-    #         # if sigma > 180:
-    #         #     sign = -1*sign
-
-    #         # if (90 < sigma < 270):
-    #         #     sign = -1*sign
-    #         # if sigma < difference:
-    #         #     sign = 1
-    #         # else:
-    #         #     sign = 1
-            
-    #         # print(sigma)
-    #         # print(sign)
-
-            
-            
-    #         coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(abs_value_of_summed)
-
-    #         vector = [coefficient*summed_units[0], coefficient*summed_units[1]]
-
-    #         # print("sigma: " + str(sigma))
-    #         # print("difference: " + str(difference))
-    #         # print("vector: " + str(vector))
-    #         # print("\n")
-            
-    #         return vector
-    # else:
-    #     # print("sigma: " + str(sigma))
-    #     # print("difference: " + str(difference))
-    #     # print("vector: " + str(vector))
-    #     # print("\n")
-
-    #     return vector
 
 def get_repulsion_vector(sensor_info):
     """
