@@ -15,3 +15,9 @@ def normalize(vec):
         return vec
     return vec / norm
 
+def magnitude_of_vector(vec):
+    """
+    Returns the magnitude of a 2D vector.
+    """
+    return np.sqrt((vec[0]**2)+(vec[1]**2))
+

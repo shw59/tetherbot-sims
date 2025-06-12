@@ -14,6 +14,8 @@ class Agent:
     label = "agent"
     desired_strain = 0.1
     gradient_source = None
+    err_pos = 0.01
+    err_delta = 5
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1] # [strain, heading/gradient, collision avoidance, tether angle]
 
     def __init__(self, goal_delta, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
@@ -179,21 +181,31 @@ class Agent:
         """
         Return the angle between the agent's heading and the heading of its tether (in degrees).
         """
-        hx, hy = self.pose()[1]
-        tx, ty = self.tether_heading(tether_num)
-        theta = math.atan2(hx*ty - hy*tx, hx*tx + hy*ty)
+        hx, hy = self.get_pose()[1]
+        tx, ty = self.get_tether_heading(tether_num)
+        theta = math.degrees(math.atan2(hx*ty - hy*tx, hx*tx + hy*ty))
+
+        if theta < 0:
+            theta = 360 + theta
+
+        if (tether_num == 1) and (round(theta, 2) == 0):
+            theta = 360
 
         return math.degrees(theta) % 360
     
     def get_delta(self):
         """
         Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
+        The angle is always positive and inbetween 0-360 degrees.
         """
         if self.tethers[1] is None:
             return None
-        theta_m = self.theta(self.tethers[0])
-        theta_p = self.theta(self.tethers[1])
+        theta_m = self.get_theta(self.tethers[0])
+        theta_p = self.get_theta(self.tethers[1])
         delta = theta_m - theta_p
+
+        if delta < 0:
+            delta = 360 + delta
 
         return delta
     
@@ -250,9 +262,9 @@ class Agent:
             closest_point, dist = get_closest_point_distance(obj.id, obj.label)
             if obj.id != self.id and dist <= self.sensing_radius:
                 if obj.label == "tether" and dist >= self.radius:
-                    u_r = utils.normalize_vector(curr_pos - np.array(closest_point))
+                    u_r = utils.normalize(curr_pos - np.array(closest_point))
                 elif obj.label != "tether":
-                    u_r = utils.normalize_vector(curr_pos - np.array(obj.get_pose()))
+                    u_r = utils.normalize(curr_pos - np.array(obj.get_pose()))
                 else:
                     continue
 
@@ -280,7 +292,7 @@ class Agent:
             sign = 0
 
         # The vector from the center of the robot to the point where the tether connects to the robot
-        vector_norm = utils.normalize(np.array(self.tether_heading(tether_num)))
+        vector_norm = utils.normalize(np.array(self.get_tether_heading(tether_num)))
         v_t = sign * (strain_diff ** 2) * vector_norm
 
         return v_t
@@ -293,13 +305,20 @@ class Agent:
         curr_position = self.pose()[0]
         goal_position = Agent.gradient_source
         distance = math.dist(curr_position, goal_position)
+
+        # Makes sure there are no dividing by 0 errors
+        if distance == 0:
+            distance = 1
+
+        # Changes the weights of the gradient vector depending on how far it is from the source
         if distance >= 10 * self.length_0:
             scale = 1
         elif distance >= 2 * self.length_0:
             scale = 0.5
         else:
-            scale = 0.1
+            scale = 0
         
+        # The vector pointing in the direction of the source
         v_g = scale * (1/distance) * (np.array(goal_position) - np.array(curr_position))
 
         return v_g
@@ -319,22 +338,82 @@ class Agent:
 
         return v_r
     
-    def compute_next_step(self):
+    def compute_vector_angle(self):
+        """
+        Computes which direction the robot should move in so that it
+        can attempt to reach its desired delta value
+        """
+        delta = self.get_delta()
+
+        tether_m_heading = self.get_tether_heading(0)
+        tether_p_heading = self.get_tether_heading(1)
+
+        normalized_tether_m_heading = utils.normalize(tether_m_heading)
+        normalized_tether_p_heading = utils.normalize(tether_p_heading)
+
+        summed_normalized_tether_headings = normalized_tether_m_heading + normalized_tether_p_heading
+
+        magnitude_of_summed_nomralized_headings = utils.magnitude_of_vector(summed_normalized_tether_headings)
+
+        difference = self.desired_tether_angle - delta
+
+        abs_difference = abs(difference)
+
+        vector = [0,0]
+
+        if (abs_difference > Agent.err_delta):
+
+            if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
+                heading = self.get_pose()[1]
+
+                vector = [20*heading[0], 20*heading[1]]
+
+            else:
+
+                if (delta < 180) and (delta > self.desired_tether_angle):
+                    sign = -1
+                elif (delta < 180) and (delta < self.desired_tether_angle):
+                    sign = 1
+                elif (delta > 180) and (delta < self.desired_tether_angle):
+                    sign = -1
+                else:
+                    sign = 1
+
+                coefficient = sign*math.sqrt((abs_difference)/(10*math.pi))*(magnitude_of_summed_nomralized_headings)
+
+                vector = [coefficient*summed_normalized_tether_headings[0], coefficient*summed_normalized_tether_headings[1]]
+            
+            return vector
+        else:
+            return vector
+
+
+    
+    def compute_next_step(self, cr_sensor_data):
         """
         Calculates and sets the next position the agent should move to based on the resultant weighted vector sum.
         """
         curr_position = np.array(self.pose()[0])
 
-        v_strain = self.vector_strain()
-        v_gradient = self.vector_gradient()
-        v_repulsion = self.vector_repulsion()
+        if self.tethers[1] == None:
+            v_strain = self.compute_vector_strain(0)
+            v_gradient = self.compute_vector_gradient()
+            v_repulsion = self.compute_vector_repulsion(cr_sensor_data)
 
-        resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
+            resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
         
-        self.next_position = curr_position + resulting_vector
+            self.next_position = curr_position + resulting_vector
+        
+        else:
+            v_m_strain = self.compute_vector_strain(0)
+            v_p_strain = self.compute_vector_strain(1)
+            v_gradient = self.compute_vector_gradient()
+            v_repulsion = self.compute_vector_repulsion()
+            v_angle = self.compute_vector_angle()
 
-    def update(self): # feedback control? idk still need to figure out how this will work in context of the main simulation loop
-        pass
+            resulting_vector = Agent.strain_weight * ( v_m_strain + v_p_strain ) + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+            
+            self.next_position = curr_position + resulting_vector
     
     def move_to(self, target_pos, force=10):
         """
@@ -358,4 +437,14 @@ class Agent:
         joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
         p.setJointMotorControlArray(self.id, joint_indices, p.POSITION_CONTROL,
                                     targetPositions=[x_move, y_move, rotation], forces=[force]*3)
+        
+    def reached_target_position(self):
+        """
+        Checks to see if the robot's current position is the target position
+        """
+
+        position = self.get_pose[0]
+
+        return ( ( position[0] > self.next_position[0] - Agent.err_pos) and ( position[0] > self.next_position[0] - Agent.err_pos) ) and \
+                ( ( position[1] > self.next_position[1] - Agent.err_pos) and ( position[1] > self.next_position[1] - Agent.err_pos) )
         
