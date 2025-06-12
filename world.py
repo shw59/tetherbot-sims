@@ -15,7 +15,7 @@ from obstacle import Obstacle
 GRAVITYZ = -9.81
 
 class World:
-    def __init__(self, length, width):
+    def __init__(self, length, width, time_step = 1./240.):
         """
         Initialize the simulation world with length and width boundary dimensions that will contain all objects.
         """
@@ -28,7 +28,7 @@ class World:
         p.resetSimulation(p.RESET_USE_DEFORMABLE_WORLD)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) # disable side bar windows in the GUI
         p.setGravity(0, 0, GRAVITYZ)
-        p.setTimeStep(1./240.)
+        p.setTimeStep(time_step)
 
         # load plane
         p.loadURDF("plane.urdf")
