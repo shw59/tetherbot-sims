@@ -492,21 +492,20 @@ def get_closest_point_distance(robot_id, object_id, object_type):
     """
     curr_pos = p.getLinkState(robot_id, 2)[0][:2]
     closest_points = []
-    match object_type:
-        case "tether":
-            _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-            closest_point = [float('inf'), float('inf')]
-            nearest_dist = float('inf')
-            for vert in verts:
-                dist = math.dist(curr_pos, vert[:2])
-                if dist < nearest_dist:
-                    nearest_dist = dist
-                    closest_point = vert[:2]
-            return closest_point, nearest_dist
-        case "agent":
-            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
-        case "obstacle":
-            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+    if object_type == "tether":
+        _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        closest_point = [float('inf'), float('inf')]
+        nearest_dist = float('inf')
+        for vert in verts:
+            dist = math.dist(curr_pos, vert[:2])
+            if dist < nearest_dist:
+                nearest_dist = dist
+                closest_point = vert[:2]
+        return closest_point, nearest_dist
+    elif object_type == "agent":
+        closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
+    elif object_type == "obstacle":
+        closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
     if closest_points:
         closest_point = closest_points[0][6][:2]
         nearest_dist = math.dist(curr_pos, closest_point)
@@ -541,14 +540,13 @@ def robot_sense(robot_id, objects, sensing_mode=0):
             else:
                 continue
 
-            match sensing_mode:
-                case 0:
+            if sensing_mode == 0:
+                sensor_data.append((heading_vec_norm, dist, "unknown"))
+            elif sensing_mode == 1:
+                sensor_data.append((heading_vec_norm, dist, obj_type))
+            elif sensing_mode == 2:
+                if obj_type != "obstacle":
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
-                case 1:
-                    sensor_data.append((heading_vec_norm, dist, obj_type))
-                case 2:
-                    if obj_type != "obstacle":
-                        sensor_data.append((heading_vec_norm, dist, "unknown"))
 
     return sensor_data
 
@@ -1035,8 +1033,15 @@ def achieve_goal_angle_test():
             delta1 = get_delta(robot_ids[1], tether_ids[0], tether_ids[1])
             # theta2 = get_theta(robot_ids[1], tether_ids[0])
 
+            # calculate tether length and strain on every step
+            l1 = get_tether_length(tether_ids[0])
+            strain1 = (l1 - l_0) / l_0
+            
+            l2 = get_tether_length(tether_ids[1])
+            strain2 = (l2 - l_0) / l_0
+
             # display results in the GUI
-            p.addUserDebugText(f"delta = {delta1:.2f} deg \n",
+            p.addUserDebugText(f"delta = {delta1:.2f} deg \n strain1 = {strain1:.2f} \n strain2 = {strain2:.2f}",
                                 [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1]):
@@ -1105,9 +1110,16 @@ def achieve_goal_angle_with_gradient_strain_test():
             # calculate tether angle relative to each robot's heading
             delta1 = get_delta(robot_ids[1], tether_ids[0], tether_ids[1])
             # theta2 = get_theta(robot_ids[1], tether_ids[0])
+            
+            # calculate tether length and strain on every step
+            l1 = get_tether_length(tether_ids[0])
+            strain1 = (l1 - l_0) / l_0
+            
+            l2 = get_tether_length(tether_ids[1])
+            strain2 = (l2 - l_0) / l_0
 
             # display results in the GUI
-            p.addUserDebugText(f"delta = {delta1:.2f} deg \n",
+            p.addUserDebugText(f"delta = {delta1:.2f} deg \n strain1 = {strain1:.2f} \n strain2 = {strain2:.2f}",
                                 [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
         if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1]):
@@ -1140,15 +1152,15 @@ sensing_radius = radius * 4
 
 # tether properties
 l_0 = 1   # unstretched/taut length of tether in meters
-goal_strain = 0.2
+goal_strain = 0.1
 goal_gradient = [2, 2]
 goal_delta = 90
 
 # vector weights
-angle_weight = 10
-strain_weight = 5
-heading_weight = 4
-gradient_weight = 5
+angle_weight = 5
+strain_weight = 6
+heading_weight = 0
+gradient_weight = 2
 repulsion_weight = 5
 
 gradient_target = [2, 2]

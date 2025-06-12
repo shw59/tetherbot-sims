@@ -215,22 +215,21 @@ class Agent:
             """
             curr_pos = p.getLinkState(self.id, 2)[0][:2]
             closest_points = []
-            match obj_type:
-                case "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
-                    _, verts, *_ = p.getMeshData(obj_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-                    closest_point = [float('inf'), float('inf')]
-                    nearest_dist = float('inf')
-                    for vert in verts:
-                        dist = math.dist(curr_pos, vert[:2])
-                        if dist < nearest_dist:
-                            nearest_dist = dist
-                            closest_point = vert[:2]
+            if obj_type == "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
+                _, verts, *_ = p.getMeshData(obj_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+                closest_point = [float('inf'), float('inf')]
+                nearest_dist = float('inf')
+                for vert in verts:
+                    dist = math.dist(curr_pos, vert[:2])
+                    if dist < nearest_dist:
+                        nearest_dist = dist
+                        closest_point = vert[:2]
 
-                    return closest_point, nearest_dist
-                case "agent":
-                    closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=2)
-                case "obstacle":
-                    closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+                return closest_point, nearest_dist
+            elif obj_type == "agent":
+                closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=2)
+            elif obj_type == "obstacle":
+                closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=-1)
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
                 nearest_dist = math.dist(curr_pos, closest_point)
@@ -257,14 +256,13 @@ class Agent:
                 else:
                     continue
 
-                match sensing_mode:
-                    case 0:
+                if sensing_mode == 0:
+                    sensor_data.append((u_r, dist, "unknown"))
+                elif sensing_mode == 1:
+                    sensor_data.append((u_r, dist, obj.label))
+                elif sensing_mode == 2:
+                    if obj.label != "obstacle":
                         sensor_data.append((u_r, dist, "unknown"))
-                    case 1:
-                        sensor_data.append((u_r, dist, obj.label))
-                    case 2:
-                        if obj.label != "obstacle":
-                            sensor_data.append((u_r, dist, "unknown"))
 
         return sensor_data
     
@@ -338,7 +336,7 @@ class Agent:
     def update(self): # feedback control? idk still need to figure out how this will work in context of the main simulation loop
         pass
     
-    def move(self, target_pos, force=10):
+    def move_to(self, target_pos, force=10):
         """
         Move the agent from its current position to a specified [x, y] target position in the world. The parameter
         target_pos should be a numpy array.

@@ -504,21 +504,20 @@ def get_closest_point_distance(robot_id, object_id, object_type):
     """
     curr_pos = p.getLinkState(robot_id, 2)[0][:2]
     closest_points = []
-    match object_type:
-        case "tether":
-            _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-            closest_point = [float('inf'), float('inf')]
-            nearest_dist = float('inf')
-            for vert in verts:
-                dist = math.dist(curr_pos, vert[:2])
-                if dist < nearest_dist:
-                    nearest_dist = dist
-                    closest_point = vert[:2]
-            return closest_point, nearest_dist
-        case "agent":
-            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
-        case "obstacle":
-            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+    if object_type == "tether":
+        _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        closest_point = [float('inf'), float('inf')]
+        nearest_dist = float('inf')
+        for vert in verts:
+            dist = math.dist(curr_pos, vert[:2])
+            if dist < nearest_dist:
+                nearest_dist = dist
+                closest_point = vert[:2]
+        return closest_point, nearest_dist
+    elif object_type == "agent":
+        closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
+    elif object_type == "obstacle":
+        closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
     if closest_points:
         closest_point = closest_points[0][6][:2]
         nearest_dist = math.dist(curr_pos, closest_point)
@@ -553,14 +552,13 @@ def robot_sense(robot_id, objects, sensing_mode=0):
             else:
                 continue
 
-            match sensing_mode:
-                case 0:
+            if sensing_mode == 0:
+                sensor_data.append((heading_vec_norm, dist, "unknown"))
+            elif sensing_mode == 1:
+                sensor_data.append((heading_vec_norm, dist, obj_type))
+            elif sensing_mode == 2:
+                if obj_type != "obstacle":
                     sensor_data.append((heading_vec_norm, dist, "unknown"))
-                case 1:
-                    sensor_data.append((heading_vec_norm, dist, obj_type))
-                case 2:
-                    if obj_type != "obstacle":
-                        sensor_data.append((heading_vec_norm, dist, "unknown"))
 
     return sensor_data
     
