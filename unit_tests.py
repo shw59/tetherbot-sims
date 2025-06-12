@@ -492,21 +492,20 @@ def get_closest_point_distance(robot_id, object_id, object_type):
     """
     curr_pos = p.getLinkState(robot_id, 2)[0][:2]
     closest_points = []
-    match object_type:
-        case "tether":
-            _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-            closest_point = [float('inf'), float('inf')]
-            nearest_dist = float('inf')
-            for vert in verts:
-                dist = math.dist(curr_pos, vert[:2])
-                if dist < nearest_dist:
-                    nearest_dist = dist
-                    closest_point = vert[:2]
-            return closest_point, nearest_dist
-        case "agent":
-            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
-        case "obstacle":
-            closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+    if object_type == "tether":
+        _, verts, *_ = p.getMeshData(object_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        closest_point = [float('inf'), float('inf')]
+        nearest_dist = float('inf')
+        for vert in verts:
+            dist = math.dist(curr_pos, vert[:2])
+            if dist < nearest_dist:
+                nearest_dist = dist
+                closest_point = vert[:2]
+        return closest_point, nearest_dist
+    elif object_type == "agent":
+        closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=2)
+    elif object_type == "obstacle":
+        closest_points = p.getClosestPoints(robot_id, object_id, float('inf'), linkIndexA=2, linkIndexB=-1)
     if closest_points:
         closest_point = closest_points[0][6][:2]
         nearest_dist = math.dist(curr_pos, closest_point)
