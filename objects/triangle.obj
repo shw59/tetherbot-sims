@@ -1,0 +1,29 @@
+# triangle.obj
+
+o triangle
+
+# Top vertices (z = 0.5)
+v  0.0       0.5   0.5
+v -0.5      -0.5   0.5
+v  0.5      -0.5   0.5
+
+# Bottom vertices (z = -0.5)
+v  0.0       0.5  -0.5
+v -0.5      -0.5  -0.5
+v  0.5      -0.5  -0.5
+
+# Top face
+f 1 2 3
+
+# Bottom face
+f 6 5 4
+
+# Side faces
+f 1 4 5
+f 1 5 2
+
+f 2 5 6
+f 2 6 3
+
+f 3 6 4
+f 3 4 1
