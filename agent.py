@@ -26,6 +26,7 @@ class Agent:
         self.radius = radius
         self.sensing_radius = radius * 4
         self.desired_tether_angle = goal_delta
+        self.tethers = [None, None]
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -136,11 +137,17 @@ class Agent:
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-    def instantiate_tethers(self, tether_m, tether_p=None):
+    def instantiate_m_tether(self, m_tether):
         """
-        Instantiate tether object(s) for the agent.
+        Instantiates the negative tether for the agent.
         """
-        self.tethers = [tether_m, tether_p]
+        self.tethers[0] = m_tether
+
+    def instantiate_p_tether(self, p_tether):
+        """
+        Instantiate the positive tether for the agent.
+        """
+        self.tethers[1] = p_tether
 
     def get_pose(self):
         """
