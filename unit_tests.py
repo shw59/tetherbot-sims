@@ -1217,12 +1217,6 @@ def all_vectors_test():
 
     cube_id = p.loadURDF("cube.urdf", cube_pos)
     p.createConstraint(cube_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], cube_pos)
-
-    # query list of object ids, positions, and type
-    obj_list = [(robot_ids[i], p.getLinkState(robot_ids[i], 2)[0][:2], "agent") for i in range(3)]
-    obj_list.append((cube_id, cube_pos, "obstacle"))
-    for i in range(2):
-        obj_list.append((tether_ids[i], [0, 0], "tether"))
         
     runs = 0
 
@@ -1245,6 +1239,12 @@ def all_vectors_test():
             # display results in the GUI
             p.addUserDebugText(f"delta = {delta1:.2f} deg \n strain1 = {strain1:.2f} \n strain2 = {strain2:.2f}",
                                 [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
+        # query list of object ids, positions, and type
+        obj_list = [(robot_ids[i], p.getLinkState(robot_ids[i], 2)[0][:2], "agent") for i in range(3)]
+        obj_list.append((cube_id, cube_pos, "obstacle"))
+        for i in range(2):
+            obj_list.append((tether_ids[i], [0, 0], "tether"))
             
         sensor_data = []
         for i in range(3):
@@ -1285,7 +1285,7 @@ goal_gradient = [2, 2]
 goal_delta = 90
 
 # vector weights
-angle_weight = 5
+angle_weight = 0
 strain_weight = 6
 heading_weight = 2
 gradient_weight = 4
