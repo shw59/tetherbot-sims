@@ -15,10 +15,9 @@ class Agent:
     desired_strain = 0.1
     err_pos = 0.01
     err_delta = 5
-    mu = 2.5  # friction coefficient between robots and plane
-    angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1]
+    angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5]
 
-    def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, friction_coeff=2.5):
         """
         Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
@@ -139,7 +138,7 @@ class Agent:
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-        p.changeDynamics(self.id, -1, linearDamping=Agent.mu)
+        p.changeDynamics(self.id, -1, linearDamping=friction_coeff)
     
     def instantiate_m_tether(self, m_tether):
         """
@@ -155,6 +154,10 @@ class Agent:
 
     def set_desired_tether_angle(self, goal_delta):
         self.desired_tether_angle = goal_delta
+
+    @classmethod
+    def set_weights(weight_list):
+        Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
 
     def get_pose(self):
         """
