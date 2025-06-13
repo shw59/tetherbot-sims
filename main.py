@@ -198,7 +198,8 @@ def unit_test_gradient_strain():
                 agent.move_to()
 
         p.stepSimulation()
-
+        
+        
 def main():
     unit_test_gradient_strain()
 
@@ -214,7 +215,6 @@ def main():
                                [1, 1, HEIGHT]]
     
     # Goal angles for each agent
-    goal_angles = [None, 270, None]
     
     # # list of x-y current target positions for each agent (starts at their initial positions)
     # target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
@@ -234,39 +234,39 @@ def main():
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
         
     add_gui_labels()
-
+    
     runs = 0
 
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
-    #     if runs%100 == 0:
-    #         # calculate tether angle relative to each robot's heading
-    #         sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
-    #         # theta2 = get_theta(robot_ids[1], tether_ids[0])
+        # if runs%100 == 0:
+        #     # calculate tether angle relative to each robot's heading
+        #     sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
+        #     # theta2 = get_theta(robot_ids[1], tether_ids[0])
 
-    #         # display results in the GUI
-    #         p.addUserDebugText(f"sigma = {sigma1:.2f} deg \n",
-    #                             [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        #     # display results in the GUI
+        #     p.addUserDebugText(f"sigma = {sigma1:.2f} deg \n",
+        #                         [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
         
 
-    #     # # calculate tether length and strain on every step
-    #     # l = get_tether_length(tether_ids[0])
-    #     # strain = (l - l_0) / l_0
+        # # calculate tether length and strain on every step
+        # l = get_tether_length(tether_ids[0])
+        # strain = (l - l_0) / l_0
 
-    #     # # calculate tether angle relative to each robot's heading
-    #     # sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
-    #     # # theta2 = get_theta(robot_ids[1], tether_ids[0])
+        # # calculate tether angle relative to each robot's heading
+        # sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
+        # # theta2 = get_theta(robot_ids[1], tether_ids[0])
 
-    #     # # calculates the direction the robot should move in to achieve the 
-    #     # # goal delta
-    #     # new_vector = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 270)
+        # # calculates the direction the robot should move in to achieve the 
+        # # goal delta
+        # new_vector = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 270)
 
-    #     # # display results in the GUI
-    #     # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-    #     #                     f"sigma = {sigma1:.2f} deg \n x_comp = {new_vector[0]:.2f} \n y_comp ={new_vector[1]:.2f} \n",
-    #     #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        # # display results in the GUI
+        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
+        #                     f"sigma = {sigma1:.2f} deg \n x_comp = {new_vector[0]:.2f} \n y_comp ={new_vector[1]:.2f} \n",
+        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
 
         my_world.agent_list[0].sense_gradient(my_world.gradient_source)
         my_world.agent_list[0].sense_close_range(my_world.obj_list)
