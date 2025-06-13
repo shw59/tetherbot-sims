@@ -17,8 +17,8 @@ N = 3
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
 GRADIENT_SOURCE = [-3,-3]
-ANGLE_WEIGHT = 1
-STRAIN_WEIGHT = 10
+ANGLE_WEIGHT = 10
+STRAIN_WEIGHT = 0
 GRADIENT_WEIGHT = 0
 REPULSION_WEIGHT = 0
 
@@ -41,8 +41,167 @@ def set_straight_line(n, spacing):
         positions.append(pos)
 
     return positions
+
+def add_gui_labels():
+    p.addUserDebugLine([0, 0, 0], [1, 0, 0], lineColorRGB=[0, 0, 1], lineWidth=10, lifeTime=0)
+    p.addUserDebugLine([0, 0, 0], [0, 1, 0], lineColorRGB=[1, 0, 0], lineWidth=10, lifeTime=0)
+    p.addUserDebugLine([0, 0, 0], [0, 0, 1], lineColorRGB=[.68, .12, .94], lineWidth=10, lifeTime=0)
+    p.addUserDebugText("+x", [1, 0, 0], lifeTime=0, textColorRGB=[0, 0, 0])
+    p.addUserDebugText("+y", [0, 1, 0], lifeTime=0, textColorRGB=[0, 0, 0])
+    p.addUserDebugText("+z", [0, 0, 1], lifeTime=0, textColorRGB=[0, 0, 0])
+
+
+"""UNIT TESTS"""
+
+def unit_test_strain():
+    n = 2
+
+    angle_weight = 0
+    strain_weight = 10
+    gradient_weight = 0
+    repulsion_weight = 0
+
+    my_world = World(20, 20, TIME_STEP)
+
+    Agent.set_weights([angle_weight, strain_weight, gradient_weight, repulsion_weight])
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT]]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS)
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
+
+    add_gui_labels()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        strain = 0
+        for agent in my_world.agent_list:
+            if agent.tethers[0]:
+                strain = agent.tethers[0].get_strain()
+
+        p.addUserDebugText(f"tether strain = {strain:.2f}",
+                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+        for agent in my_world.agent_list:
+            if agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
+
+        p.stepSimulation()
+
+def unit_test_gradient():
+    n = 3
+    gradient_source = [-2, -2]
+
+    angle_weight = 0
+    strain_weight = 0
+    gradient_weight = 20
+    repulsion_weight = 0
+
+    my_world = World(20, 20, TIME_STEP)
+
+    my_world.set_gradient_source(gradient_source)
+
+    Agent.set_weights([angle_weight, strain_weight, gradient_weight, repulsion_weight])
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT],
+                               [1, 1, HEIGHT]]
+    
+    # Goal angles for each agent
+    goal_angles = [None, 270, None]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=10)
+
+    add_gui_labels()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        for agent in my_world.agent_list:
+            agent.sense_gradient(my_world.gradient_source)
+
+        for agent in my_world.agent_list:
+            if agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
+
+        p.stepSimulation()
+
+def unit_test_gradient_strain():
+    n = 2
+    gradient_source = [-2, -2]
+
+    angle_weight = 0
+    strain_weight = 50
+    gradient_weight = 1
+    repulsion_weight = 0
+
+    my_world = World(20, 20, TIME_STEP)
+
+    my_world.set_gradient_source(gradient_source)
+
+    Agent.set_weights([angle_weight, strain_weight, gradient_weight, repulsion_weight])
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT]]
+    
+    # Goal angles for each agent
+    goal_angles = [None, 270, None]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=10)
+
+    add_gui_labels()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        strain = 0
+        for agent in my_world.agent_list:
+            if agent.tethers[0]:
+                strain = agent.tethers[0].get_strain()
+
+        p.addUserDebugText(f"tether strain = {strain:.2f}",
+                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+        for agent in my_world.agent_list:
+            agent.sense_gradient(my_world.gradient_source)
+
+        for agent in my_world.agent_list:
+            if agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
+
+        p.stepSimulation()
+        
         
 def main():
+    unit_test_gradient_strain()
 
     my_world = World(20, 20, TIME_STEP)
 
@@ -56,7 +215,15 @@ def main():
                                [1, 1, HEIGHT]]
     
     # Goal angles for each agent
-    goal_angles = [None, 90, None]
+    
+    # # list of x-y current target positions for each agent (starts at their initial positions)
+    # target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
+
+    # # a list of all of the agent objects created
+    # robot_ids = []
+
+    # # a list of tether objects
+    # tether_ids = []
 
     # populates the list of robot objects with robot objects
     for i in range(N):
@@ -64,8 +231,10 @@ def main():
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):
-        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 10)
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
         
+    add_gui_labels()
+    
     runs = 0
 
     # main simulation loop
