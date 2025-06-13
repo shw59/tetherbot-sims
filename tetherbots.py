@@ -26,7 +26,7 @@ def make_tether(robot1_pos, robot2_pos, length_0, num_segments=10):
         a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
         lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-    tether_filename = f"tether.obj"
+    tether_filename = f"objects/tether.obj"
     open(tether_filename, "w").write("\n".join(lines))
 
     # tether position should be midpoint of the two robots
@@ -192,7 +192,7 @@ def make_robot(radius, position, heading=0, length=.01, mass=1.0, color=(0, 0.5,
     </robot>
     """
     
-    robot_blue_filename = f"robot.urdf"
+    robot_blue_filename = f"objects/robot.urdf"
     open(robot_blue_filename, "w").write(urdf_text)
 
     id = p.loadURDF(robot_blue_filename, position)

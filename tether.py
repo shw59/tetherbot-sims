@@ -8,7 +8,7 @@ import pybullet as p
 import math
 
 class Tether:
-    def __init__(self, position_0, length_0, orientation_0, num_segments=10):
+    def __init__(self, position_0, length_0, orientation_0, num_segments=10, mass=1.0, friction_coeff=0):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
         """
@@ -27,14 +27,14 @@ class Tether:
             a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
             lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
-        tether_filename = f"tether.obj"
+        tether_filename = f"objects/tether.obj"
         open(tether_filename, "w").write("\n".join(lines))
 
         self.id = p.loadSoftBody(tether_filename, 
                                 basePosition = position_0, 
                                 baseOrientation = orientation_0,
                                 scale=1, 
-                                mass=1., 
+                                mass=mass, 
                                 useNeoHookean=0, 
                                 useBendingSprings=1,
                                 useMassSpring=1, 
@@ -42,7 +42,7 @@ class Tether:
                                 springDampingStiffness=.1,
                                 springDampingAllDirections=1, 
                                 useSelfCollision=0, 
-                                frictionCoeff=0, 
+                                frictionCoeff=friction_coeff, 
                                 useFaceContact=1)
         
         p.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)

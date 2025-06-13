@@ -15,12 +15,13 @@ from obstacle import Obstacle
 GRAVITYZ = -9.81
 
 class World:
-    def __init__(self, length, width, time_step = 1./240.):
+    def __init__(self, length, width, time_step=1/240):
         """
-        Initialize the simulation world with length and width boundary dimensions that will contain all objects.
+        Initialize the simulation world with length and width boundary dimensions and a time step length for each iteration of the simulation.
         """
         self.obj_list = []
         self.agent_list = []
+        self.gradient_source = None
 
         p.connect(p.GUI) # connect to PyBullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # add pybullet_data to search path
@@ -63,11 +64,11 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
 
-    def create_agent(self, goal_angle, position_0, heading_0, radius=0.1, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Adds an agent to the simulation world and returns its object.
         """
-        agent = Agent(goal_angle, position_0, heading_0, radius, mass, color, height)
+        agent = Agent(position_0, heading_0, radius, mass, color, height)
         self.obj_list.append(agent)
         self.agent_list.append(agent)
 
@@ -116,19 +117,17 @@ class World:
 
         return tether
     
-    def create_obstacle(self):
-        pass
+    def create_obstacle(self, shape, position, heading, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), fixed=True):
+        """
+        Adds an obstacle to the simulation world and returns its object.
+        """
+        obstacle = Obstacle(shape, position, heading, mass, length, width, height, color, fixed)
+        self.obj_list.append(obstacle)
+
+        return obstacle
     
     def set_gradient_source(self, source_pos):
         """
-        Set a gradient source in the world for agents to gravitate towards.
+        Set a gradient source in the world for agents to gravitate towards. Must have agents instantiated in the world already.
         """
-        for obj in self.obj_list:
-            if obj.label == "agent":
-                obj.gradient_source = source_pos
-                break
-
-    # def reached_target_position(self, index_of_agent):
-    #     if self.agent_list[index_of_agent].reached_target_position():
-    #         return True
-    #     return False
+        self.gradient_source = source_pos
