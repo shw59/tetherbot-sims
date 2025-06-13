@@ -15,6 +15,7 @@ HEIGHT = 0.01
 TIME_STEP = 1./240.
 N = 3
 UNSTRETCHED_TETHER_LENGTH = 1
+RADIUS = 0.1
 
 def set_straight_line(n, spacing):
     """
@@ -60,7 +61,7 @@ def main():
 
     # populates the list of robot objects with robot objects
     for i in range(N):
-        my_world.create_agent(goal_angles[i], initial_robot_positions[i], 0)
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):
@@ -102,11 +103,10 @@ def main():
         
 
         if my_world.agent_list[1].reached_target_position():
-            new_pos = my_world.agent_list[1].compute_next_step()
-            my_world.agent_list[1].set_next_position(new_pos)
+            my_world.agent_list[1].compute_next_step()
             # target_pos[1] = (new_pos[0], new_pos[1])
-            my_world.agent_list[1].move_to( my_world.agent_list[1].next_position)
-            
+            my_world.agent_list[1].move_to()
+
         # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
         #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
         #     target_pos[0] = (new_pos[0], new_pos[1])

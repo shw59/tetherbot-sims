@@ -15,13 +15,14 @@ class Agent:
     desired_strain = 0.1
     err_pos = 0.01
     err_delta = 5
+    mu = 2.5  # friction coefficient between robots and plane
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1]
 
     def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
-        self.next_position = position_0
+        self.next_position = position_0[:2]
         self.radius = radius
         self.sensing_radius = radius * 4
         self.desired_tether_angle = None
@@ -40,7 +41,7 @@ class Agent:
         block_origin_z = height / 2
 
         urdf_text = f"""<?xml version="1.0"?>
-        <agent name="disk">
+        <robot name="disk">
             <link name="world">
                 <inertial>
                     <mass value="0"/>
@@ -128,7 +129,7 @@ class Agent:
                     <material name="block_color"><color rgba="0 0 1 1"/></material>
                 </visual>
             </link>
-        </agent>
+        </robot>
         """
 
         filename = f"objects/agent.urdf"
@@ -139,12 +140,6 @@ class Agent:
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
         p.changeDynamics(self.id, -1, linearDamping=Agent.mu)
-
-    def set_new_position(self, position):
-        """
-        Sets a 2D vector to the next_position property of an agent object.
-        """
-        self.next_position = position
     
     def instantiate_m_tether(self, m_tether):
         """
@@ -217,10 +212,10 @@ class Agent:
         Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
         The angle is always positive and inbetween 0-360 degrees.
         """
-        if self.tethers[1] is None:
+        if (self.tethers[1] is None) or (self.tethers[0] is None):
             return None
-        theta_m = self.get_theta(self.tethers[0])
-        theta_p = self.get_theta(self.tethers[1])
+        theta_m = self.get_theta(0)
+        theta_p = self.get_theta(1)
         delta = theta_m - theta_p
 
         if delta < 0:
@@ -300,12 +295,13 @@ class Agent:
         """
         Returns the unit vector from the agent to the gradient source and its linear distance to the gradient source as a tuple.
         """
-        curr_pos = self.get_pose()[0]
+        if gradient_source_pos != None:
+            curr_pos = self.get_pose()[0]
 
-        u_g = utils.normalize(np.array(gradient_source_pos) - np.array(self.get_pose()[0]))
-        dist = math.dist(curr_pos, gradient_source_pos)
+            u_g = utils.normalize(np.array(gradient_source_pos) - np.array(self.get_pose()[0]))
+            dist = math.dist(curr_pos, gradient_source_pos)
 
-        self.gradient_sensor_data = (u_g, dist)
+            self.gradient_sensor_data = (u_g, dist)
     
     def compute_vector_strain(self, tether_num=0):
         """
@@ -421,7 +417,7 @@ class Agent:
         """
         Calculates and sets the next position the agent should move to based on the resultant weighted vector sum and its current close-range sensor data.
         """
-        curr_position = np.array(self.pose()[0])
+        curr_position = np.array(self.get_pose()[0])
         
         try: # if agent has one tether instantiated
             tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
@@ -433,7 +429,7 @@ class Agent:
             v_p_strain = self.compute_vector_strain(1)
             v_angle = self.compute_vector_angle()
 
-        if self.gradient_source is None:
+        if self.gradient_sensor_data is None:
             v_gradient = np.array([0, 0])
         else:
             v_gradient = self.compute_vector_gradient()
@@ -445,19 +441,19 @@ class Agent:
         
         self.next_position = curr_position + resulting_vector
     
-    def move_to(self, target_pos, force=10):
+    def move_to(self, force=10):
         """
         Move the agent from its current position to a specified [x, y] target position in the world. The parameter
         target_pos should be a numpy array.
         """
         # amount to move (relative to base position)
-        x_move, y_move = target_pos - np.array(p.getBasePositionAndOrientation(self.id)[0][:2])
+        x_move, y_move = self.next_position - np.array(p.getBasePositionAndOrientation(self.id)[0][:2])
 
         # calculate rotation to face direction of movement
         base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
         curr_heading = p.getJointState(self.id, 2)[0]
         
-        desired_h_x, desired_h_y = target_pos - np.array(p.getLinkState(self.id, 2)[0][:2])
+        desired_h_x, desired_h_y = self.next_position - np.array(p.getLinkState(self.id, 2)[0][:2])
         desired_heading = math.atan2(desired_h_y, desired_h_x)
 
         # rotations must be fed into setJointMotorControl function with respect to the base heading, not current heading
