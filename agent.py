@@ -12,9 +12,10 @@ import utils
 
 class Agent:
     label = "agent"
-    desired_strain = 0.1
+    desired_strain = 0.5
     err_pos = 0.01
     err_delta = 5
+    err_strain = 0.05
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5]
 
     def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, friction_coeff=2.5):
@@ -313,11 +314,11 @@ class Agent:
         if self.tethers[tether_num] is None:
             return None
         
-        strain_diff = self.tethers[tether_num].strain() - Agent.desired_strain
+        strain_diff = self.tethers[tether_num].get_strain() - Agent.desired_strain
 
-        if strain_diff > 0:
+        if strain_diff > Agent.err_strain:
             sign = 1
-        elif strain_diff < 0:
+        elif strain_diff < -Agent.err_strain:
             sign = -1
         else:
             sign = 0
@@ -336,11 +337,11 @@ class Agent:
         u_g, distance = self.gradient_sensor_data
 
         # Changes the weights of the gradient vector depending on how far it is from the source
-        if distance >= 10:
+        if distance >= 30 * self.radius:
             scale = 1
-        elif distance >= 5:
+        elif distance >= 10 * self.radius:
             scale = 0.5
-        elif distance >= 2:
+        elif distance >= 5 * self.radius:
             scale = 0.01
         else:
             scale = 0
@@ -448,9 +449,9 @@ class Agent:
                             + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
         
         if utils.magnitude_of_vector(resulting_vector) >= 1:
-            self.next_position = curr_position + 0.01*utils.normalize(resulting_vector)
+            self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
         else:
-            self.next_position = curr_position + 0.01*resulting_vector
+            self.next_position = curr_position + 0.05*resulting_vector
     
     def move_to(self, force=10):
         """

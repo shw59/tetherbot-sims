@@ -49,7 +49,7 @@ class Tether:
         
         p.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
-    def length(self):
+    def get_length(self):
         """
         Return the current length of the tether.
         """
@@ -63,11 +63,11 @@ class Tether:
 
         return length
     
-    def strain(self):
+    def get_strain(self):
         """
         Return the current strain of the tether object based on its current length.
         """
-        return (self.length() - self.length_0) / self.length_0
+        return (self.get_length() - self.length_0) / self.length_0
     
     def get_verts(self):
         """
