@@ -12,7 +12,7 @@ import utils
 
 class Agent:
     label = "agent"
-    desired_strain = 0.5
+    desired_strain = 0.3
     err_pos = 0.01
     err_delta = 5
     err_strain = 0.05
@@ -339,9 +339,9 @@ class Agent:
         # Changes the weights of the gradient vector depending on how far it is from the source
         if distance >= 30 * self.radius:
             scale = 1
-        elif distance >= 10 * self.radius:
+        elif distance >= 20 * self.radius:
             scale = 0.5
-        elif distance >= 5 * self.radius:
+        elif distance >= 15 * self.radius:
             scale = 0.01
         else:
             scale = 0
