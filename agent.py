@@ -13,20 +13,21 @@ import utils
 class Agent:
     label = "agent"
     desired_strain = 0.1
-    gradient_source = None
     err_pos = 0.01
     err_delta = 5
-    angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1] # [strain, heading/gradient, collision avoidance, tether angle]
+    angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1]
 
-    def __init__(self, goal_delta, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Initializes an agent object and its position and id attributes.
         """
         self.next_position = position_0
         self.radius = radius
         self.sensing_radius = radius * 4
-        self.desired_tether_angle = goal_delta
+        self.desired_tether_angle = None
         self.tethers = [None, None]
+        self.cr_sensor_data = []
+        self.gradient_sensor_data = None
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -39,7 +40,7 @@ class Agent:
         block_origin_z = height / 2
 
         urdf_text = f"""<?xml version="1.0"?>
-        <robot name="disk">
+        <agent name="disk">
             <link name="world">
                 <inertial>
                     <mass value="0"/>
@@ -127,7 +128,7 @@ class Agent:
                     <material name="block_color"><color rgba="0 0 1 1"/></material>
                 </visual>
             </link>
-        </robot>
+        </agent>
         """
 
         filename = f"objects/agent.urdf"
@@ -148,6 +149,9 @@ class Agent:
         Instantiate the positive tether for the agent.
         """
         self.tethers[1] = p_tether
+
+    def set_desired_tether_angle(self, goal_delta):
+        self.desired_tether_angle = goal_delta
 
     def get_pose(self):
         """
@@ -216,14 +220,14 @@ class Agent:
 
         return delta
     
-    def robot_sense_close_range(self, obj_list, sensing_mode=0):
+    def sense_close_range(self, obj_list, sensing_mode=0):
         """
         Three modes of close-range sensing:
-        0: Robot senses all obstacles, tethers, and robots indistinguishably. Returns list of tuples with unknown type classifications.
-        1: Robot senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
-        2: Robot can only sense robots and tethers, but not obstacles. 
+        0: agent senses all obstacles, tethers, and agents indistinguishably. Returns list of tuples with unknown type classifications.
+        1: agent senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
+        2: agent can only sense agents and tethers, but not obstacles. 
 
-        The returned list sensor data contains the format (u_r normal vector as numpy array, distance, object type)
+        Updates the instance variable sensor_data list with format: (u_r normal vector as numpy array, distance, object type)
         """
         from obstacle import Obstacle
         
@@ -264,7 +268,7 @@ class Agent:
             return [float('inf'), float('inf')], float('inf')
         
         curr_pos = np.array(p.getLinkState(self.id, 2)[0][:2])
-        sensor_data = []
+        self.sensor_data = []
 
         for obj in obj_list:
             closest_point, dist = get_closest_point_distance(obj.id, obj.label)
@@ -277,18 +281,27 @@ class Agent:
                     continue
 
                 if sensing_mode == 0:
-                    sensor_data.append((u_r, dist, "unknown"))
+                    self.sensor_data.append((u_r, dist, "unknown"))
                 elif sensing_mode == 1:
-                    sensor_data.append((u_r, dist, obj.label))
+                    self.sensor_data.append((u_r, dist, obj.label))
                 elif sensing_mode == 2:
                     if obj.label != "obstacle":
-                        sensor_data.append((u_r, dist, "unknown"))
+                        self.sensor_data.append((u_r, dist, "unknown"))
+    
+    def sense_gradient(self, gradient_source_pos):
+        """
+        Returns the unit vector from the agent to the gradient source and its linear distance to the gradient source as a tuple.
+        """
+        curr_pos = self.get_pose()[0]
 
-        return sensor_data
+        u_g = utils.normalize(np.array(gradient_source_pos) - np.array(self.get_pose()[0]))
+        dist = math.dist(curr_pos, gradient_source_pos)
+
+        self.gradient_sensor_data = (u_g, dist)
     
     def compute_vector_strain(self, tether_num=0):
         """
-        Calculates the vector direction that the robot should move to achieve the goal strain/tautness.
+        Calculates the vector direction that the agent should move to achieve the goal strain/tautness.
         """
         if self.tethers[tether_num] is None:
             return None
@@ -302,7 +315,7 @@ class Agent:
         else:
             sign = 0
 
-        # The vector from the center of the robot to the point where the tether connects to the robot
+        # The vector from the center of the agent to the point where the tether connects to the agent
         vector_norm = utils.normalize(np.array(self.get_tether_heading(tether_num)))
         v_t = sign * (strain_diff ** 2) * vector_norm
 
@@ -313,9 +326,7 @@ class Agent:
         Returns the vector pointing towards the target destination, where the vector's magnitude increases the farther from the
         destination the agent is.
         """
-        curr_position = self.pose()[0]
-        goal_position = Agent.gradient_source
-        distance = math.dist(curr_position, goal_position)
+        u_g, distance = self.gradient_sensor_data
 
         # Makes sure there are no dividing by 0 errors
         if distance == 0:
@@ -330,11 +341,11 @@ class Agent:
             scale = 0
         
         # The vector pointing in the direction of the source
-        v_g = scale * (1/distance) * (np.array(goal_position) - np.array(curr_position))
+        v_g = scale * (1/distance) * u_g
 
         return v_g
     
-    def compute_vector_repulsion(self, cr_sensor_data):
+    def compute_vector_repulsion(self):
         """
         Returns the repulsion vector given close-range sensor data.
         """
@@ -342,8 +353,8 @@ class Agent:
         std_dev = self.radius
         v_r = np.array([0, 0])
 
-        for i in range(len(cr_sensor_data)):
-            u_r, d, obj_type = cr_sensor_data[i]
+        for i in range(len(self.cr_sensor_data)):
+            u_r, d, obj_type = self.cr_sensor_data[i]
             v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r # Gaussian
             # do something here if the obj_type is not "unknown"
 
@@ -351,7 +362,7 @@ class Agent:
     
     def compute_vector_angle(self):
         """
-        Computes which direction the robot should move in so that it
+        Computes which direction the agent should move in so that it
         can attempt to reach its desired delta value
         """
         delta = self.get_delta()
@@ -398,7 +409,7 @@ class Agent:
         else:
             return vector
     
-    def compute_next_step(self, cr_sensor_data=[]):
+    def compute_next_step(self):
         """
         Calculates and sets the next position the agent should move to based on the resultant weighted vector sum and its current close-range sensor data.
         """
@@ -414,8 +425,12 @@ class Agent:
             v_p_strain = self.compute_vector_strain(1)
             v_angle = self.compute_vector_angle()
 
-        v_gradient = self.compute_vector_gradient()
-        v_repulsion = self.compute_vector_repulsion(cr_sensor_data)
+        if self.gradient_source is None:
+            v_gradient = np.array([0, 0])
+        else:
+            v_gradient = self.compute_vector_gradient()
+
+        v_repulsion = self.compute_vector_repulsion()
 
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                            + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
@@ -447,7 +462,7 @@ class Agent:
         
     def reached_target_position(self):
         """
-        Checks to see if the robot's current position is the target position
+        Checks to see if the agent's current position is the target position
         """
         position = self.get_pose[0]
 
