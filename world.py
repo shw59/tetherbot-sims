@@ -21,6 +21,7 @@ class World:
         """
         self.obj_list = []
         self.agent_list = []
+        self.gradient_source = None
 
         p.connect(p.GUI) # connect to PyBullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # add pybullet_data to search path
@@ -63,11 +64,11 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
 
-    def create_agent(self, goal_angle, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Adds an agent to the simulation world and returns its object.
         """
-        agent = Agent(goal_angle, position_0, heading_0, radius, mass, color, height)
+        agent = Agent(position_0, heading_0, radius, mass, color, height)
         self.obj_list.append(agent)
         self.agent_list.append(agent)
 
@@ -127,9 +128,6 @@ class World:
     
     def set_gradient_source(self, source_pos):
         """
-        Set a gradient source in the world for agents to gravitate towards.
+        Set a gradient source in the world for agents to gravitate towards. Must have agents instantiated in the world already.
         """
-        for obj in self.obj_list:
-            if obj.label == "agent":
-                obj.gradient_source = source_pos
-                break
+        self.gradient_source = source_pos
