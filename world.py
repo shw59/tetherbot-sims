@@ -63,7 +63,7 @@ class World:
         create_boundary([0, width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
-
+        
     def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Adds an agent to the simulation world and returns its object.

@@ -8,11 +8,13 @@ import pybullet as p
 import math
 
 class Tether:
+    label = "tether"
     def __init__(self, position_0, length_0, orientation_0, num_segments=10, mass=1.0, friction_coeff=0):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
         """
         self.length_0 = length_0
+
 
         dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
         dx = 0.01  # half the width of the tether
