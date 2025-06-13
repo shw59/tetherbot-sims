@@ -8,23 +8,46 @@ import pybullet as p
 import pybullet_data
 from world import World
 from agent import Agent
+import numpy as np
 
 GRAVITY_Z = -9.81
 HEIGHT = 0.01
 TIME_STEP = 1./240.
+N = 3
+UNSTRETCHED_TETHER_LENGTH = 1
+
+def set_straight_line(n, spacing):
+    """
+    Returns a list of positions that correspond to n robots seperated by "spacing" distance
+    along the x-axis, centered about zero.
+    """
+    positions = []
+    if (n%2 == 0):
+        left = n/2
+        right = n - left
+        y = np.linspace(-left*spacing, right*spacing, n+1)
+    else:
+        left = round(n/2)
+        right = n - left
+        y = np.linspace(-left*spacing, right*spacing, n+1)
+    for i in range(n):
+        pos = [0, y[i], HEIGHT]
+        positions.append(pos)
+
+    return positions
+
 
 def main():
 
     my_world = World(20, 20, TIME_STEP)
 
     # set initial object positions
-    # initial_robot_positions = set_straight_line(N, l_0)
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT],
+                               [1, 1, HEIGHT]]
     
-    # initial_robot_positions = [[0, 0, HEIGHT],
-    #                            [0, 1, HEIGHT],
-    #                            [1, 1, HEIGHT]]
-    # # initial_robot_positions = [[1,1,height]]
-    # # initial_robot_positions = set_straight_line(N, l_0)
+    # Goal angles for each agent
+    goal_angles = [None, 90, None]
     
     # # list of x-y current target positions for each agent (starts at their initial positions)
     # target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
@@ -35,29 +58,20 @@ def main():
     # # a list of tether objects
     # tether_ids = []
 
-    # # populates the list of robot objects with robot objects
-    # for i in range(N):
-    #     robot_ids.append(make_robot(radius, initial_robot_positions[i]))
+    # populates the list of robot objects with robot objects
+    for i in range(N):
+        my_world.create_agent(goal_angles[i], initial_robot_positions[i], 0)
 
-    # # applies friction/damping between robots and the plane
-    # for i in range(N):
-    #     p.changeDynamics(robot_ids[i], -1, linearDamping=mu)
-
-    # # populates the list of tether objects with tether objects
-    # for i in range(N-1):
-    #     tether_ids.append(make_tether(initial_robot_positions[i], initial_robot_positions[i+1], l_0, num_segments=1))
-
-    # # anchors all of the tethers to their respective robots
-    # for i in range(N-1):
-    #     anchor_tether(tether_ids[i], robot_ids[i], robot_ids[i+1])
+    # populates the list of tether objects with tether objects
+    for i in range(N-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
         
-    # runs = 0
+        
+    runs = 0
 
-    # # print(get_sigma(robot_ids[1], tether_ids[0], tether_ids[1]))
-
-    # # main simulation loop
-    # while p.isConnected():
-    #     p.getCameraImage(320,200)
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
 
     #     if runs%100 == 0:
     #         # calculate tether angle relative to each robot's heading
@@ -87,20 +101,21 @@ def main():
     #     #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
         
 
-    #     if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
-    #         new_pos = calculate_new_position(robot_ids[1], tether_ids[0], tether_ids[1], 90)
-    #         target_pos[1] = (new_pos[0], new_pos[1])
-    #         move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
+        if my_world.agent_list[1].reached_target_position():
+            new_pos = my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_position(new_pos)
+            # target_pos[1] = (new_pos[0], new_pos[1])
+            my_world.agent_list[1].move_to( my_world.agent_list[1].next_position)
+            
+        # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
+        #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
+        #     target_pos[0] = (new_pos[0], new_pos[1])
+        #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
 
-    #     if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
-    #         new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
-    #         target_pos[0] = (new_pos[0], new_pos[1])
-    #         move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
-
-    #     if reached_target_position(robot_ids[2], target_pos[2][0], target_pos[2][1], err_pos):
-    #         new_pos = new_position_forward_with_strain_1_tether(robot_ids[2], tether_ids[1])
-    #         target_pos[2] = (new_pos[0], new_pos[1])
-    #         move_robot(robot_ids[2], target_pos[2][0], target_pos[2][1], force=60)
+        # if reached_target_position(robot_ids[2], target_pos[2][0], target_pos[2][1], err_pos):
+        #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[2], tether_ids[1])
+        #     target_pos[2] = (new_pos[0], new_pos[1])
+        #     move_robot(robot_ids[2], target_pos[2][0], target_pos[2][1], force=60)
 
     #     runs = runs + 1
         
@@ -130,7 +145,7 @@ def main():
     #     #     target_pos[0] = (new_pos[0], new_pos[1])
     #     #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
 
-    #     p.stepSimulation()
+        p.stepSimulation()
 
 if __name__ == "__main__":
     main()

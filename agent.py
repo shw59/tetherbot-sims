@@ -19,7 +19,7 @@ class Agent:
 
     def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
-        Initializes an agent object and its position and id attributes.
+        Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
         self.next_position = position_0
         self.radius = radius
@@ -138,6 +138,14 @@ class Agent:
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
+        p.changeDynamics(self.id, -1, linearDamping=Agent.mu)
+
+    def set_new_position(self, position):
+        """
+        Sets a 2D vector to the next_position property of an agent object.
+        """
+        self.next_position = position
+    
     def instantiate_m_tether(self, m_tether):
         """
         Instantiates the negative tether for the agent.
@@ -167,7 +175,7 @@ class Agent:
         """
         Return the current heading of the agent's tether with respect to the agent's center.
         """
-        n_verts, verts, *_ = p.getMeshData(self.tether[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = p.getMeshData(self.tethers[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         # get both end vertices of the tether
         p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(2)]
@@ -464,7 +472,7 @@ class Agent:
         """
         Checks to see if the agent's current position is the target position
         """
-        position = self.get_pose[0]
+        position = self.get_pose()[0]
 
         return ( ( position[0] > self.next_position[0] - Agent.err_pos) and ( position[0] > self.next_position[0] - Agent.err_pos) ) and \
                ( ( position[1] > self.next_position[1] - Agent.err_pos) and ( position[1] > self.next_position[1] - Agent.err_pos) )
