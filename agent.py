@@ -18,7 +18,7 @@ class Agent:
     err_strain = 0.05
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5]
 
-    def __init__(self, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, friction_coeff=2.5):
+    def __init__(self, position_0, heading_0, radius, mass, color, height, friction_coeff):
         """
         Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
@@ -239,14 +239,14 @@ class Agent:
         from obstacle import Obstacle
         
         # helper function
-        def get_closest_point_distance( obj):
+        def get_closest_point_distance(obj):
             """
             Returns the closest global coordinate point and distance as (closest_point, dist) from another object to the agent.
             """
-            curr_pos = p.getLinkState(self.id, 2)[0][:2]
+            curr_pos = self.get_pose()[0]
             closest_points = []
             if obj.label == "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
-                _, verts, *_ = p.getMeshData(obj.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+                verts = obj.get_verts()[1]
                 closest_point = [float('inf'), float('inf')]
                 nearest_dist = float('inf')
                 for vert in verts:
@@ -274,8 +274,8 @@ class Agent:
             
             return [float('inf'), float('inf')], float('inf')
         
-        curr_pos = np.array(p.getLinkState(self.id, 2)[0][:2])
-        self.sensor_data = []
+        curr_pos = np.array(self.get_pose()[0])
+        self.cr_sensor_data = []
 
         for obj in obj_list:
             closest_point, dist = get_closest_point_distance(obj)
@@ -288,12 +288,12 @@ class Agent:
                     continue
 
                 if sensing_mode == 0:
-                    self.sensor_data.append((u_r, dist, "unknown"))
+                    self.cr_sensor_data.append((u_r, dist, "unknown"))
                 elif sensing_mode == 1:
-                    self.sensor_data.append((u_r, dist, obj.label))
+                    self.cr_sensor_data.append((u_r, dist, obj.label))
                 elif sensing_mode == 2:
                     if obj.label != "obstacle":
-                        self.sensor_data.append((u_r, dist, "unknown"))
+                        self.cr_sensor_data.append((u_r, dist, "unknown"))
     
     def sense_gradient(self, gradient_source_pos):
         """

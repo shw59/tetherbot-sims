@@ -10,7 +10,7 @@ import math
 class Obstacle:
     label = "obstacle"
 
-    def __init__(self, shape, position, heading, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), fixed=True):
+    def __init__(self, shape, position, heading, mass, length, width, height, color, fixed):
         """
         Initializes an obstacle with a shape of "hexagon", "cube", or "triangle" at the specified position [x, y] and orientation (in degrees). 
         """
@@ -24,7 +24,7 @@ class Obstacle:
                 <link name="hex_block_link">
                     <contact>
                         <lateral_friction value="0.0"/>
-                        <rolling friction value="0.0"/>
+                        <rolling_friction value="0.0"/>
                     </contact>
                     <visual>
                         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -39,7 +39,7 @@ class Obstacle:
                     <collision>
                         <origin xyz="0 0 0" rpy="0 0 0"/>
                         <geometry>
-                            <mesh filename="hex_block.obj" scale="{length} {width} {height}"/>
+                            <mesh filename="hex.obj" scale="{length} {width} {height}"/>
                         </geometry>
                     </collision>
 
@@ -57,7 +57,7 @@ class Obstacle:
                 <link name="baseLink">
                     <contact>
                         <lateral_friction value="0.0"/>
-                        <rolling friction value="0.0"/>
+                        <rolling_friction value="0.0"/>
                     </contact>
 
                     <inertial>
@@ -91,7 +91,7 @@ class Obstacle:
                 <link name="triangle_block_link">
                     <contact>
                         <lateral_friction value="0.0"/>
-                        <rolling friction value="0.0"/>
+                        <rolling_friction value="0.0"/>
                     </contact>
 
                     <visual>
@@ -123,11 +123,11 @@ class Obstacle:
         filename = f"objects/{shape}.urdf"
         open(filename, "w").write(urdf_text)
 
-        position.append(height / 2)
-        self.id = p.loadURDF(filename, position, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
+        position_3d = position + [height / 2]
+        self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
         if fixed:
-            p.createConstraint(self.id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position)
+            p.createConstraint(self.id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
         
     def get_pose(self):
         """
