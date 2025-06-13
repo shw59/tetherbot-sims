@@ -69,6 +69,7 @@ class World:
         Adds an agent to the simulation world and returns its object.
         """
         agent = Agent(position_0, heading_0, radius, mass, color, height)
+        agent.set_desired_tether_angle(goal_delta)
         self.obj_list.append(agent)
         self.agent_list.append(agent)
 
