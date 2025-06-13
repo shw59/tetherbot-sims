@@ -208,7 +208,7 @@ class Agent:
         if (tether_num == 1) and (round(theta, 2) == 0):
             theta = 360
 
-        return math.degrees(theta) % 360
+        return theta
     
     def get_delta(self):
         """
@@ -386,15 +386,45 @@ class Agent:
 
         abs_difference = abs(difference)
 
-        vector = np.array([0,0])
+        # vector = np.array([0,0])
 
         if (abs_difference > Agent.err_delta):
 
             if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
-                heading = self.get_pose()[1]
+                heading = np.array(self.get_pose()[1])
 
-                vector[0] = 20*heading[0]
-                vector[1] = 20*heading[1]
+                vector = np.array(heading)
+
+                normalized_heading = np.array(utils.normalize(heading))
+                normalized_t_m = np.array(utils.normalize(tether_m_heading))
+                normalized_t_p = np.array(utils.normalize(tether_p_heading))
+
+                # print("heading: " + str(normalized_heading))
+                # print("normalized_t_m: " + str(normalized_t_m))
+                # print("normalized_t_p: " + str(normalized_t_p))
+
+                if (round(normalized_heading[0]) == round(normalized_t_m[0])) and (round(normalized_heading[1]) == round(normalized_t_m[1])):
+                    vector[0] = 20*round(normalized_heading[1])
+                    vector[0] = -20*round(normalized_heading[0])
+                    # print("enter first")
+                    # print("\n")
+                elif (round(normalized_heading[0]) == round(normalized_t_p[0])) and (round(normalized_heading[1]) == round(normalized_t_p[1])):
+                    vector[0] = 20*round(normalized_heading[1])
+                    vector[0] = -20*round(normalized_heading[0])
+                    # print("enter second")
+                    # print("\n")
+                else:
+
+                    vector = np.array(heading)
+
+                    vector[0] = 20*heading[0]
+                    vector[1] = 20*heading[1]
+                # print("Second if")
+                # print("heading: " + str(heading))
+                # print("heading x: " + str(heading[0]))
+                # print("heading y: " + str(heading[1]))
+                # print("vector x: " + str(vector[0]))
+                # print("vector y: " + str(vector[1]))
 
             else:
 
@@ -410,9 +440,19 @@ class Agent:
                 coefficient = sign * math.sqrt((abs_difference)/(10 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
                 vector = np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
+
+            #     print("first else")
             
+            # print(vector)
+            # print("\n")
             return vector
         else:
+            vector = np.array([0,0])
+
+            # print("second else")
+            # print(vector)
+            # print()
+            # print("\n")
             return vector
     
     def compute_next_step(self):
@@ -438,11 +478,11 @@ class Agent:
 
         v_repulsion = self.compute_vector_repulsion()
 
-        print(Agent.strain_weight * (v_m_strain + v_p_strain))
-        print(Agent.gradient_weight * v_gradient)
-        print(Agent.repulsion_weight * v_repulsion)
-        print(Agent.angle_weight * v_angle)
-        print("\n")
+        # print(Agent.strain_weight * (v_m_strain + v_p_strain))
+        # print(Agent.gradient_weight * v_gradient)
+        # print(Agent.repulsion_weight * v_repulsion)
+        # print(Agent.angle_weight * v_angle)
+        # print("\n")
 
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                             + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
