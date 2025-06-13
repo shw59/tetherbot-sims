@@ -16,6 +16,7 @@ TIME_STEP = 1./240.
 N = 3
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
+GRADIENT_SOURCE = [-3,-3]
 
 def set_straight_line(n, spacing):
     """
@@ -41,6 +42,8 @@ def set_straight_line(n, spacing):
 def main():
 
     my_world = World(20, 20, TIME_STEP)
+
+    my_world.set_gradient_source(GRADIENT_SOURCE)
 
     # set initial object positions
     initial_robot_positions = [[0, 0, HEIGHT],
@@ -104,8 +107,15 @@ def main():
 
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].compute_next_step()
-            # target_pos[1] = (new_pos[0], new_pos[1])
             my_world.agent_list[1].move_to()
+
+        if my_world.agent_list[0].reached_target_position():
+            my_world.agent_list[0].compute_next_step()
+            my_world.agent_list[0].move_to()
+
+        if my_world.agent_list[2].reached_target_position():
+            my_world.agent_list[2].compute_next_step()
+            my_world.agent_list[2].move_to()
 
         # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
         #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
