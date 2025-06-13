@@ -28,14 +28,14 @@ def set_straight_line(n, spacing):
     along the x-axis, centered about zero.
     """
     positions = []
-    if (n%2 == 0):
-        left = n/2
+    if (n % 2 == 0):
+        left = n / 2
         right = n - left
-        y = np.linspace(-left*spacing, right*spacing, n+1)
+        y = np.linspace(-left * spacing, right * spacing, n + 1)
     else:
-        left = round(n/2)
+        left = round(n / 2)
         right = n - left
-        y = np.linspace(-left*spacing, right*spacing, n+1)
+        y = np.linspace(-left * spacing, right * spacing, n + 1)
     for i in range(n):
         pos = [0, y[i], HEIGHT]
         positions.append(pos)
@@ -49,8 +49,6 @@ def add_axis_labels():
     p.addUserDebugText("+x", [1, 0, 0], lifeTime=0, textColorRGB=[0, 0, 0])
     p.addUserDebugText("+y", [0, 1, 0], lifeTime=0, textColorRGB=[0, 0, 0])
     p.addUserDebugText("+z", [0, 0, 1], lifeTime=0, textColorRGB=[0, 0, 0])
-
-
 
 # The following tests all relate to the calculation of the angle vector
 
@@ -81,8 +79,6 @@ def test_delta_calculation():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -128,8 +124,6 @@ def test_angle_vector_270_to_90():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -171,8 +165,6 @@ def test_angle_vector_90_to_270():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -214,8 +206,6 @@ def test_angle_vector_90_to_90():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -257,8 +247,6 @@ def test_angle_vector_270_to_270():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -300,8 +288,6 @@ def test_angle_vector_90_to_180():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -343,8 +329,6 @@ def test_angle_vector_270_to_180():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -386,8 +370,6 @@ def test_angle_vector_180_to_270():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -429,8 +411,6 @@ def test_angle_vector_180_to_90():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -472,8 +452,6 @@ def test_angle_vector_180_to_180():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
-        
-    runs = 0
 
     add_axis_labels()
 
@@ -694,38 +672,51 @@ def test_repulsion_gradient():
 
 # Combines the strain and angle vector functionality
 # Successful!
-def unit_test_strain_angle():
+def test_strain_angle():
     n = 3
+
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(GRADIENT_SOURCE)
+
     Agent.set_weights([2, 20, 0, 0]) # angle, strain, gradient, repulsion
+
     # set initial object positions
     initial_robot_positions = [[0, 0, HEIGHT],
                                [0, 1, HEIGHT],
                                [1, 1, HEIGHT]]
+    
     # Goal angles for each agent
     goal_angles = [None, 90, None]
+
     # populates the list of robot objects with robot objects
     for i in range(n):
         my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+
     # populates the list of tether objects with tether objects
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 5)
+
     runs = 0
+
     add_axis_labels()
+
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
-        if runs%200 == 0:
+
+        if runs % 200 == 0:
             strain_m = my_world.agent_list[1].tethers[0].get_strain()
             strain_p = my_world.agent_list[1].tethers[1].get_strain()
             p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
                         [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.compute_next_step()
                 agent.move_to()
+
         runs = runs + 1
+
         p.stepSimulation()
 
 def test_repulsion_gradient_strain():
@@ -783,39 +774,49 @@ def test_repulsion_gradient_strain():
 
         p.stepSimulation()
 
-
 # Combines the gradient and angle vector functionality
-def unit_test_gradient_strain_angle():
+def test_gradient_strain_angle():
     n = 3
     gradient_source = [-2, -2]
+
     my_world = World(20, 20, TIME_STEP)
-    my_world.set_gradient_source(GRADIENT_SOURCE)
     my_world.set_gradient_source(gradient_source)
+
     Agent.set_weights([10, 100, 2, 0]) # angle, strain, gradient, repulsion
+
     # set initial object positions
     initial_robot_positions = [[0, 0, HEIGHT],
                                [0, 1, HEIGHT],
                                [1, 1, HEIGHT]]
+    
     # Goal angles for each agent
     goal_angles = [None, 90, None]
+
     # populates the list of robot objects with robot objects
     for i in range(n):
         my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+
     # populates the list of tether objects with tether objects
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 5)
+    
     runs = 0
+
     add_axis_labels()
+
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
-        if runs%200 == 0:
+
+        if runs % 200 == 0:
             strain_m = my_world.agent_list[1].tethers[0].get_strain()
             strain_p = my_world.agent_list[1].tethers[1].get_strain()
             p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
                         [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
         for agent in my_world.agent_list:
             agent.sense_gradient(my_world.gradient_source)
+
         for agent in my_world.agent_list:
             if runs%5 == 0:
                 agent.compute_next_step()
@@ -823,12 +824,72 @@ def unit_test_gradient_strain_angle():
             if agent.reached_target_position():
                 agent.compute_next_step()
                 agent.move_to()
+
         runs = runs + 1
+
         p.stepSimulation()
         
+def test_all():
+    n = 3
+    gradient_source = [4, 1]
+
+    my_world = World(20, 20, TIME_STEP)
+    my_world.set_gradient_source(gradient_source)
+
+    Agent.set_weights([10, 100, 2, 40]) # angle, strain, gradient, repulsion
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT],
+                               [1, 1, HEIGHT]]
+    
+    # Goal angles for each agent
+    goal_angles = [None, 90, None]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 5)
+
+    # create an obstacle
+    my_world.create_obstacle("hexagon", [2, 0])
+
+    runs = 0
+
+    add_axis_labels()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        if runs % 200 == 0:
+            strain_m = my_world.agent_list[1].tethers[0].get_strain()
+            strain_p = my_world.agent_list[1].tethers[1].get_strain()
+            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
+                        [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
+        for agent in my_world.agent_list:
+            agent.sense_gradient(my_world.gradient_source)
+            agent.sense_close_range(my_world.obj_list)
+
+        for agent in my_world.agent_list:
+            if runs % 5 == 0:
+                agent.compute_next_step()
+                agent.move_to()
+            if agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
+
+        runs = runs + 1
+
+        p.stepSimulation()
   
+
 def main():
-    unit_test_gradient_strain_angle()
+    test_all()
 
 if __name__ == "__main__":
     main()
