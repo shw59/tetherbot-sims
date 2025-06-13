@@ -156,7 +156,7 @@ class Agent:
         self.desired_tether_angle = goal_delta
 
     @classmethod
-    def set_weights(weight_list):
+    def set_weights(cls, weight_list):
         Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
 
     def get_pose(self):
@@ -238,14 +238,14 @@ class Agent:
         from obstacle import Obstacle
         
         # helper function
-        def get_closest_point_distance(self, obj_id, obj_type):
+        def get_closest_point_distance( obj):
             """
             Returns the closest global coordinate point and distance as (closest_point, dist) from another object to the agent.
             """
             curr_pos = p.getLinkState(self.id, 2)[0][:2]
             closest_points = []
-            if obj_type == "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
-                _, verts, *_ = p.getMeshData(obj_id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+            if obj.label == "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
+                _, verts, *_ = p.getMeshData(obj.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
                 closest_point = [float('inf'), float('inf')]
                 nearest_dist = float('inf')
                 for vert in verts:
@@ -255,10 +255,10 @@ class Agent:
                         closest_point = vert[:2]
 
                 return closest_point, nearest_dist
-            elif obj_type == "agent":
-                closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=2)
-            elif obj_type == "obstacle":
-                closest_points = p.getClosestPoints(self.id, obj_id, float('inf'), linkIndexA=2, linkIndexB=-1)
+            elif obj.label == "agent":
+                closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
+            elif obj.label == "obstacle":
+                closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=-1)
 
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
@@ -277,7 +277,7 @@ class Agent:
         self.sensor_data = []
 
         for obj in obj_list:
-            closest_point, dist = get_closest_point_distance(obj.id, obj.label)
+            closest_point, dist = get_closest_point_distance(obj)
             if obj.id != self.id and dist <= self.sensing_radius:
                 if obj.label == "tether" and dist >= self.radius:
                     u_r = utils.normalize(curr_pos - np.array(closest_point))
@@ -298,7 +298,7 @@ class Agent:
         """
         Returns the unit vector from the agent to the gradient source and its linear distance to the gradient source as a tuple.
         """
-        if gradient_source_pos != None:
+        if gradient_source_pos is not None:
             curr_pos = self.get_pose()[0]
 
             u_g = utils.normalize(np.array(gradient_source_pos) - np.array(self.get_pose()[0]))
@@ -335,20 +335,18 @@ class Agent:
         """
         u_g, distance = self.gradient_sensor_data
 
-        # Makes sure there are no dividing by 0 errors
-        if distance == 0:
-            distance = 1
-
         # Changes the weights of the gradient vector depending on how far it is from the source
-        if distance >= 10 * self.length_0:
+        if distance >= 10:
             scale = 1
-        elif distance >= 2 * self.length_0:
+        elif distance >= 5:
             scale = 0.5
+        elif distance >= 2:
+            scale = 0.01
         else:
             scale = 0
         
         # The vector pointing in the direction of the source
-        v_g = scale * (1/distance) * u_g
+        v_g = scale * u_g
 
         return v_g
     
@@ -388,14 +386,15 @@ class Agent:
 
         abs_difference = abs(difference)
 
-        vector = [0,0]
+        vector = np.array([0,0])
 
         if (abs_difference > Agent.err_delta):
 
             if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
                 heading = self.get_pose()[1]
 
-                vector = [20*heading[0], 20*heading[1]]
+                vector[0] = 20*heading[0]
+                vector[1] = 20*heading[1]
 
             else:
 
@@ -410,7 +409,7 @@ class Agent:
 
                 coefficient = sign * math.sqrt((abs_difference)/(10 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
-                vector = [coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]]
+                vector = np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
             
             return vector
         else:
@@ -439,10 +438,19 @@ class Agent:
 
         v_repulsion = self.compute_vector_repulsion()
 
+        print(Agent.strain_weight * (v_m_strain + v_p_strain))
+        print(Agent.gradient_weight * v_gradient)
+        print(Agent.repulsion_weight * v_repulsion)
+        print(Agent.angle_weight * v_angle)
+        print("\n")
+
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
-                           + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+                            + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
         
-        self.next_position = curr_position + resulting_vector
+        if utils.magnitude_of_vector(resulting_vector) >= 1:
+            self.next_position = curr_position + 0.01*utils.normalize(resulting_vector)
+        else:
+            self.next_position = curr_position + 0.01*resulting_vector
     
     def move_to(self, force=10):
         """

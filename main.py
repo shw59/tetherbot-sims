@@ -17,6 +17,10 @@ N = 3
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
 GRADIENT_SOURCE = [-3,-3]
+ANGLE_WEIGHT = 1
+STRAIN_WEIGHT = 10
+GRADIENT_WEIGHT = 0
+REPULSION_WEIGHT = 0
 
 def set_straight_line(n, spacing):
     """
@@ -44,6 +48,8 @@ def main():
     my_world = World(20, 20, TIME_STEP)
 
     my_world.set_gradient_source(GRADIENT_SOURCE)
+
+    Agent.set_weights([ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT])
 
     # set initial object positions
     initial_robot_positions = [[0, 0, HEIGHT],
@@ -103,6 +109,15 @@ def main():
     #     # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
     #     #                     f"sigma = {sigma1:.2f} deg \n x_comp = {new_vector[0]:.2f} \n y_comp ={new_vector[1]:.2f} \n",
     #     #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+        my_world.agent_list[0].sense_gradient(my_world.gradient_source)
+        my_world.agent_list[0].sense_close_range(my_world.obj_list)
+
+        my_world.agent_list[1].sense_gradient(my_world.gradient_source)
+        my_world.agent_list[1].sense_close_range(my_world.obj_list)
+
+        my_world.agent_list[2].sense_gradient(my_world.gradient_source)
+        my_world.agent_list[2].sense_close_range(my_world.obj_list)
         
 
         if my_world.agent_list[1].reached_target_position():
@@ -116,44 +131,6 @@ def main():
         if my_world.agent_list[2].reached_target_position():
             my_world.agent_list[2].compute_next_step()
             my_world.agent_list[2].move_to()
-
-        # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
-        #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
-        #     target_pos[0] = (new_pos[0], new_pos[1])
-        #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
-
-        # if reached_target_position(robot_ids[2], target_pos[2][0], target_pos[2][1], err_pos):
-        #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[2], tether_ids[1])
-        #     target_pos[2] = (new_pos[0], new_pos[1])
-        #     move_robot(robot_ids[2], target_pos[2][0], target_pos[2][1], force=60)
-
-    #     runs = runs + 1
-        
-    #     # if runs == 0:
-    #     #     new_pos = turn_around(robot_ids[0])
-    #     #     target_pos[0] = (new_pos[0], new_pos[1])
-    #     #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
-    #     #     runs = 1
-    #     # elif reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
-    #     #     new_pos = new_position_forward_with_strain_1_tether(robot_ids[0], tether_ids[0])
-    #     #     target_pos[0] = (new_pos[0], new_pos[1])
-    #     #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
-
-
-    #     # if reached_target_position(robot_ids[1], target_pos[1][0], target_pos[1][1], err_pos):
-    #     #     new_pos = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 150)
-    #     #     target_pos[1] = (new_pos[0], new_pos[1])
-    #     #     # print(get_sigma(robot_ids[1], tether_ids[0], tether_ids[1]))
-    #     #     # print("\n")
-    #     #     move_robot(robot_ids[1], target_pos[1][0], target_pos[1][1], force=60)
-
-
-
-
-    #     # if reached_target_position(robot_ids[0], target_pos[0][0], target_pos[0][1], err_pos):
-    #     #     new_pos = go_home(robot_ids[0], [-1,1])
-    #     #     target_pos[0] = (new_pos[0], new_pos[1])
-    #     #     move_robot(robot_ids[0], target_pos[0][0], target_pos[0][1], force=60)
 
         p.stepSimulation()
 
