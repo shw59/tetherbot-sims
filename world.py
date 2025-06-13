@@ -63,7 +63,7 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
 
-    def create_agent(self, goal_angle, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
+    def create_agent(self, goal_angle, position_0, heading_0, radius=0.1, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
         Adds an agent to the simulation world and returns its object.
         """
@@ -81,7 +81,7 @@ class World:
         agent_1_pos = agent_1.get_pose()[0]
         agent_2_pos = agent_2.get_pose()[0]
 
-        tether_x, tether_y = [(agent_1_pos[i] + agent_2_pos[0][i]) / 2 for i in range(2)]
+        tether_x, tether_y = [(agent_1_pos[i] + agent_2_pos[i]) / 2 for i in range(2)]
 
         tether_pos = [tether_x, tether_y, 0]
 
@@ -101,7 +101,7 @@ class World:
 
         orientation = p.getQuaternionFromEuler([0, 0, theta]) # [0, 0,-1*theta]
 
-        tether = Tether(tether_pos, tether_length_0, orientation, num_segments=10) # create the tether object
+        tether = Tether(tether_pos, tether_length_0, orientation, num_segments) # create the tether object
         self.obj_list.append(tether)
         agent_1.instantiate_p_tether(tether)
         agent_2.instantiate_m_tether(tether)
@@ -127,3 +127,8 @@ class World:
             if obj.label == "agent":
                 obj.gradient_source = source_pos
                 break
+
+    # def reached_target_position(self, index_of_agent):
+    #     if self.agent_list[index_of_agent].reached_target_position():
+    #         return True
+    #     return False

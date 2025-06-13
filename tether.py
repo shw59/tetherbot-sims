@@ -45,7 +45,7 @@ class Tether:
                                 frictionCoeff=0, 
                                 useFaceContact=1)
         
-        p.changeVisualShape(id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+        p.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 
     def length(self):
         """

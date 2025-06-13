@@ -16,11 +16,12 @@ class Agent:
     gradient_source = None
     err_pos = 0.01
     err_delta = 5
+    mu = 2.5  # friction coefficient between robots and plane
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [1, 1, 1, 1] # [strain, heading/gradient, collision avoidance, tether angle]
 
     def __init__(self, goal_delta, position_0, heading_0, radius, mass=1.0, color=(0, 0.5, 1, 1), height=0.01):
         """
-        Initializes an agent object and its position and id attributes.
+        Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
         self.next_position = position_0
         self.radius = radius
@@ -137,6 +138,14 @@ class Agent:
 
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
+        p.changeDynamics(self.id, -1, linearDamping=Agent.mu)
+
+    def set_new_position(self, position):
+        """
+        Sets a 2D vector to the next_position property of an agent object.
+        """
+        self.next_position = position
+    
     def instantiate_m_tether(self, m_tether):
         """
         Instantiates the negative tether for the agent.
@@ -163,7 +172,7 @@ class Agent:
         """
         Return the current heading of the agent's tether with respect to the agent's center.
         """
-        n_verts, verts, *_ = p.getMeshData(self.tether[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = p.getMeshData(self.tethers[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         # get both end vertices of the tether
         p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(2)]
@@ -289,7 +298,7 @@ class Agent:
         """
         Calculates the vector direction that the robot should move to achieve the goal strain/tautness.
         """
-        strain_diff = self.tether[tether_num].strain() - Agent.desired_strain
+        strain_diff = self.tethers[tether_num].strain() - Agent.desired_strain
 
         if strain_diff > 0:
             sign = 1
@@ -309,7 +318,7 @@ class Agent:
         Returns the vector pointing towards the target destination, where the vector's magnitude increases the farther from the
         destination the agent is.
         """
-        curr_position = self.pose()[0]
+        curr_position = self.get_pose()[0]
         goal_position = Agent.gradient_source
         distance = math.dist(curr_position, goal_position)
 
@@ -396,31 +405,51 @@ class Agent:
 
 
     
-    def compute_next_step(self, cr_sensor_data):
+    def compute_next_step(self, cr_sensor_data = None):
         """
         Calculates and sets the next position the agent should move to based on the resultant weighted vector sum.
         """
-        curr_position = np.array(self.pose()[0])
+        curr_position = np.array(self.get_pose()[0])
 
-        if self.tethers[1] == None:
-            v_strain = self.compute_vector_strain(0)
-            v_gradient = self.compute_vector_gradient()
-            v_repulsion = self.compute_vector_repulsion(cr_sensor_data)
+        if cr_sensor_data == None:
+            if self.tethers[1] == None:
+                v_strain = self.compute_vector_strain(0)
+                v_gradient = self.compute_vector_gradient()
 
-            resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
-        
-            self.next_position = curr_position + resulting_vector
-        
-        else:
-            v_m_strain = self.compute_vector_strain(0)
-            v_p_strain = self.compute_vector_strain(1)
-            v_gradient = self.compute_vector_gradient()
-            v_repulsion = self.compute_vector_repulsion()
-            v_angle = self.compute_vector_angle()
-
-            resulting_vector = Agent.strain_weight * ( v_m_strain + v_p_strain ) + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+                resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient
             
-            self.next_position = curr_position + resulting_vector
+                self.next_position = curr_position + resulting_vector
+        
+            else:
+                v_m_strain = self.compute_vector_strain(0)
+                v_p_strain = self.compute_vector_strain(1)
+                v_gradient = self.compute_vector_gradient()
+                v_angle = self.compute_vector_angle()
+
+                resulting_vector = Agent.strain_weight * ( v_m_strain + v_p_strain ) + Agent.gradient_weight * v_gradient + Agent.angle_weight * v_angle
+                
+                self.next_position = curr_position + resulting_vector
+
+        else:
+            if self.tethers[1] == None:
+                v_strain = self.compute_vector_strain(0)
+                v_gradient = self.compute_vector_gradient()
+                v_repulsion = self.compute_vector_repulsion(cr_sensor_data)
+
+                resulting_vector = Agent.strain_weight * v_strain + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion
+            
+                self.next_position = curr_position + resulting_vector
+            
+            else:
+                v_m_strain = self.compute_vector_strain(0)
+                v_p_strain = self.compute_vector_strain(1)
+                v_gradient = self.compute_vector_gradient()
+                v_repulsion = self.compute_vector_repulsion()
+                v_angle = self.compute_vector_angle()
+
+                resulting_vector = Agent.strain_weight * ( v_m_strain + v_p_strain ) + Agent.gradient_weight * v_gradient + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+                
+                self.next_position = curr_position + resulting_vector
     
     def move_to(self, target_pos, force=10):
         """
@@ -450,7 +479,7 @@ class Agent:
         Checks to see if the robot's current position is the target position
         """
 
-        position = self.get_pose[0]
+        position = self.get_pose()[0]
 
         return ( ( position[0] > self.next_position[0] - Agent.err_pos) and ( position[0] > self.next_position[0] - Agent.err_pos) ) and \
                 ( ( position[1] > self.next_position[1] - Agent.err_pos) and ( position[1] > self.next_position[1] - Agent.err_pos) )
