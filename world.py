@@ -64,11 +64,11 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         
-    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, friction_coeff=0.0):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, friction_coeff=0.5, max_velocity=100):
         """
         Adds an agent to the simulation world and returns its object.
         """
-        agent = Agent(position_0, heading_0, radius, mass, color, height, friction_coeff)
+        agent = Agent(position_0, heading_0, radius, mass, color, height, friction_coeff, max_velocity)
         agent.set_desired_tether_angle(goal_delta)
         self.obj_list.append(agent)
         self.agent_list.append(agent)
