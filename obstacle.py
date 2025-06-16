@@ -10,7 +10,7 @@ import math
 class Obstacle:
     label = "obstacle"
 
-    def __init__(self, shape, position, heading, mass, length, width, height, color, fixed):
+    def __init__(self, shape, position, heading, mass, length, width, height, color, mu, fixed):
         """
         Initializes an obstacle with a shape of "hexagon", "cube", or "triangle" at the specified position [x, y] and orientation (in degrees). 
         """
@@ -23,8 +23,8 @@ class Obstacle:
             <robot name="hex_block">
                 <link name="hex_block_link">
                     <contact>
-                        <lateral_friction value="0.0"/>
-                        <rolling_friction value="0.0"/>
+                        <lateral_friction value="{mu}"/>
+                        <rolling_friction value="{mu}"/>
                     </contact>
                     <visual>
                         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -56,8 +56,8 @@ class Obstacle:
             <robot name="cube">
                 <link name="baseLink">
                     <contact>
-                        <lateral_friction value="0.0"/>
-                        <rolling_friction value="0.0"/>
+                        <lateral_friction value="{mu}"/>
+                        <rolling_friction value="{mu}"/>
                     </contact>
 
                     <inertial>
@@ -90,8 +90,8 @@ class Obstacle:
             <robot name="triangle_block">
                 <link name="triangle_block_link">
                     <contact>
-                        <lateral_friction value="0.0"/>
-                        <rolling_friction value="0.0"/>
+                        <lateral_friction value="{mu}"/>
+                        <rolling_friction value="{mu}"/>
                     </contact>
 
                     <visual>
@@ -125,6 +125,8 @@ class Obstacle:
 
         position_3d = position + [height / 2]
         self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
+
+
 
         if fixed:
             p.createConstraint(self.id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)

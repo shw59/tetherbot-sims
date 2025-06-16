@@ -828,6 +828,97 @@ def test_gradient_strain_angle():
         runs = runs + 1
 
         p.stepSimulation()
+
+def test_static_friction():
+    n = 3
+    gradient_source = [4, 1]
+
+    my_world = World(20, 20, TIME_STEP)
+    my_world.set_gradient_source(gradient_source)
+
+    Agent.set_weights([10, 100, 2, 40]) # angle, strain, gradient, repulsion
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT],
+                               [1, 1, HEIGHT]]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, mu=0)
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
+
+    runs = 0
+
+    add_axis_labels()
+
+    for agent in my_world.agent_list[1:]:
+        agent.next_position = [5, 5]
+        agent.move_to()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        p.stepSimulation()
+
+def test_moveable_obstacle():
+    n = 3
+    gradient_source = [4, 0]
+
+    my_world = World(20, 20, TIME_STEP)
+    my_world.set_gradient_source(gradient_source)
+
+    Agent.set_weights([10, 100, 2, 40]) # angle, strain, gradient, repulsion
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, HEIGHT],
+                               [0, 1, HEIGHT],
+                               [1, 1, HEIGHT]]
+    
+    # Goal angles for each agent
+    goal_angles = [None, 90, None]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 5)
+
+    # create an obstacle
+    my_world.create_obstacle("hexagon", [2, 0], mu=0.9, fixed=False)
+
+    runs = 0
+
+    add_axis_labels()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        if runs % 200 == 0:
+            strain_m = my_world.agent_list[1].tethers[0].get_strain()
+            strain_p = my_world.agent_list[1].tethers[1].get_strain()
+            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
+                        [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
+        for agent in my_world.agent_list:
+            agent.sense_gradient(my_world.gradient_source)
+            agent.sense_close_range(my_world.obj_list)
+
+        for agent in my_world.agent_list:
+            if runs % 5 == 0 or agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
+
+        runs = runs + 1
+
+        p.stepSimulation()
         
 def test_all():
     n = 3
@@ -889,7 +980,7 @@ def test_all():
   
 
 def main():
-    test_all()
+    test_moveable_obstacle()
 
 if __name__ == "__main__":
     main()
