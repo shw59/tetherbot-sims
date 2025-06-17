@@ -11,7 +11,6 @@ from agent import Agent
 import numpy as np
 import math
 
-GRAVITY_Z = -9.81
 HEIGHT = 0.01
 TIME_STEP = 1./240.
 N = 5
@@ -100,7 +99,7 @@ def main():
 
     # populates the list of robot objects with robot objects
     for i in range(N):
-        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i], height=HEIGHT)
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):

@@ -64,11 +64,11 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         
-    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, mu=0.5, max_velocity=100):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.3, mu_dynamic=0.5, max_velocity=100):
         """
         Adds an agent to the simulation world and returns its object.
         """
-        agent = Agent(position_0, heading_0, radius, mass, color, height, mu, max_velocity)
+        agent = Agent(position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity)
         agent.set_desired_tether_angle(goal_delta)
         self.obj_list.append(agent)
         self.agent_list.append(agent)
@@ -118,11 +118,11 @@ class World:
 
         return tether
     
-    def create_obstacle(self, shape, position, heading=0, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), mu=0.0, fixed=True):
+    def create_obstacle(self, shape, position, heading=0, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), mu_static=0.5, mu_dynamic=0.5, fixed=True):
         """
         Adds an obstacle to the simulation world and returns its object.
         """
-        obstacle = Obstacle(shape, position, heading, mass, length, width, height, color, mu, fixed)
+        obstacle = Obstacle(shape, position, heading, mass, length, width, height, color, mu_static, mu_dynamic, fixed)
         self.obj_list.append(obstacle)
 
         return obstacle

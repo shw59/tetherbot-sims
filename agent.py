@@ -12,13 +12,14 @@ import utils
 
 class Agent:
     label = "agent"
+    joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     desired_strain = 0.3
     err_pos = 0.01
     err_delta = 5
     err_strain = 0.05
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5]
 
-    def __init__(self, position_0, heading_0, radius, mass, color, height, mu, max_velocity):
+    def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity):
         """
         Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
@@ -140,10 +141,14 @@ class Agent:
         # set initial heading
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-        # set friction coefficient and maximum velocities
-        p.changeDynamics(self.id, 0, linearDamping=mu, maxJointVelocity=max_velocity)
-        p.changeDynamics(self.id, 1, linearDamping=mu, maxJointVelocity=max_velocity)
-        p.changeDynamics(self.id, 2, linearDamping=mu, maxJointVelocity=max_velocity)
+        # set dynamic friction coefficient and maximum velocities
+        p.changeDynamics(self.id, 0, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 1, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 2, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
+
+        # # set static friction coefficient
+        force_friction = utils.normal_force(mass) * mu_static
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[force_friction]*3)
     
     def instantiate_m_tether(self, m_tether):
         """
@@ -260,10 +265,8 @@ class Agent:
                         closest_point = vert[:2]
 
                 return closest_point, nearest_dist
-            elif obj.label == "agent":
+            elif obj.label == "agent" or obj.label == "obstacle":
                 closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
-            elif obj.label == "obstacle":
-                closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=-1)
 
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
@@ -497,7 +500,7 @@ class Agent:
         else:
             self.next_position = curr_position + 0.05*resulting_vector
     
-    def move_to(self, force=10):
+    def move_to(self, force=15):
         """
         Move the agent from its current position to a specified [x, y] target position in the world. The parameter
         target_pos should be a numpy array.
@@ -509,15 +512,14 @@ class Agent:
         base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
         curr_heading = p.getJointState(self.id, 2)[0]
         
-        desired_h_x, desired_h_y = self.next_position - np.array(p.getLinkState(self.id, 2)[0][:2])
+        desired_h_x, desired_h_y = self.next_position - np.array(self.get_pose()[0])
         desired_heading = math.atan2(desired_h_y, desired_h_x)
 
         # rotations must be fed into setJointMotorControl function with respect to the base heading, not current heading
         # use smallest signed angle difference and then add the current heading and base heading
         rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
         
-        joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
-        p.setJointMotorControlArray(self.id, joint_indices, p.POSITION_CONTROL,
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.POSITION_CONTROL,
                                     targetPositions=[x_move, y_move, rotation], forces=[force]*3)
         
     def reached_target_position(self):

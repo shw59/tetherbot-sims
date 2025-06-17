@@ -15,7 +15,6 @@ class Tether:
         """
         self.length_0 = length_0
 
-
         dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
         dx = 0.01  # half the width of the tether
         lines = ["o tether"]
@@ -37,7 +36,7 @@ class Tether:
                                 baseOrientation = orientation_0,
                                 scale=1, 
                                 mass=mass, 
-                                useNeoHookean=0, 
+                                useNeoHookean=1, 
                                 useBendingSprings=1,
                                 useMassSpring=1, 
                                 springElasticStiffness=30, 
