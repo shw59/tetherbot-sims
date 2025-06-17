@@ -501,6 +501,8 @@ class Agent:
             self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
         else:
             self.next_position = curr_position + 0.05*resulting_vector
+
+        self.move_to()
     
     def move_to(self, force=15):
         """
