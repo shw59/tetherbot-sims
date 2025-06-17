@@ -19,6 +19,7 @@ class World:
         """
         Initialize the simulation world with length and width boundary dimensions and a time step length for each iteration of the simulation.
         """
+        self.dimensions = [length, width]
         self.obj_list = []
         self.agent_list = []
         self.gradient_source = None
