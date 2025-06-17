@@ -9,11 +9,12 @@ import pybullet_data
 from world import World
 from agent import Agent
 import numpy as np
+import math
 
 GRAVITY_Z = -9.81
 HEIGHT = 0.01
 TIME_STEP = 1./240.
-N = 8
+N = 5
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
 GRADIENT_SOURCE = [0,0]
@@ -37,10 +38,38 @@ def set_straight_line(n, spacing):
         right = n - left
         y = np.linspace(-left*spacing, right*spacing, n+1)
     for i in range(n):
-        pos = [0, y[i], HEIGHT]
+        pos = [0, y[i], 0]
         positions.append(pos)
 
     return positions
+
+def get_starting_positions(l_0, n, angles, left_most_position):
+    """
+    Calculates the starting position based on the list of desired starting angles and the unstretched length
+    of the tether between the agents. "left_most_position" is given as [x, y, z].
+    """
+    the_list = []
+
+    for i in range(n):
+        the_list.append([0])
+
+    the_list[0] = left_most_position
+
+    for i in range(1, n):
+        if angles[i-1] == None:
+            next_position = [the_list[i-1][0], the_list[i-1][1] + 1, the_list[i-1][2]]
+        else:
+            prev_theta = np.degrees(math.atan2(the_list[i-2][1] - the_list[i-1][1], the_list[i-2][0] - the_list[i-1][0]))
+            new_theta = prev_theta + (360-angles[i-1])
+            new_x = the_list[i-1][0] + l_0*np.cos(np.radians(new_theta))
+            new_y = the_list[i-1][1] + l_0*np.sin(np.radians(new_theta))
+            next_position = [new_x, new_y, 0]
+
+        the_list[i] = next_position
+        print(next_position)
+
+
+    return the_list
 
 def add_axis_labels():
     p.addUserDebugLine([0, 0, 0], [1, 0, 0], lineColorRGB=[0, 0, 1], lineWidth=10, lifeTime=0)
@@ -59,8 +88,11 @@ def main():
     Agent.set_weights([ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT])
 
     # set initial object positions
+
+    angles = [None, 90, 270, 315, None]
     
-    initial_robot_positions = set_straight_line(N, UNSTRETCHED_TETHER_LENGTH)
+    # initial_robot_positions = set_straight_line(N, UNSTRETCHED_TETHER_LENGTH)
+    initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, N, angles, [0,-1,0])
     
     # Goal angles for each agent
     goal_angles = [None, 135, 135, 135, 135, 135, 135, None]
@@ -82,17 +114,17 @@ def main():
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        for agent in my_world.agent_list:
-            agent.sense_gradient(my_world.gradient_source)
-            agent.sense_close_range(my_world.obj_list)
+        # for agent in my_world.agent_list:
+        #     agent.sense_gradient(my_world.gradient_source)
+        #     agent.sense_close_range(my_world.obj_list)
 
-        for agent in my_world.agent_list:
-            if runs % 5 == 0:
-                agent.compute_next_step()
-                agent.move_to()
-            if agent.reached_target_position():
-                agent.compute_next_step()
-                agent.move_to()
+        # for agent in my_world.agent_list:
+        #     if runs % 5 == 0:
+        #         agent.compute_next_step()
+        #         agent.move_to()
+        #     if agent.reached_target_position():
+        #         agent.compute_next_step()
+        #         agent.move_to()
         
         p.stepSimulation()
 
