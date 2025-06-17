@@ -10,7 +10,6 @@ from world import World
 from agent import Agent
 import numpy as np
 
-GRAVITY_Z = -9.81
 HEIGHT = 0.01
 TIME_STEP = 1./240.
 N = 8
@@ -37,7 +36,7 @@ def set_straight_line(n, spacing):
         right = n - left
         y = np.linspace(-left*spacing, right*spacing, n+1)
     for i in range(n):
-        pos = [0, y[i], HEIGHT]
+        pos = [0, y[i], 0]
         positions.append(pos)
 
     return positions
@@ -68,7 +67,7 @@ def main():
 
     # populates the list of robot objects with robot objects
     for i in range(N):
-        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i])
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i], height=HEIGHT)
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):

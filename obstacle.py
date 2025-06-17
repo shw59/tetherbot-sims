@@ -6,11 +6,13 @@ This file defines the Obstacle class.
 
 import pybullet as p
 import math
+import utils
 
 class Obstacle:
     label = "obstacle"
+    joint_indices = [1, 0, 2] # [x, y, rotation]
 
-    def __init__(self, shape, position, heading, mass, length, width, height, color, mu, fixed):
+    def __init__(self, shape, position, heading, mass, length, width, height, color, mu_static, mu_dynamic, fixed):
         """
         Initializes an obstacle with a shape of "hexagon", "cube", or "triangle" at the specified position [x, y] and orientation (in degrees). 
         """
@@ -21,11 +23,54 @@ class Obstacle:
         if shape == "hexagon":
             urdf_text = f"""<?xml version="1.0"?>
             <robot name="hex_block">
+                <link name="world">
+                    <inertial>
+                        <mass value="0"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                        <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+                    </inertial>
+                </link>
+
+                <joint name="y_to_world" type="prismatic">
+                    <parent link="world"/>
+                    <child link="y_prismatic"/>
+                    <axis xyz="0 1 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="y_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="x_to_y" type="prismatic">
+                    <parent link="y_prismatic"/>
+                    <child link="x_prismatic"/>
+                    <axis xyz="1 0 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="x_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="hex_to_x" type="continuous">
+                    <parent link="x_prismatic"/>
+                    <child link="hex_block_link"/>
+                    <axis xyz="0 0 1"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
                 <link name="hex_block_link">
-                    <contact>
-                        <lateral_friction value="{mu}"/>
-                        <rolling_friction value="{mu}"/>
-                    </contact>
                     <visual>
                         <origin xyz="0 0 0" rpy="0 0 0"/>
                         <geometry>
@@ -54,12 +99,54 @@ class Obstacle:
         elif shape == "cube":
             urdf_text = f"""<?xml version="1.0" ?>
             <robot name="cube">
-                <link name="baseLink">
-                    <contact>
-                        <lateral_friction value="{mu}"/>
-                        <rolling_friction value="{mu}"/>
-                    </contact>
+                <link name="world">
+                    <inertial>
+                        <mass value="0"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                        <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+                    </inertial>
+                </link>
 
+                <joint name="y_to_world" type="prismatic">
+                    <parent link="world"/>
+                    <child link="y_prismatic"/>
+                    <axis xyz="0 1 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="y_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="x_to_y" type="prismatic">
+                    <parent link="y_prismatic"/>
+                    <child link="x_prismatic"/>
+                    <axis xyz="1 0 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="x_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="cube_to_x" type="continuous">
+                    <parent link="x_prismatic"/>
+                    <child link="baseLink"/>
+                    <axis xyz="0 0 1"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="baseLink">
                     <inertial>
                         <origin rpy="0 0 0" xyz="0 0 0"/>
                         <mass value="{mass}"/>
@@ -88,12 +175,54 @@ class Obstacle:
         elif shape == "triangle":
             urdf_text = f"""<?xml version="1.0"?>
             <robot name="triangle_block">
-                <link name="triangle_block_link">
-                    <contact>
-                        <lateral_friction value="{mu}"/>
-                        <rolling_friction value="{mu}"/>
-                    </contact>
+                <link name="world">
+                    <inertial>
+                        <mass value="0"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                        <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+                    </inertial>
+                </link>
 
+                <joint name="y_to_world" type="prismatic">
+                    <parent link="world"/>
+                    <child link="y_prismatic"/>
+                    <axis xyz="0 1 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="y_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="x_to_y" type="prismatic">
+                    <parent link="y_prismatic"/>
+                    <child link="x_prismatic"/>
+                    <axis xyz="1 0 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="x_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="triangle_to_x" type="continuous">
+                    <parent link="x_prismatic"/>
+                    <child link="triangle_block_link"/>
+                    <axis xyz="0 0 1"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="triangle_block_link">
                     <visual>
                         <origin xyz="0 0 0" rpy="0 0 0"/>
                         <geometry>
@@ -126,10 +255,17 @@ class Obstacle:
         position_3d = position + [height / 2]
         self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
-
-
         if fixed:
             p.createConstraint(self.id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
+        else:
+            # set dynamic friction coefficient
+            p.changeDynamics(self.id, 0, linearDamping=mu_dynamic)
+            p.changeDynamics(self.id, 1, linearDamping=mu_dynamic)
+            p.changeDynamics(self.id, 2, linearDamping=mu_dynamic)
+
+            # set static friction coefficient
+            force_friction = utils.normal_force(mass) * mu_static
+            p.setJointMotorControlArray(self.id, Obstacle.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[force_friction]*3)
         
     def get_pose(self):
         """
