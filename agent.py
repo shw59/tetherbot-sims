@@ -344,17 +344,19 @@ class Agent:
         u_g, distance = self.gradient_sensor_data
 
         # Changes the weights of the gradient vector depending on how far it is from the source
-        if distance >= 1000 * self.radius:
-            scale = 1
-        elif distance >= 800 * self.radius:
-            scale = 0.5
-        elif distance >= 600 * self.radius:
-            scale = 0.01
-        else:
-            scale = 0
+        # if distance >= 1000 * self.radius:
+        #     scale = 1
+        # elif distance >= 800 * self.radius:
+        #     scale = 0.5
+        # elif distance >= 600 * self.radius:
+        #     scale = 0.01
+        # else:
+        #     scale = 0
+
+        scale = len(self.cr_sensor_data) < 3
         
         # The vector pointing in the direction of the source
-        v_g = scale * u_g
+        v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
 
         return v_g
     
@@ -362,7 +364,7 @@ class Agent:
         """
         Returns the repulsion vector given close-range sensor data.
         """
-        amplitude = 3 * self.radius
+        amplitude = 16 * self.radius
         std_dev = self.radius
         v_r = np.array([0, 0])
 
