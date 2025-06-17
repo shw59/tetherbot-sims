@@ -344,17 +344,20 @@ class Agent:
         u_g, distance = self.gradient_sensor_data
 
         # Changes the weights of the gradient vector depending on how far it is from the source
-        if distance >= 1000 * self.radius:
-            scale = 1
-        elif distance >= 800 * self.radius:
-            scale = 0.5
-        elif distance >= 600 * self.radius:
-            scale = 0.01
-        else:
-            scale = 0
+        # if distance >= 1000 * self.radius:
+        #     scale = 1
+        # elif distance >= 800 * self.radius:
+        #     scale = 0.5
+        # elif distance >= 600 * self.radius:
+        #     scale = 0.01
+        # else:
+        #     scale = 0
         
         # The vector pointing in the direction of the source
-        v_g = scale * u_g
+        # v_g = scale * u_g
+        scale = len(self.cr_sensor_data) < 3
+
+        v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
 
         return v_g
     
@@ -499,6 +502,8 @@ class Agent:
             self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
         else:
             self.next_position = curr_position + 0.05*resulting_vector
+
+        self.move_to()
     
     def move_to(self, force=15):
         """
