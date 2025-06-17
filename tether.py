@@ -9,7 +9,7 @@ import math
 
 class Tether:
     label = "tether"
-    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, friction_coeff):
+    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, mu):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
         """
@@ -44,7 +44,7 @@ class Tether:
                                 springDampingStiffness=.1,
                                 springDampingAllDirections=1, 
                                 useSelfCollision=0, 
-                                frictionCoeff=friction_coeff, 
+                                frictionCoeff=mu, 
                                 useFaceContact=1)
         
         p.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)

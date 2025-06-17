@@ -42,7 +42,7 @@ def set_straight_line(n, spacing):
 
     return positions
 
-def add_gui_labels():
+def add_axis_labels():
     p.addUserDebugLine([0, 0, 0], [1, 0, 0], lineColorRGB=[0, 0, 1], lineWidth=10, lifeTime=0)
     p.addUserDebugLine([0, 0, 0], [0, 1, 0], lineColorRGB=[1, 0, 0], lineWidth=10, lifeTime=0)
     p.addUserDebugLine([0, 0, 0], [0, 0, 1], lineColorRGB=[.68, .12, .94], lineWidth=10, lifeTime=0)
@@ -82,7 +82,7 @@ def main():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
         
-    add_gui_labels()
+    add_axis_labels()
     
     runs = 0
 

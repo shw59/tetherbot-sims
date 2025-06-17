@@ -64,18 +64,18 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         
-    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, friction_coeff=0.0):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, mu=0.5, max_velocity=100):
         """
         Adds an agent to the simulation world and returns its object.
         """
-        agent = Agent(position_0, heading_0, radius, mass, color, height, friction_coeff)
+        agent = Agent(position_0, heading_0, radius, mass, color, height, mu, max_velocity)
         agent.set_desired_tether_angle(goal_delta)
         self.obj_list.append(agent)
         self.agent_list.append(agent)
 
         return agent
     
-    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, num_segments=10, mass=1.0, friction_coeff=0.0):
+    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, num_segments=10, mass=1.0, mu=0.0):
         """
         Creates and anchors a tether between two specified agent objects, returns the tether object.
         """
@@ -103,7 +103,7 @@ class World:
 
         orientation = p.getQuaternionFromEuler([0, 0, theta]) # [0, 0,-1*theta]
 
-        tether = Tether(tether_pos, tether_length_0, orientation, num_segments, mass, friction_coeff) # create the tether object
+        tether = Tether(tether_pos, tether_length_0, orientation, num_segments, mass, mu) # create the tether object
         self.obj_list.append(tether)
         agent_1.instantiate_p_tether(tether)
         agent_2.instantiate_m_tether(tether)
@@ -118,11 +118,11 @@ class World:
 
         return tether
     
-    def create_obstacle(self, shape, position, heading=0, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), fixed=True):
+    def create_obstacle(self, shape, position, heading=0, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), mu=0.0, fixed=True):
         """
         Adds an obstacle to the simulation world and returns its object.
         """
-        obstacle = Obstacle(shape, position, heading, mass, length, width, height, color, fixed)
+        obstacle = Obstacle(shape, position, heading, mass, length, width, height, color, mu, fixed)
         self.obj_list.append(obstacle)
 
         return obstacle

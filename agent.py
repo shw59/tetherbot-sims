@@ -18,7 +18,7 @@ class Agent:
     err_strain = 0.05
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5]
 
-    def __init__(self, position_0, heading_0, radius, mass, color, height, friction_coeff):
+    def __init__(self, position_0, heading_0, radius, mass, color, height, mu, max_velocity):
         """
         Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
         """
@@ -137,9 +137,13 @@ class Agent:
 
         self.id = p.loadURDF(filename, position_0)
 
+        # set initial heading
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-        p.changeDynamics(self.id, -1, linearDamping=friction_coeff)
+        # set friction coefficient and maximum velocities
+        p.changeDynamics(self.id, 0, linearDamping=mu, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 1, linearDamping=mu, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 2, linearDamping=mu, maxJointVelocity=max_velocity)
     
     def instantiate_m_tether(self, m_tether):
         """
