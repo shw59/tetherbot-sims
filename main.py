@@ -10,37 +10,24 @@ from world import World
 from agent import Agent
 import numpy as np
 import math
+import random
 
 HEIGHT = 0.01
 TIME_STEP = 1./240.
-N = 60
+N = 5
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
-GRADIENT_SOURCE = [0,0]
-ANGLE_WEIGHT = 2
+GRADIENT_SOURCE = [0, 0]
+# ANGLE_WEIGHT = 2
+# STRAIN_WEIGHT = 100
+# GRADIENT_WEIGHT = 2
+# REPULSION_WEIGHT = 4
+ANGLE_WEIGHT = 0
 STRAIN_WEIGHT = 100
-GRADIENT_WEIGHT = 2
+GRADIENT_WEIGHT = 50
 REPULSION_WEIGHT = 4
-
-def set_straight_line(n, spacing):
-    """
-    Returns a list of positions that correspond to n robots seperated by "spacing" distance
-    along the x-axis, centered about zero.
-    """
-    positions = []
-    if (n%2 == 0):
-        left = n/2
-        right = n - left
-        y = np.linspace(-left*spacing, right*spacing, n+1)
-    else:
-        left = round(n/2)
-        right = n - left
-        y = np.linspace(-left*spacing, right*spacing, n+1)
-    for i in range(n):
-        pos = [0, y[i], 0]
-        positions.append(pos)
-
-    return positions
+PERIOD_BETWEEN_SENSING = 5 # The number of while loop iterations that should run before a singular, random
+                           # agent updates its goal position
 
 def get_starting_positions(l_0, n, angles, left_most_position):
     """
@@ -56,7 +43,7 @@ def get_starting_positions(l_0, n, angles, left_most_position):
 
     for i in range(1, n):
         if angles[i-1] == None:
-            next_position = [the_list[i-1][0], the_list[i-1][1] + 1, the_list[i-1][2]]
+            next_position = [the_list[i-1][0] + 1, the_list[i-1][1], the_list[i-1][2]]
         else:
             prev_theta = np.degrees(math.atan2(the_list[i-2][1] - the_list[i-1][1], the_list[i-2][0] - the_list[i-1][0]))
             new_theta = prev_theta + (360-angles[i-1])
@@ -65,7 +52,6 @@ def get_starting_positions(l_0, n, angles, left_most_position):
             next_position = [new_x, new_y, 0]
 
         the_list[i] = next_position
-
 
     return the_list
 
@@ -79,7 +65,7 @@ def add_axis_labels():
         
 def main():
 
-    my_world = World(200, 200, TIME_STEP)
+    my_world = World(20, 40, TIME_STEP)
 
     my_world.set_gradient_source(GRADIENT_SOURCE)
 
@@ -87,18 +73,15 @@ def main():
 
     # set initial object positions
 
-    angles = [None, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
-              180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
-              180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
-              180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, None]
+    angles = [None, 180, 180, 180, None]
     
-    initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, N, angles, [0,-30,0])
+    initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, N, angles, [-7,-19,0])
     
     # Goal angles for each agent
-    goal_angles = [None, 180, 180, 180, 180, 180, 180, 180, 180, 180, 225, 180, 180, 225, 180, 180, 180, 180, 
-                   225, 180, 180, 225, 180, 270, 180, 180, 270, 90, 180, 180, 90,
-                   180, 180, 180, 180, 180, 180, 180, 180, 90, 180, 180, 90, 
-                   270, 180, 180, 270, 180, 225, 180, 180, 225, 180, 180, 180, 180, 225, 180, 180, None]
+    goal_angles = [None, 180, 180, 180, None]
+    
+    # initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, N, goal_angles, [0,-1,0])
+
     
 
     # populates the list of robot objects with robot objects
@@ -108,26 +91,51 @@ def main():
     # populates the list of tether objects with tether objects
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 2)
+
+    number_of_fixed_obstacles = 0
+
+    for i in range(number_of_fixed_obstacles):
+        x = random.uniform(-9,9)
+        y = random.uniform(-15, 15)
+        sizes = random.uniform(0.1,1)
+        my_world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(1, 0, 1, 1), fixed=True)
+
+    number_of_non_fixed_obstacles = 20
+
+    for i in range(number_of_non_fixed_obstacles):
+        x = random.uniform(-9,9)
+        y = random.uniform(-15, 15)
+        size = random.uniform(0.1,1)
+        my_world.create_obstacle("hexagon", [x, y], length=size, width=size, color=(0, 1, 0, 1), fixed=False)
+
         
     add_axis_labels()
     
     runs = 0
 
+    agent_to_update_next = 0
+
+    shuffled_list = random.sample(my_world.agent_list, k = len(my_world.agent_list))
+
     # main simulation loop
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        for agent in my_world.agent_list:
+        for agent in shuffled_list:
             agent.sense_gradient(my_world.gradient_source)
-            agent.sense_close_range(my_world.obj_list)
+            agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-        for agent in my_world.agent_list:
-            if runs % 5 == 0:
-                agent.compute_next_step()
-                agent.move_to()
-            if agent.reached_target_position():
-                agent.compute_next_step()
-                agent.move_to()
+        if runs%PERIOD_BETWEEN_SENSING == 0:
+            for i in range(len(shuffled_list)):
+                if i == agent_to_update_next:
+                    shuffled_list[i].compute_next_step()
+                
+            agent_to_update_next = agent_to_update_next + 1
+
+            if agent_to_update_next >= len(shuffled_list):
+                agent_to_update_next = 0
+
+        runs = runs + 1
         
         p.stepSimulation()
 
