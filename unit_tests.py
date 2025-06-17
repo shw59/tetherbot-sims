@@ -919,9 +919,9 @@ def test_moveable_obstacle():
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 5)
 
     # create an obstacle
-    my_world.create_obstacle("hexagon", [2, 0], fixed=False)
-    my_world.create_obstacle("triangle", [2, 0], fixed=False)
-    my_world.create_obstacle("cube", [2, 0], fixed=False)
+    my_world.create_obstacle("hexagon", [2, 0], length=0.5, width=0.5, height=0.5, fixed=False)
+    my_world.create_obstacle("triangle", [2, 0], length=0.5, width=0.5, height=0.5, fixed=False)
+    my_world.create_obstacle("cube", [2, 0], length=0.5, width=0.5, height=0.5, fixed=False)
 
     runs = 0
 
@@ -957,12 +957,12 @@ def test_all():
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(gradient_source)
 
-    Agent.set_weights([10, 100, 2, 40]) # angle, strain, gradient, repulsion
+    Agent.set_weights([10, 100, 500, 100]) # angle, strain, gradient, repulsion
 
     # set initial object positions
-    initial_robot_positions = [[0, 0, HEIGHT],
-                               [0, 1, HEIGHT],
-                               [1, 1, HEIGHT]]
+    initial_robot_positions = [[0, 0, 0],
+                               [0, 1, 0],
+                               [1, 1, 0]]
     
     # Goal angles for each agent
     goal_angles = [None, 90, None]

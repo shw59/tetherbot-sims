@@ -352,11 +352,10 @@ class Agent:
         #     scale = 0.01
         # else:
         #     scale = 0
+
+        scale = len(self.cr_sensor_data) < 3
         
         # The vector pointing in the direction of the source
-        # v_g = scale * u_g
-        scale = len(self.cr_sensor_data) < 3
-
         v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
 
         return v_g
@@ -365,7 +364,7 @@ class Agent:
         """
         Returns the repulsion vector given close-range sensor data.
         """
-        amplitude = 3 * self.radius
+        amplitude = 16 * self.radius
         std_dev = self.radius
         v_r = np.array([0, 0])
 
