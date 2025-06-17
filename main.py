@@ -13,14 +13,14 @@ import numpy as np
 GRAVITY_Z = -9.81
 HEIGHT = 0.01
 TIME_STEP = 1./240.
-N = 3
+N = 8
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
-GRADIENT_SOURCE = [-3,-3]
-ANGLE_WEIGHT = 10
-STRAIN_WEIGHT = 0
-GRADIENT_WEIGHT = 0
-REPULSION_WEIGHT = 0
+GRADIENT_SOURCE = [0,0]
+ANGLE_WEIGHT = 2
+STRAIN_WEIGHT = 100
+GRADIENT_WEIGHT = 2
+REPULSION_WEIGHT = 4
 
 def set_straight_line(n, spacing):
     """
@@ -59,20 +59,12 @@ def main():
     Agent.set_weights([ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT])
 
     # set initial object positions
-    initial_robot_positions = [[0, 0, HEIGHT],
-                               [0, 1, HEIGHT],
-                               [1, 1, HEIGHT]]
+    
+    initial_robot_positions = set_straight_line(N, UNSTRETCHED_TETHER_LENGTH)
     
     # Goal angles for each agent
+    goal_angles = [None, 135, 135, 135, 135, 135, 135, None]
     
-    # # list of x-y current target positions for each agent (starts at their initial positions)
-    # target_pos = [initial_robot_positions[i][:2] for i in range(len(initial_robot_positions))]
-
-    # # a list of all of the agent objects created
-    # robot_ids = []
-
-    # # a list of tether objects
-    # tether_ids = []
 
     # populates the list of robot objects with robot objects
     for i in range(N):
@@ -90,55 +82,18 @@ def main():
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        # if runs%100 == 0:
-        #     # calculate tether angle relative to each robot's heading
-        #     sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
-        #     # theta2 = get_theta(robot_ids[1], tether_ids[0])
+        for agent in my_world.agent_list:
+            agent.sense_gradient(my_world.gradient_source)
+            agent.sense_close_range(my_world.obj_list)
 
-        #     # display results in the GUI
-        #     p.addUserDebugText(f"sigma = {sigma1:.2f} deg \n",
-        #                         [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        for agent in my_world.agent_list:
+            if runs % 5 == 0:
+                agent.compute_next_step()
+                agent.move_to()
+            if agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
         
-
-        # # calculate tether length and strain on every step
-        # l = get_tether_length(tether_ids[0])
-        # strain = (l - l_0) / l_0
-
-        # # calculate tether angle relative to each robot's heading
-        # sigma1 = get_sigma(robot_ids[1], tether_ids[0], tether_ids[1])
-        # # theta2 = get_theta(robot_ids[1], tether_ids[0])
-
-        # # calculates the direction the robot should move in to achieve the 
-        # # goal delta
-        # new_vector = new_position_for_sigma_goal(robot_ids[1], tether_ids[0], tether_ids[1], 270)
-
-        # # display results in the GUI
-        # p.addUserDebugText(f"tether length = {l:.2f} m\n tether strain = {strain:.2f}\n "
-        #                     f"sigma = {sigma1:.2f} deg \n x_comp = {new_vector[0]:.2f} \n y_comp ={new_vector[1]:.2f} \n",
-        #                     [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
-
-        my_world.agent_list[0].sense_gradient(my_world.gradient_source)
-        my_world.agent_list[0].sense_close_range(my_world.obj_list)
-
-        my_world.agent_list[1].sense_gradient(my_world.gradient_source)
-        my_world.agent_list[1].sense_close_range(my_world.obj_list)
-
-        my_world.agent_list[2].sense_gradient(my_world.gradient_source)
-        my_world.agent_list[2].sense_close_range(my_world.obj_list)
-        
-
-        if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
-            my_world.agent_list[1].move_to()
-
-        if my_world.agent_list[0].reached_target_position():
-            my_world.agent_list[0].compute_next_step()
-            my_world.agent_list[0].move_to()
-
-        if my_world.agent_list[2].reached_target_position():
-            my_world.agent_list[2].compute_next_step()
-            my_world.agent_list[2].move_to()
-
         p.stepSimulation()
 
 if __name__ == "__main__":
