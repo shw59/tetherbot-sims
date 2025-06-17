@@ -344,11 +344,11 @@ class Agent:
         u_g, distance = self.gradient_sensor_data
 
         # Changes the weights of the gradient vector depending on how far it is from the source
-        if distance >= 30 * self.radius:
+        if distance >= 1000 * self.radius:
             scale = 1
-        elif distance >= 20 * self.radius:
+        elif distance >= 800 * self.radius:
             scale = 0.5
-        elif distance >= 15 * self.radius:
+        elif distance >= 600 * self.radius:
             scale = 0.01
         else:
             scale = 0
