@@ -13,7 +13,7 @@ import math
 
 HEIGHT = 0.01
 TIME_STEP = 1./240.
-N = 5
+N = 60
 UNSTRETCHED_TETHER_LENGTH = 1
 RADIUS = 0.1
 GRADIENT_SOURCE = [0,0]
@@ -65,7 +65,6 @@ def get_starting_positions(l_0, n, angles, left_most_position):
             next_position = [new_x, new_y, 0]
 
         the_list[i] = next_position
-        print(next_position)
 
 
     return the_list
@@ -80,7 +79,7 @@ def add_axis_labels():
         
 def main():
 
-    my_world = World(20, 20, TIME_STEP)
+    my_world = World(200, 200, TIME_STEP)
 
     my_world.set_gradient_source(GRADIENT_SOURCE)
 
@@ -88,22 +87,27 @@ def main():
 
     # set initial object positions
 
-    angles = [None, 90, 270, 315, None]
+    angles = [None, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
+              180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
+              180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
+              180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, None]
     
-    # initial_robot_positions = set_straight_line(N, UNSTRETCHED_TETHER_LENGTH)
-    initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, N, angles, [0,-1,0])
+    initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, N, angles, [0,-30,0])
     
     # Goal angles for each agent
-    goal_angles = [None, 135, 135, 135, 135, 135, 135, None]
+    goal_angles = [None, 180, 180, 180, 180, 180, 180, 180, 180, 180, 225, 180, 180, 225, 180, 180, 180, 180, 
+                   225, 180, 180, 225, 180, 270, 180, 180, 270, 90, 180, 180, 90,
+                   180, 180, 180, 180, 180, 180, 180, 180, 90, 180, 180, 90, 
+                   270, 180, 180, 270, 180, 225, 180, 180, 225, 180, 180, 180, 180, 225, 180, 180, None]
     
 
     # populates the list of robot objects with robot objects
     for i in range(N):
-        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i], height=HEIGHT)
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i], height=HEIGHT, color=(1, 0, 0, 1))
 
     # populates the list of tether objects with tether objects
     for i in range(N-1):
-        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 2)
         
     add_axis_labels()
     
@@ -113,17 +117,17 @@ def main():
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        # for agent in my_world.agent_list:
-        #     agent.sense_gradient(my_world.gradient_source)
-        #     agent.sense_close_range(my_world.obj_list)
+        for agent in my_world.agent_list:
+            agent.sense_gradient(my_world.gradient_source)
+            agent.sense_close_range(my_world.obj_list)
 
-        # for agent in my_world.agent_list:
-        #     if runs % 5 == 0:
-        #         agent.compute_next_step()
-        #         agent.move_to()
-        #     if agent.reached_target_position():
-        #         agent.compute_next_step()
-        #         agent.move_to()
+        for agent in my_world.agent_list:
+            if runs % 5 == 0:
+                agent.compute_next_step()
+                agent.move_to()
+            if agent.reached_target_position():
+                agent.compute_next_step()
+                agent.move_to()
         
         p.stepSimulation()
 
