@@ -256,7 +256,7 @@ class Obstacle:
         self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
         if fixed:
-            p.createConstraint(self.id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
+            p.createConstraint(self.id, 2, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
         else:
             # set dynamic friction coefficient
             p.changeDynamics(self.id, 0, linearDamping=mu_dynamic)
