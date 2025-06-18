@@ -11,25 +11,47 @@ from tether import Tether
 import utils
 
 class Agent:
-    label = "agent"
+    label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
-    desired_strain = 0.3
-    err_pos = 0.01
-    err_delta = 5
-    err_strain = 0.05
-    angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5]
+    desired_strain = 0.3 # how much strain the agents will attempt to maintain in their tethers, if they have any
+    # err_pos = 0.01 # The allowable error in the accuracy of the position of the agent
+    err_delta = 5 # The allowable error in the accuracy of the goal angle between an agent's two tether
+    err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
 
+    @classmethod
+    def set_weights(cls, weight_list):
+        """
+        Sets the values of the weights used to compute the resultant vector, which the agent uses to determine where to move
+        """
+        Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
+    
+
+    
+    # Initializes an agent object
     def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity):
         """
-        Initializes an agent object and its position and id attributes. Heading is angle off of positive x-axis
+        Initializes an agent object and its position and id attributes. 
+        position_0: a three dimenstional vector in the form [x, y, z]
+        heading_0: the direction the heading will face, a float in degrees whose angle 
+                   is measured from the +x-axis
+        radius: the radius of the cylindrical body of the agent, a float
+        mass: the mass of the agent, a float
+        color: the color of the agent, (r, g, b, 1), where r/g/b are either 0 or 1 to create different colors
+        height: hieght of the cylindrical body of the agent, a float
+        mu_static: the coefficient of static friction, a float
+        mu_dynamic: the coefficient of dynamic friction, a float
+        max_velocity: the maximum velocity the agent can obtain, a float
         """
-        self.next_position = position_0[:2]
-        self.radius = radius
-        self.sensing_radius = radius * 4
-        self.desired_tether_angle = None
-        self.tethers = [None, None]
-        self.cr_sensor_data = []
-        self.gradient_sensor_data = None
+
+
+        self.next_position = position_0[:2] # gets the (x,y) of the position
+        self.radius = radius # sets the radius of the agent
+        self.sensing_radius = radius * 4 # sets the sensing radius of the agent
+        self.desired_tether_angle = None # initializes the desired tether angle to be None
+        self.tethers = [None, None] # initializes no attached tethers to the agent
+        self.cr_sensor_data = [] # initializes an empty list of sensor data
+        self.gradient_sensor_data = None # initializes the gradient sensor data to none
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -41,6 +63,7 @@ class Agent:
         block_origin_x = radius / 2
         block_origin_z = height / 2
 
+        # the construction of the agent
         urdf_text = f"""<?xml version="1.0"?>
         <robot name="disk">
             <link name="world">
@@ -146,32 +169,37 @@ class Agent:
         p.changeDynamics(self.id, 1, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
         p.changeDynamics(self.id, 2, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
 
-        # # set static friction coefficient
+        # set static friction coefficient
         force_friction = utils.normal_force(mass) * mu_static
         p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[force_friction]*3)
     
     def instantiate_m_tether(self, m_tether):
         """
         Instantiates the negative tether for the agent.
+        m_tehter: a tether object
         """
         self.tethers[0] = m_tether
 
     def instantiate_p_tether(self, p_tether):
         """
         Instantiate the positive tether for the agent.
+        p_tether: a tether object
         """
         self.tethers[1] = p_tether
 
     def set_desired_tether_angle(self, goal_delta):
+        """
+        Sets the value of the desired tether angle.
+        goal_delta: a float from 0 to 360, in degrees, measured from the m_tether to
+                    the p_tether from the heading. Should not be negative. If it is 
+                    negative, add 360 to it.
+        """
         self.desired_tether_angle = goal_delta
-
-    @classmethod
-    def set_weights(cls, weight_list):
-        Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
 
     def get_pose(self):
         """
-        Return the current position and heading of the agent as a list [[x, y], [x_heading, y_heading]].
+        Returns the current position and heading of the agent as a list [[x, y], [x_heading, y_heading]].
+        The [x_heading, y_heading] is a vector that points in the direction of the heading of the agent.
         """
         agent_pos = p.getLinkState(self.id, 2)[0][:2]
         head_pos = p.getLinkState(self.id, 3)[0][:2]
@@ -181,7 +209,8 @@ class Agent:
     
     def get_tether_heading(self, tether_num=0):
         """
-        Return the current heading of the agent's tether with respect to the agent's center.
+        Returns the current heading of the agent's tether with respect to the agent's center.
+        tether_num: either 0 or 1, representing the m_tether or the p_tether, respectively
         """
         n_verts, verts, *_ = p.getMeshData(self.tethers[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
@@ -206,7 +235,8 @@ class Agent:
     
     def get_theta(self, tether_num=0):
         """
-        Return the angle between the agent's heading and the heading of its tether (in degrees).
+        Returns the angle between the agent's heading and the heading of one of its tether (in degrees).
+        tether_num: either 0 or 1, representing the m_tether or the p_tether, respectively
         """
         hx, hy = self.get_pose()[1]
         tx, ty = self.get_tether_heading(tether_num)
@@ -222,8 +252,8 @@ class Agent:
     
     def get_delta(self):
         """
-        Return the angle between two tethers of an agent (in degrees). Returns None if there is no second tether.
-        The angle is always positive and inbetween 0-360 degrees.
+        Returns the angle between two tethers of an agent (in degrees). 
+        Returns None if there is no second tether. The angle is always positive and inbetween 0-360 degrees.
         """
         if (self.tethers[1] is None) or (self.tethers[0] is None):
             return None
@@ -238,19 +268,23 @@ class Agent:
     
     def sense_close_range(self, obj_list, sensing_mode=0):
         """
-        Three modes of close-range sensing:
-        0: agent senses all obstacles, tethers, and agents indistinguishably. Returns list of tuples with unknown type classifications.
-        1: agent senses all obstacles, but can distinguish between them. Returns a list of tuples classified as "tether", "agent", or "obstacle".
-        2: agent can only sense agents and tethers, but not obstacles. 
+        Updates the instance variable sensor_data list with 
+        format (u_r normal vector as numpy array, distance, object type)
 
-        Updates the instance variable sensor_data list with format: (u_r normal vector as numpy array, distance, object type)
+        sensing_mode: can be 0, 1, or 2, with the following effects:
+            0: agent senses all obstacles, tethers, and agents indistinguishably. Returns 
+            a list of tuples with unknown type classifications.
+            1: agent senses all obstacles, but can distinguish between them. Returns a 
+            list of tuples classified as "tether", "agent", or "obstacle".
+            2: agent can only sense agents and tethers, but not obstacles. 
         """
         from obstacle import Obstacle
         
         # helper function
         def get_closest_point_distance(obj):
             """
-            Returns the closest global coordinate point and distance as (closest_point, dist) from another object to the agent.
+            Returns the closest global coordinate point and distance 
+            as (closest_point, dist) from another object to the agent.
             """
             curr_pos = self.get_pose()[0]
             closest_points = []
@@ -306,8 +340,12 @@ class Agent:
     
     def sense_gradient(self, gradient_source_pos):
         """
-        Returns the unit vector from the agent to the gradient source and its linear distance to the gradient source as a tuple.
+        Sets the gradient_sensor_data parameter to a tuple with the unit vector from the agent 
+        to the gradient source as the first entry and its linear distance to the gradient 
+        source as its second entry.
+        gradient_source_pos: the [x,y] position of the gradient source
         """
+
         if gradient_source_pos is not None:
             curr_pos = self.get_pose()[0]
 
@@ -318,8 +356,11 @@ class Agent:
     
     def compute_vector_strain(self, tether_num=0):
         """
-        Calculates the vector direction that the agent should move to achieve the goal strain/tautness.
+        Calculates and returns the vector direction that the agent should 
+        move to achieve the goal strain/tautness.
+        tether_num: either 0 or 1, representing the m_tether or the p_tether, respectively
         """
+        
         if self.tethers[tether_num] is None:
             return None
         
@@ -340,20 +381,10 @@ class Agent:
     
     def compute_vector_gradient(self):
         """
-        Returns the vector pointing towards the target destination, where the vector's magnitude increases the farther from the
-        destination the agent is.
+        Returns the vector pointing towards the target destination, where the 
+        vector's magnitude increases the farther from the destination the agent is.
         """
         u_g, distance = self.gradient_sensor_data
-
-        # Changes the weights of the gradient vector depending on how far it is from the source
-        # if distance >= 1000 * self.radius:
-        #     scale = 1
-        # elif distance >= 800 * self.radius:
-        #     scale = 0.5
-        # elif distance >= 600 * self.radius:
-        #     scale = 0.01
-        # else:
-        #     scale = 0
 
         scale = len(self.cr_sensor_data) < 3
         
@@ -379,7 +410,7 @@ class Agent:
     
     def compute_vector_angle(self):
         """
-        Computes which direction the agent should move in so that it
+        Returns which direction the agent should move in so that it
         can attempt to reach its desired delta value
         """
         delta = self.get_delta()
@@ -398,8 +429,6 @@ class Agent:
 
         abs_difference = abs(difference)
 
-        # vector = np.array([0,0])
-
         if (abs_difference > Agent.err_delta):
 
             if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
@@ -411,35 +440,20 @@ class Agent:
                 normalized_t_m = np.array(utils.normalize(tether_m_heading))
                 normalized_t_p = np.array(utils.normalize(tether_p_heading))
 
-                # print("heading: " + str(normalized_heading))
-                # print("normalized_t_m: " + str(normalized_t_m))
-                # print("normalized_t_p: " + str(normalized_t_p))
-
                 if (round(normalized_heading[0]) == round(normalized_t_m[0])) and (round(normalized_heading[1]) == round(normalized_t_m[1])):
                     vector[0] = 20*round(normalized_heading[1])
                     vector[0] = -20*round(normalized_heading[0])
-                    # print("enter first")
-                    # print("\n")
+
                 elif (round(normalized_heading[0]) == round(normalized_t_p[0])) and (round(normalized_heading[1]) == round(normalized_t_p[1])):
                     vector[0] = 20*round(normalized_heading[1])
                     vector[0] = -20*round(normalized_heading[0])
-                    # print("enter second")
-                    # print("\n")
+               
                 else:
-
                     vector = np.array(heading)
-
                     vector[0] = 20*heading[0]
                     vector[1] = 20*heading[1]
-                # print("Second if")
-                # print("heading: " + str(heading))
-                # print("heading x: " + str(heading[0]))
-                # print("heading y: " + str(heading[1]))
-                # print("vector x: " + str(vector[0]))
-                # print("vector y: " + str(vector[1]))
 
             else:
-
                 if (delta < 180) and (delta > self.desired_tether_angle):
                     sign = -1
                 elif (delta < 180) and (delta < self.desired_tether_angle):
@@ -453,23 +467,17 @@ class Agent:
 
                 vector = np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
 
-            #     print("first else")
-            
-            # print(vector)
-            # print("\n")
             return vector
         else:
             vector = np.array([0,0])
 
-            # print("second else")
-            # print(vector)
-            # print()
-            # print("\n")
             return vector
     
     def compute_next_step(self):
         """
-        Calculates and sets the next position the agent should move to based on the resultant weighted vector sum and its current close-range sensor data.
+        Calculates and sets the next position the agent should move to based on 
+        the resultant weighted vector sum and its current close-range sensor data.
+        The function then calls move_to so that the robot begins to move in that direction.
         """
         curr_position = np.array(self.get_pose()[0])
         
@@ -478,6 +486,7 @@ class Agent:
             v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
             v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
             v_angle = np.array([0, 0])
+
         except ValueError: # if agent has two tethers instantiated
             v_m_strain = self.compute_vector_strain(0)
             v_p_strain = self.compute_vector_strain(1)
@@ -485,22 +494,18 @@ class Agent:
 
         if self.gradient_sensor_data is None:
             v_gradient = np.array([0, 0])
+
         else:
             v_gradient = self.compute_vector_gradient()
 
         v_repulsion = self.compute_vector_repulsion()
-
-        # print(Agent.strain_weight * (v_m_strain + v_p_strain))
-        # print(Agent.gradient_weight * v_gradient)
-        # print(Agent.repulsion_weight * v_repulsion)
-        # print(Agent.angle_weight * v_angle)
-        # print("\n")
 
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                             + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
         
         if utils.magnitude_of_vector(resulting_vector) >= 1:
             self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
+
         else:
             self.next_position = curr_position + 0.05*resulting_vector
 
@@ -508,8 +513,7 @@ class Agent:
     
     def move_to(self, force=15):
         """
-        Move the agent from its current position to a specified [x, y] target position in the world. The parameter
-        target_pos should be a numpy array.
+        Moves the agent from its current position to its next_position.
         """
         # amount to move (relative to base position)
         x_move, y_move = self.next_position - np.array(p.getBasePositionAndOrientation(self.id)[0][:2])
@@ -527,13 +531,3 @@ class Agent:
         
         p.setJointMotorControlArray(self.id, Agent.joint_indices, p.POSITION_CONTROL,
                                     targetPositions=[x_move, y_move, rotation], forces=[force]*3)
-        
-    def reached_target_position(self):
-        """
-        Checks to see if the agent's current position is the target position
-        """
-        position = self.get_pose()[0]
-
-        return ( ( position[0] > self.next_position[0] - Agent.err_pos) and ( position[0] > self.next_position[0] - Agent.err_pos) ) and \
-               ( ( position[1] > self.next_position[1] - Agent.err_pos) and ( position[1] > self.next_position[1] - Agent.err_pos) )
-        
