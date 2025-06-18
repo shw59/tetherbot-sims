@@ -254,19 +254,20 @@ class Agent:
             """
             curr_pos = self.get_pose()[0]
             closest_points = []
-            if obj.label == "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
-                verts = obj.get_verts()[1]
-                closest_point = [float('inf'), float('inf')]
-                nearest_dist = float('inf')
-                for vert in verts:
-                    dist = math.dist(curr_pos, vert[:2])
-                    if dist < nearest_dist:
-                        nearest_dist = dist
-                        closest_point = vert[:2]
+            match obj.label:
+                case "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
+                    verts = obj.get_verts()[1]
+                    closest_point = [float('inf'), float('inf')]
+                    nearest_dist = float('inf')
+                    for vert in verts:
+                        dist = math.dist(curr_pos, vert[:2])
+                        if dist < nearest_dist:
+                            nearest_dist = dist
+                            closest_point = vert[:2]
 
-                return closest_point, nearest_dist
-            elif obj.label == "agent" or obj.label == "obstacle":
-                closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
+                    return closest_point, nearest_dist
+                case "agent" | "obstacle":
+                    closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
 
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
@@ -294,13 +295,14 @@ class Agent:
                 else:
                     continue
 
-                if sensing_mode == 0:
-                    self.cr_sensor_data.append((u_r, dist, "unknown"))
-                elif sensing_mode == 1:
-                    self.cr_sensor_data.append((u_r, dist, obj.label))
-                elif sensing_mode == 2:
-                    if obj.label != "obstacle":
+                match sensing_mode:
+                    case 0:
                         self.cr_sensor_data.append((u_r, dist, "unknown"))
+                    case 1:
+                        self.cr_sensor_data.append((u_r, dist, obj.label))
+                    case 2:
+                        if obj.label != "obstacle":
+                            self.cr_sensor_data.append((u_r, dist, "unknown"))
     
     def sense_gradient(self, gradient_source_pos):
         """

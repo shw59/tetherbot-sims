@@ -14,7 +14,19 @@ class Obstacle:
 
     def __init__(self, shape, position, heading, mass, length, width, height, color, mu_static, mu_dynamic, fixed):
         """
-        Initializes an obstacle with a shape of "hexagon", "cube", or "triangle" at the specified position [x, y] and orientation (in degrees). 
+        Initializes an obstacle with attributes height and id. 
+
+        shape: One of "hexagon", "cube", or "triangle" strings
+        position: Initial position of the obstacle in format [x, y, z]
+        heading: Orientation of the obstacle in degrees, where the scale ranges from 0 to 360 degrees beginning from the +x axis
+        mass: Mass of the obstacle in kg
+        length: Length of the obstacle in meters
+        width: Width of the obstacle in meters
+        height: height of the obstacle in meters
+        color: Color of the obstacle in RGBA format (r, g, b, a) where each color component ranges from 0 to 1
+        mu_static: Obstacle's static coefficient of friction (only applicable if not movable)
+        mu_dynamic: Obstacle's dynamic coefficient of friction (only applicable if not movable)
+        fixed: True if the obstacle is fixed and False if the obstacle is movable in the 2D plane
         """
         self.height = height
         urdf_text = ""
@@ -256,7 +268,7 @@ class Obstacle:
         self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
         if fixed:
-            p.createConstraint(self.id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
+            p.createConstraint(self.id, 2, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
         else:
             # set dynamic friction coefficient
             p.changeDynamics(self.id, 0, linearDamping=mu_dynamic)
@@ -271,14 +283,17 @@ class Obstacle:
         """
         Return the current position and heading orientation of the obstacle as a list [[x, y], heading in degrees].
         """
-        curr_pos = p.getBasePositionAndOrientation(self.id)[0][:2]
-        curr_orn = math.degrees(p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2])
+        curr_pos = p.getLinkState(self.id, 2)[0][:2]
+        curr_orn = math.degrees(p.getEulerFromQuaternion(p.getLinkState(self.id, 2)[1])[2])
 
         return [curr_pos, curr_orn]
 
     def set_pose(self, new_position, heading):
         """
         Set the position and heading orientation of an obstacle object.
+
+        new_position: Newly specified [x, y, z] position of an obstacle object
+        heading: Newly specified heading of an obstacle object in degrees ranging from 0 to 360 starting from the +x axis
         """
         new_position.append(self.height / 2)
         p.resetBasePositionAndOrientation(self.id, new_position, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))

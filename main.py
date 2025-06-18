@@ -55,20 +55,21 @@ def get_starting_positions(l_0, n, angles, left_most_position):
 
     return the_list
 
-def generate_obstacle_course(world, n_fixed, n_movable, radius_range):
-    length, width = world.dimensions
+def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, course_radius):
 
-    for i in range(n_fixed):
-        x = random.uniform(-(length / 2 - 2), length / 2 - 2)
-        y = random.uniform(-(width / 2 - 2), width / 2 - 2)
-        sizes = random.uniform(radius_range[0], radius_range[1])
-        world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(1, 0, 1, 1), fixed=True)
-
-    for i in range(n_movable):
-        x = random.uniform(-length / 2 - 2, length / 2)
-        y = random.uniform(-width / 2, width / 2)
-        sizes = random.uniform(radius_range[0], radius_range[1])
-        world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(0, 1, 0, 1), fixed=False)
+    for i in range(n_obstacles):
+        r = random.uniform(0, course_radius - (obstacle_size_range[1] / 2))
+        theta = random.uniform(0, 2 * math.pi)
+        x = r * math.cos(theta)
+        y = r * math.sin(theta)
+        sizes = random.uniform(obstacle_size_range[0], obstacle_size_range[1])
+        no_overlap = True
+        for obj in world.obj_list:
+            if obj.label == "obstacle" and math.dist(obj.get_pose()[0], [x, y]) <= sizes * 2:
+                no_overlap = True
+                break
+        if no_overlap:
+            world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(0, 1, 0, 1), fixed=True)
 
 def add_axis_labels():
     p.addUserDebugLine([0, 0, 0], [1, 0, 0], lineColorRGB=[0, 0, 1], lineWidth=10, lifeTime=0)
@@ -79,7 +80,7 @@ def add_axis_labels():
     p.addUserDebugText("+z", [0, 0, 1], lifeTime=0, textColorRGB=[0, 0, 0])
         
 def main():
-    my_world = World(20, 40, TIME_STEP)
+    my_world = World(50, 50, TIME_STEP)
 
     my_world.set_gradient_source(GRADIENT_SOURCE)
 
@@ -104,7 +105,7 @@ def main():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 2)
         
-    generate_obstacle_course(my_world, 20, 40, radius_range=(0.1, 2))
+    generate_circular_obstacle_course(my_world, 20, (0.1, 2), 20)
 
     add_axis_labels()
     
