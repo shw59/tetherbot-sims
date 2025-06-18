@@ -829,6 +829,38 @@ def test_gradient_strain_angle():
 
         p.stepSimulation()
 
+def test_friction_default():
+    n = 3
+
+    my_world = World(20, 20, TIME_STEP)
+
+    Agent.set_weights([10, 100, 2, 40]) # angle, strain, gradient, repulsion
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, 0],
+                               [0, 1, 0],
+                               [1, 1, 0]]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, mu_static=3)
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
+
+    add_axis_labels()
+
+    for agent in my_world.agent_list[::2]:
+        agent.next_position = [5, 5]
+        agent.move_to()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        p.stepSimulation()
+
 def test_friction_high_dynamic_low_static():
     n = 3
 
@@ -1010,7 +1042,7 @@ def test_all():
   
 
 def main():
-    test_moveable_obstacle()
+    test_friction_default()
 
 if __name__ == "__main__":
     main()

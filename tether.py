@@ -12,6 +12,13 @@ class Tether:
     def __init__(self, position_0, length_0, orientation_0, num_segments, mass, mu):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
+
+        position_0: Initial position of the tether in the format [x, y, z]
+        length_0: Nominal length of the tether in meters
+        orientation_0: A quaternion in the form of a 4-element list [w, x, y, z]
+        num_segments: number of flexible spring-like segments the tether is spliced into
+        mass: mass of the tether in kg
+        mu: contact friction coefficient of the tether
         """
         self.length_0 = length_0
 
@@ -47,10 +54,10 @@ class Tether:
                                 useFaceContact=1)
         
         p.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
-
-    def get_length(self):
+    
+    def get_strain(self):
         """
-        Return the current length of the tether.
+        Return the current strain of the tether object.
         """
         n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
@@ -60,13 +67,7 @@ class Tether:
             p2 = [(verts[i+2][k] + verts[i+3][k]) / 2.0 for k in range(3)]
             length += math.dist(p1, p2)
 
-        return length
-    
-    def get_strain(self):
-        """
-        Return the current strain of the tether object based on its current length.
-        """
-        return (self.get_length() - self.length_0) / self.length_0
+        return (length - self.length_0) / self.length_0
     
     def get_verts(self):
         """

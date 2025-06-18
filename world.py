@@ -17,8 +17,13 @@ GRAVITYZ = -9.81
 class World:
     def __init__(self, length, width, time_step=1/240):
         """
-        Initialize the simulation world with length and width boundary dimensions and a time step length for each iteration of the simulation.
+        Initialize the simulation world with attributes dimensions, list of all objects and agents, and gradient source.
+
+        length: Length of the simulation world boundary in meters
+        width: Width of the simulation world boundary in meters
+        time_step: The simulated time interval between each step calculation
         """
+        self.dimensions = [length, width]
         self.obj_list = []
         self.agent_list = []
         self.gradient_source = None
@@ -64,7 +69,7 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         
-    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.3, mu_dynamic=0.5, max_velocity=100):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=1.0, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.5, mu_dynamic=0.7, max_velocity=100):
         """
         Adds an agent to the simulation world and returns its object.
         """

@@ -12,19 +12,24 @@ import numpy as np
 import math
 import random
 
-HEIGHT = 0.01 # The height of the agent objects to be created
-TIME_STEP = 1./240. # How much time passes in the physics simulation with each while loop iteration
-N = 9 # The number of agents to be created
-UNSTRETCHED_TETHER_LENGTH = 1 # The unstretched, zero strain length of the tether between the agents
-RADIUS = 0.1 # the radius of the agent objects to be created
-GRADIENT_SOURCE = [0, 30] # the point that the agent objects witll try to get to, global attraction
-ANGLE_WEIGHT = 0 # the weighting of the angle vector (default is 2), set to 0 if desired angle doesn't matter
-STRAIN_WEIGHT = 100 # the weighting of the strain vector (default is 100), set to 0 if strain doesn't matter
-GRADIENT_WEIGHT = 50 # the weighting of the gradient vector (default is 2), set to 0 if global gradient doesn't matter
-REPULSION_WEIGHT = 4 # the weighting of the repulsion vector (default is 4), set to 0 if repulsion doesn't matter
-PERIOD_BETWEEN_SENSING = 5 # The number of while loop iterations that should run before a singular agent updates its goal position
+HEIGHT = 0.01
+TIME_STEP = 1./240.
+N = 5
+UNSTRETCHED_TETHER_LENGTH = 1
+RADIUS = 0.1
+GRADIENT_SOURCE = [0, 0]
+# ANGLE_WEIGHT = 2
+# STRAIN_WEIGHT = 100
+# GRADIENT_WEIGHT = 2
+# REPULSION_WEIGHT = 4
+ANGLE_WEIGHT = 0
+STRAIN_WEIGHT = 100
+GRADIENT_WEIGHT = 50
+REPULSION_WEIGHT = 4
+SENSING_PERIOD = 5 # The number of while loop iterations that should run before a singular, random
+                           # agent updates its goal position
 
-def get_starting_positions(l_0, n, angles, starting_position, direction):
+def get_starting_positions(l_0, n, angles, left_most_position):
     """
     Calculates and returns a list the starting position based on the list of 
     desired starting angles and the unstretched length of the tether between 
@@ -66,6 +71,22 @@ def get_starting_positions(l_0, n, angles, starting_position, direction):
 
     return the_list
 
+def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, course_radius):
+
+    for i in range(n_obstacles):
+        r = random.uniform(0, course_radius - (obstacle_size_range[1] / 2))
+        theta = random.uniform(0, 2 * math.pi)
+        x = r * math.cos(theta)
+        y = r * math.sin(theta)
+        sizes = random.uniform(obstacle_size_range[0], obstacle_size_range[1])
+        no_overlap = True
+        for obj in world.obj_list:
+            if obj.label == "obstacle" and math.dist(obj.get_pose()[0], [x, y]) <= sizes * 2:
+                no_overlap = True
+                break
+        if no_overlap:
+            world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(0, 1, 0, 1), fixed=True)
+
 def add_axis_labels():
     """
     Adds x, y, and z axis labels so that it is easier to orient oneself
@@ -76,7 +97,6 @@ def add_axis_labels():
     p.addUserDebugText("+x", [1, 0, 0], lifeTime=0, textColorRGB=[0, 0, 0])
     p.addUserDebugText("+y", [0, 1, 0], lifeTime=0, textColorRGB=[0, 0, 0])
     p.addUserDebugText("+z", [0, 0, 1], lifeTime=0, textColorRGB=[0, 0, 0])
-
 
 def storm_drain():
     """
@@ -227,7 +247,7 @@ def storm_drain():
 
     agent_to_update_next = 0
 
-    shuffled_list = random.sample(my_world.agent_list, k = len(my_world.agent_list))
+    shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
     # main simulation loop
     while p.isConnected():
@@ -237,7 +257,7 @@ def storm_drain():
             agent.sense_gradient(my_world.gradient_source)
             agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-        if runs%PERIOD_BETWEEN_SENSING == 0:
+        if runs % SENSING_PERIOD == 0:
             for i in range(len(shuffled_list)):
                 if i == agent_to_update_next:
                     shuffled_list[i].compute_next_step()
