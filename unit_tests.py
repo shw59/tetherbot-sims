@@ -1032,9 +1032,6 @@ def test_all():
             if runs % 5 == 0:
                 agent.compute_next_step()
                 agent.move_to()
-            if agent.reached_target_position():
-                agent.compute_next_step()
-                agent.move_to()
 
         runs = runs + 1
 
@@ -1042,7 +1039,7 @@ def test_all():
   
 
 def main():
-    test_friction_default()
+    test_all()
 
 if __name__ == "__main__":
     main()

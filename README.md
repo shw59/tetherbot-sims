@@ -4,4 +4,4 @@ This repository holds the PyBullet simulation framework for realistically simula
 
 ## Agent Class
 
-The Agent class implemented in agent.py represents the structure and capabilities of a tetherbot, and an agent object represents a singular tetherbot instantiation.
+The Agent class implemented in agent.py represents a tetherbot object. The agent class represent a tetherbot in the sense that it shoudl be.

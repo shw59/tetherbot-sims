@@ -14,9 +14,10 @@ class Agent:
     label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     desired_strain = 0.3 # how much strain the agents will attempt to maintain in their tethers, if they have any
-    # err_pos = 0.01 # The allowable error in the accuracy of the position of the agent
     err_delta = 5 # The allowable error in the accuracy of the goal angle between an agent's two tether
     err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    err_heading = 10
+    err_velocity = 0.1
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
 
     @classmethod
@@ -25,13 +26,12 @@ class Agent:
         Sets the values of the weights used to compute the resultant vector, which the agent uses to determine where to move
         """
         Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
-    
 
-    
     # Initializes an agent object
     def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity):
         """
-        Initializes an agent object and its position and id attributes. 
+        Initializes an agent object and its position and id attributes.
+
         position_0: a three dimenstional vector in the form [x, y, z]
         heading_0: the direction the heading will face, a float in degrees whose angle 
                    is measured from the +x-axis
@@ -43,8 +43,6 @@ class Agent:
         mu_dynamic: the coefficient of dynamic friction, a float
         max_velocity: the maximum velocity the agent can obtain, a float
         """
-
-
         self.next_position = position_0[:2] # gets the (x,y) of the position
         self.radius = radius # sets the radius of the agent
         self.sensing_radius = radius * 4 # sets the sensing radius of the agent
@@ -165,9 +163,9 @@ class Agent:
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
         # set dynamic friction coefficient and maximum velocities
-        p.changeDynamics(self.id, 0, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
-        p.changeDynamics(self.id, 1, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
-        p.changeDynamics(self.id, 2, linearDamping=mu_dynamic, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 0, jointDamping=mu_dynamic, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 1, jointDamping=mu_dynamic, maxJointVelocity=max_velocity)
+        p.changeDynamics(self.id, 2, jointDamping=mu_dynamic, maxJointVelocity=max_velocity)
 
         # set static friction coefficient
         force_friction = utils.normal_force(mass) * mu_static
@@ -198,14 +196,17 @@ class Agent:
 
     def get_pose(self):
         """
-        Returns the current position and heading of the agent as a list [[x, y], [x_heading, y_heading]].
+        Returns the current position, vector heading, and angle heading of the agent as a list [[x, y], [x_heading, y_heading], angle (degrees)].
         The [x_heading, y_heading] is a vector that points in the direction of the heading of the agent.
+
+        Note: the angle heading is unbounded and goes negative for CW and positive for CCW, and based on PyBullet's own angle calculation of a continuous joint
         """
         agent_pos = p.getLinkState(self.id, 2)[0][:2]
         head_pos = p.getLinkState(self.id, 3)[0][:2]
         heading = [head_pos[i] - agent_pos[i] for i in range(2)]
+        angle = math.degrees(p.getJointState(self.id, 2)[0])
 
-        return [agent_pos, heading]
+        return [agent_pos, heading, angle]
     
     def get_tether_heading(self, tether_num=0):
         """
@@ -345,7 +346,6 @@ class Agent:
         source as its second entry.
         gradient_source_pos: the [x,y] position of the gradient source
         """
-
         if gradient_source_pos is not None:
             curr_pos = self.get_pose()[0]
 
@@ -360,7 +360,6 @@ class Agent:
         move to achieve the goal strain/tautness.
         tether_num: either 0 or 1, representing the m_tether or the p_tether, respectively
         """
-        
         if self.tethers[tether_num] is None:
             return None
         
@@ -520,7 +519,7 @@ class Agent:
 
         # calculate rotation to face direction of movement
         base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
-        curr_heading = p.getJointState(self.id, 2)[0]
+        curr_heading = math.radians(self.get_pose()[2])
         
         desired_h_x, desired_h_y = self.next_position - np.array(self.get_pose()[0])
         desired_heading = math.atan2(desired_h_y, desired_h_x)
@@ -528,6 +527,18 @@ class Agent:
         # rotations must be fed into setJointMotorControl function with respect to the base heading, not current heading
         # use smallest signed angle difference and then add the current heading and base heading
         rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
+
+        # stop the robot's current motion and check that it is stopped before continuing
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[100]*3)
+        while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
+            p.getCameraImage(320,200)
+            p.stepSimulation()
+
+        # set the robot to rotate to the desired heading and check that it reaches that heading before moving forward
+        p.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force)
+        while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
+            p.getCameraImage(320,200)
+            p.stepSimulation()
         
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.POSITION_CONTROL,
-                                    targetPositions=[x_move, y_move, rotation], forces=[force]*3)
+        p.setJointMotorControlArray(self.id, Agent.joint_indices[:2], p.POSITION_CONTROL,
+                                    targetPositions=[x_move, y_move], forces=[force]*2)
