@@ -15,8 +15,9 @@ class Agent:
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     desired_strain = 0.3 # how much strain the agents will attempt to maintain in their tethers, if they have any
     # err_pos = 0.01 # The allowable error in the accuracy of the position of the agent
-    err_delta = 5 # The allowable error in the accuracy of the goal angle between an agent's two tether
-    err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
+    err_strain = 0.04 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    err_position = 0.1 # The allowable error in the accuracy of the position
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
 
     @classmethod
@@ -288,20 +289,33 @@ class Agent:
             """
             curr_pos = self.get_pose()[0]
             closest_points = []
-            match obj.label:
-                case "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
-                    verts = obj.get_verts()[1]
-                    closest_point = [float('inf'), float('inf')]
-                    nearest_dist = float('inf')
-                    for vert in verts:
-                        dist = math.dist(curr_pos, vert[:2])
-                        if dist < nearest_dist:
-                            nearest_dist = dist
-                            closest_point = vert[:2]
+            if obj.label == "tether":
+                verts = obj.get_verts()[1]
+                closest_point = [float('inf'), float('inf')]
+                nearest_dist = float('inf')
+                for vert in verts:
+                    dist = math.dist(curr_pos, vert[:2])
+                    if dist < nearest_dist:
+                        nearest_dist = dist
+                        closest_point = vert[:2]
 
-                    return closest_point, nearest_dist
-                case "agent" | "obstacle":
-                    closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
+                return closest_point, nearest_dist
+            elif (obj.label == "agent" or obj.label == "obstacle"):
+                closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
+            # match obj.label:
+            #     case "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
+            #         verts = obj.get_verts()[1]
+            #         closest_point = [float('inf'), float('inf')]
+            #         nearest_dist = float('inf')
+            #         for vert in verts:
+            #             dist = math.dist(curr_pos, vert[:2])
+            #             if dist < nearest_dist:
+            #                 nearest_dist = dist
+            #                 closest_point = vert[:2]
+
+            #         return closest_point, nearest_dist
+            #     case "agent" | "obstacle":
+            #         closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
 
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
@@ -329,14 +343,22 @@ class Agent:
                 else:
                     continue
 
-                match sensing_mode:
-                    case 0:
+                if sensing_mode == 0:
+                    self.cr_sensor_data.append((u_r, dist, "unknown"))
+                elif sensing_mode == 1:
+                    self.cr_sensor_data.append((u_r, dist, obj.label))
+                elif sensing_mode == 2:
+                    if obj.label != "obstacle":
                         self.cr_sensor_data.append((u_r, dist, "unknown"))
-                    case 1:
-                        self.cr_sensor_data.append((u_r, dist, obj.label))
-                    case 2:
-                        if obj.label != "obstacle":
-                            self.cr_sensor_data.append((u_r, dist, "unknown"))
+                
+                # match sensing_mode:
+                #     case 0:
+                #         self.cr_sensor_data.append((u_r, dist, "unknown"))
+                #     case 1:
+                #         self.cr_sensor_data.append((u_r, dist, obj.label))
+                #     case 2:
+                #         if obj.label != "obstacle":
+                #             self.cr_sensor_data.append((u_r, dist, "unknown"))
     
     def sense_gradient(self, gradient_source_pos):
         """
@@ -467,11 +489,10 @@ class Agent:
 
                 vector = np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
 
-            return vector
         else:
             vector = np.array([0,0])
 
-            return vector
+        return vector
     
     def compute_next_step(self):
         """
@@ -492,6 +513,9 @@ class Agent:
             v_p_strain = self.compute_vector_strain(1)
             v_angle = self.compute_vector_angle()
 
+        if self.desired_tether_angle == None:
+            v_angle = np.array([0, 0])
+
         if self.gradient_sensor_data is None:
             v_gradient = np.array([0, 0])
 
@@ -503,11 +527,43 @@ class Agent:
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                             + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
         
+        # print("strain: " + str(Agent.strain_weight * (v_m_strain + v_p_strain)))
+        # print("gradient: " + str(Agent.gradient_weight * v_gradient))
+        # print("repulsion: " + str(Agent.repulsion_weight * v_repulsion))
+        # print("angle: " + str(Agent.angle_weight * v_angle))
+
+        # print(utils.magnitude_of_vector(v_m_strain + v_p_strain))
+        # print(utils.magnitude_of_vector(v_gradient))
+        # print(utils.magnitude_of_vector(v_repulsion))
+        # print(utils.magnitude_of_vector(v_angle))
+        
         if utils.magnitude_of_vector(resulting_vector) >= 1:
-            self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
+            next = curr_position + 0.05*utils.normalize(resulting_vector)
+            # self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
 
         else:
-            self.next_position = curr_position + 0.05*resulting_vector
+            # print("else entered")
+            next = curr_position + 0.05*resulting_vector
+            # self.next_position = curr_position + 0.05*resulting_vector
+
+        # next = curr_position + 0.05*resulting_vector
+
+        # difference = utils.magnitude_of_vector(0.05*resulting_vector)
+
+        # print("current position: " + str(curr_position))
+        # print("next position: " + str(curr_position + 0.05*resulting_vector))
+        # print("\n")
+
+        # # print("current position magnitude: " + str(utils.magnitude_of_vector(curr_position)))
+        # # print("next position magnitude: " + str(utils.magnitude_of_vector(curr_position + 0.05*resulting_vector)))
+        # print("difference: " + str(difference))
+
+        # if difference <= 0.5*self.radius:
+        #     print("set to current position, shouldn't move")
+        #     next = curr_position
+
+        # print("\n")
+        self.next_position = next
 
         self.move_to()
     
