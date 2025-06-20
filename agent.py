@@ -41,7 +41,7 @@ class Agent:
         height: hieght of the cylindrical body of the agent, a float
         mu_static: the coefficient of static friction, a float
         mu_dynamic: the coefficient of dynamic friction, a float
-        max_velocity: the maximum velocity the agent can obtain, a float
+        max_velocity: the maximum velocity that the agent can move in m/s, a float
         """
         self.next_position = position_0[:2] # gets the (x,y) of the position
         self.radius = radius # sets the radius of the agent
@@ -472,7 +472,7 @@ class Agent:
 
             return vector
     
-    def compute_next_step(self):
+    def set_next_step(self):
         """
         Calculates and sets the next position the agent should move to based on 
         the resultant weighted vector sum and its current close-range sensor data.
@@ -528,17 +528,21 @@ class Agent:
         # use smallest signed angle difference and then add the current heading and base heading
         rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
 
-        # stop the robot's current motion and check that it is stopped before continuing
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[100]*3)
-        while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
-            p.getCameraImage(320,200)
-            p.stepSimulation()
+        # # stop the robot's current motion and check that it is stopped before continuing
+        # p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[100]*3)
+        # while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
+        #     p.getCameraImage(320,200)
+        #     p.stepSimulation()
 
-        # set the robot to rotate to the desired heading and check that it reaches that heading before moving forward
-        p.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force)
-        while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
-            p.getCameraImage(320,200)
-            p.stepSimulation()
+        # # set the robot to rotate to the desired heading and check that it reaches that heading before moving forward
+        # p.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force)
+        # while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
+        #     p.getCameraImage(320,200)
+        #     p.stepSimulation()
         
-        p.setJointMotorControlArray(self.id, Agent.joint_indices[:2], p.POSITION_CONTROL,
-                                    targetPositions=[x_move, y_move], forces=[force]*2)
+        # p.setJointMotorControlArray(self.id, Agent.joint_indices[:2], p.POSITION_CONTROL,
+        #                             targetPositions=[x_move, y_move], forces=[force]*2)
+
+        # set motor to move robot to next position (uses PD control)
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.POSITION_CONTROL,
+                                    targetPositions=[x_move, y_move, rotation], forces=[force]*3)
