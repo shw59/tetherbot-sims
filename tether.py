@@ -46,7 +46,7 @@ class Tether:
                                 useNeoHookean=1, 
                                 useBendingSprings=1,
                                 useMassSpring=1, 
-                                springElasticStiffness=30, 
+                                springElasticStiffness=50, 
                                 springDampingStiffness=.1,
                                 springDampingAllDirections=1, 
                                 useSelfCollision=0, 
