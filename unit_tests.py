@@ -133,7 +133,6 @@ def test_angle_vector_270_to_90():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -174,7 +173,6 @@ def test_angle_vector_90_to_270():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -215,7 +213,6 @@ def test_angle_vector_90_to_90():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -256,7 +253,6 @@ def test_angle_vector_270_to_270():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -297,7 +293,6 @@ def test_angle_vector_90_to_180():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -338,7 +333,6 @@ def test_angle_vector_270_to_180():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -379,7 +373,6 @@ def test_angle_vector_180_to_270():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -420,7 +413,6 @@ def test_angle_vector_180_to_90():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()
 
@@ -461,7 +453,6 @@ def test_angle_vector_180_to_180():
         
         if my_world.agent_list[1].reached_target_position():
             my_world.agent_list[1].set_next_step()
-            my_world.agent_list[1].move_to()
         
         p.stepSimulation()     
         
@@ -508,7 +499,6 @@ def test_strain():
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.set_next_step()
-                agent.move_to()
 
         p.stepSimulation()
 
@@ -556,7 +546,6 @@ def test_gradient():
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.set_next_step()
-                agent.move_to()
 
         p.stepSimulation()
 
@@ -611,7 +600,6 @@ def test_gradient_strain():
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.set_next_step()
-                agent.move_to()
 
         p.stepSimulation()
         
@@ -666,7 +654,6 @@ def test_repulsion_gradient():
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.set_next_step()
-                agent.move_to()
 
         p.stepSimulation()
 
@@ -713,7 +700,6 @@ def test_strain_angle():
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.set_next_step()
-                agent.move_to()
 
         runs = runs + 1
 
@@ -770,7 +756,6 @@ def test_repulsion_gradient_strain():
         for agent in my_world.agent_list:
             if agent.reached_target_position():
                 agent.set_next_step()
-                agent.move_to()
 
         p.stepSimulation()
 
@@ -820,12 +805,40 @@ def test_gradient_strain_angle():
         for agent in my_world.agent_list:
             if runs%5 == 0:
                 agent.set_next_step()
-                agent.move_to()
-            if agent.reached_target_position():
-                agent.set_next_step()
-                agent.move_to()
 
         runs = runs + 1
+
+        p.stepSimulation()
+
+def test_position_movement():
+    n = 1
+
+    my_world = World(20, 20, TIME_STEP)
+
+    Agent.set_weights([10, 100, 2, 40]) # angle, strain, gradient, repulsion
+
+    # set initial object positions
+    initial_robot_positions = [[0, 0, 0],
+                               [0, 1, 0],
+                               [1, 1, 0]]
+
+    # populates the list of robot objects with robot objects
+    for i in range(n):
+        my_world.create_agent(initial_robot_positions[i], 0, radius = RADIUS, mu_static=3)
+
+    # populates the list of tether objects with tether objects
+    # for i in range(n-1):
+    #     my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
+
+    add_axis_labels()
+
+    for agent in my_world.agent_list[::1]:
+        agent.next_position = [3, 3]
+        agent.move_to()
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
 
         p.stepSimulation()
 
@@ -974,9 +987,8 @@ def test_moveable_obstacle():
             agent.sense_close_range(my_world.obj_list)
 
         for agent in my_world.agent_list:
-            if runs % 5 == 0 or agent.reached_target_position():
+            if runs % 5 == 0:
                 agent.set_next_step()
-                agent.move_to()
 
         runs = runs + 1
 
@@ -989,7 +1001,7 @@ def test_all():
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(gradient_source)
 
-    Agent.set_weights([10, 50, 50, 100]) # angle, strain, gradient, repulsion
+    Agent.set_weights([1, 1, 1, 1]) # angle, strain, gradient, repulsion
 
     # set initial object positions
     initial_robot_positions = [[0, 0, 0],
@@ -1031,7 +1043,6 @@ def test_all():
         for agent in my_world.agent_list:
             if runs % 5 == 0:
                 agent.set_next_step()
-                agent.move_to()
 
         runs = runs + 1
 

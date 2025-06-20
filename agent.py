@@ -13,11 +13,11 @@ import utils
 class Agent:
     label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
-    desired_strain = 0.3 # how much strain the agents will attempt to maintain in their tethers, if they have any
+    desired_strain = 0.2 # how much strain the agents will attempt to maintain in their tethers, if they have any
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
     err_strain = 0.04 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
     err_heading = 10
-    err_velocity = 0.1
+    err_velocity = 10
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
 
     @classmethod
@@ -255,7 +255,7 @@ class Agent:
     def get_delta(self):
         """
         Returns the angle between two tethers of an agent (in degrees). 
-        Returns None if there is no second tether. The angle is always positive and inbetween 0-360 degrees.
+        Returns None if there is no second tether. The angle is always positive and in between 0-360 degrees.
         """
         if (self.tethers[1] is None) or (self.tethers[0] is None):
             return None
@@ -405,12 +405,15 @@ class Agent:
         Returns the vector pointing towards the target destination, where the 
         vector's magnitude increases the farther from the destination the agent is.
         """
-        u_g, distance = self.gradient_sensor_data
+        v_g = np.array([0, 0])
 
-        scale = len(self.cr_sensor_data) < 3
-        
-        # The vector pointing in the direction of the source
-        v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
+        if self.gradient_sensor_data is not None:
+            u_g, distance = self.gradient_sensor_data
+
+            scale = len(self.cr_sensor_data) < 3
+            
+            # The vector pointing in the direction of the source (inverted gaussian)
+            v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
 
         return v_g
     
@@ -424,7 +427,7 @@ class Agent:
 
         for i in range(len(self.cr_sensor_data)):
             u_r, d, obj_type = self.cr_sensor_data[i]
-            v_r = v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r # Gaussian
+            v_r = 10**3 * (v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r) # Gaussian
             # do something here if the obj_type is not "unknown"
 
         return v_r
@@ -486,7 +489,7 @@ class Agent:
 
                 coefficient = sign * math.sqrt((abs_difference)/(10 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
-                vector = np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
+                vector = 0.005 * np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
 
         else:
             vector = np.array([0,0])
@@ -506,7 +509,6 @@ class Agent:
             v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
             v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
             v_angle = np.array([0, 0])
-
         except ValueError: # if agent has two tethers instantiated
             v_m_strain = self.compute_vector_strain(0)
             v_p_strain = self.compute_vector_strain(1)
@@ -517,7 +519,6 @@ class Agent:
 
         if self.gradient_sensor_data is None:
             v_gradient = np.array([0, 0])
-
         else:
             v_gradient = self.compute_vector_gradient()
 
@@ -526,43 +527,23 @@ class Agent:
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                             + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
         
-        # print("strain: " + str(Agent.strain_weight * (v_m_strain + v_p_strain)))
-        # print("gradient: " + str(Agent.gradient_weight * v_gradient))
-        # print("repulsion: " + str(Agent.repulsion_weight * v_repulsion))
-        # print("angle: " + str(Agent.angle_weight * v_angle))
-
-        # print(utils.magnitude_of_vector(v_m_strain + v_p_strain))
-        # print(utils.magnitude_of_vector(v_gradient))
-        # print(utils.magnitude_of_vector(v_repulsion))
-        # print(utils.magnitude_of_vector(v_angle))
+        print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
+        print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
+        print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
+        print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
+        print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
+        print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
         
-        if utils.magnitude_of_vector(resulting_vector) >= 1:
-            next = curr_position + 0.05*utils.normalize(resulting_vector)
-            # self.next_position = curr_position + 0.05*utils.normalize(resulting_vector)
+        # if utils.magnitude_of_vector(resulting_vector) > 0.5:
+        #     self.next_position = curr_position + 0.5 * utils.normalize(resulting_vector)
+        #     print(0.5 * utils.normalize(resulting_vector))
+        #     print(f"next_position: {self.next_position}", f"current position: {self.get_pose()[0]}", f"distance traveled: {math.dist(self.next_position, self.get_pose()[0])}\n")
+        # else:
+        #     self.next_position = curr_position + resulting_vector
+        #     print(0.5 * utils.normalize(resulting_vector))
+        #     print(f"next_position: {self.next_position}", f"current position: {self.get_pose()[0]}", f"distance traveled: {math.dist(self.next_position, self.get_pose()[0])}\n")
 
-        else:
-            # print("else entered")
-            next = curr_position + 0.05*resulting_vector
-            # self.next_position = curr_position + 0.05*resulting_vector
-
-        # next = curr_position + 0.05*resulting_vector
-
-        # difference = utils.magnitude_of_vector(0.05*resulting_vector)
-
-        # print("current position: " + str(curr_position))
-        # print("next position: " + str(curr_position + 0.05*resulting_vector))
-        # print("\n")
-
-        # # print("current position magnitude: " + str(utils.magnitude_of_vector(curr_position)))
-        # # print("next position magnitude: " + str(utils.magnitude_of_vector(curr_position + 0.05*resulting_vector)))
-        # print("difference: " + str(difference))
-
-        # if difference <= 0.5*self.radius:
-        #     print("set to current position, shouldn't move")
-        #     next = curr_position
-
-        # print("\n")
-        self.next_position = next
+        self.next_position = curr_position + resulting_vector
 
         self.move_to(self.max_force)
     
@@ -601,4 +582,5 @@ class Agent:
         # set motor to move robot to next position (uses PD control)
         for i in range(2):
             p.setJointMotorControl2(self.id, Agent.joint_indices[i], p.POSITION_CONTROL,
-                                    targetPosition=target_positions[i], force=force, maxVelocity=self.max_velocity, velocityGain=1.5)
+                                    targetPosition=target_positions[i], force=force, maxVelocity=self.max_velocity,
+                                    positionGain=0.1)
