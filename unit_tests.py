@@ -989,7 +989,7 @@ def test_all():
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(gradient_source)
 
-    Agent.set_weights([10, 100, 500, 100]) # angle, strain, gradient, repulsion
+    Agent.set_weights([10, 50, 50, 100]) # angle, strain, gradient, repulsion
 
     # set initial object positions
     initial_robot_positions = [[0, 0, 0],

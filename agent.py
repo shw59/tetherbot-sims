@@ -28,13 +28,12 @@ class Agent:
         Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
 
     # Initializes an agent object
-    def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity):
+    def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity, max_velocity_angular, drive_power):
         """
         Initializes an agent object and its position and id attributes.
 
         position_0: a three dimenstional vector in the form [x, y, z]
-        heading_0: the direction the heading will face, a float in degrees whose angle 
-                   is measured from the +x-axis
+        heading_0: the direction the heading will face, a float in degrees whose angle is measured from the +x-axis
         radius: the radius of the cylindrical body of the agent, a float
         mass: the mass of the agent, a float
         color: the color of the agent, (r, g, b, 1), where r/g/b are either 0 or 1 to create different colors
@@ -44,6 +43,9 @@ class Agent:
         max_velocity: the maximum velocity that the agent can move in m/s, a float
         """
         self.next_position = position_0[:2] # gets the (x,y) of the position
+        self.max_velocity = max_velocity
+        self.max_velocity_angular = max_velocity_angular
+        self.max_force = drive_power / max_velocity
         self.radius = radius # sets the radius of the agent
         self.sensing_radius = radius * 4 # sets the sensing radius of the agent
         self.desired_tether_angle = None # initializes the desired tether angle to be None
@@ -162,10 +164,9 @@ class Agent:
         # set initial heading
         p.resetJointState(self.id, 2, math.radians(heading_0))
 
-        # set dynamic friction coefficient and maximum velocities
-        p.changeDynamics(self.id, 0, jointDamping=mu_dynamic, maxJointVelocity=max_velocity)
-        p.changeDynamics(self.id, 1, jointDamping=mu_dynamic, maxJointVelocity=max_velocity)
-        p.changeDynamics(self.id, 2, jointDamping=mu_dynamic, maxJointVelocity=max_velocity)
+        # set dynamic friction coefficient
+        for i in range(3):
+            p.changeDynamics(self.id, i, jointDamping=mu_dynamic)
 
         # set static friction coefficient
         force_friction = utils.normal_force(mass) * mu_static
@@ -508,9 +509,9 @@ class Agent:
         else:
             self.next_position = curr_position + 0.05*resulting_vector
 
-        self.move_to()
+        self.move_to(self.max_force)
     
-    def move_to(self, force=15):
+    def move_to(self, force=float('inf')):
         """
         Moves the agent from its current position to its next_position.
         """
@@ -528,21 +529,21 @@ class Agent:
         # use smallest signed angle difference and then add the current heading and base heading
         rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
 
-        # # stop the robot's current motion and check that it is stopped before continuing
-        # p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[100]*3)
-        # while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
-        #     p.getCameraImage(320,200)
-        #     p.stepSimulation()
+        # stop the robot's current motion and check that it is stopped before continuing
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[100]*3)
+        while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
+            p.getCameraImage(320,200)
+            p.stepSimulation()
 
-        # # set the robot to rotate to the desired heading and check that it reaches that heading before moving forward
-        # p.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force)
-        # while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
-        #     p.getCameraImage(320,200)
-        #     p.stepSimulation()
+        # set the robot to rotate to the desired heading and check that it reaches that heading before moving forward
+        p.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force, maxVelocity=self.max_velocity_angular)
+        while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
+            p.getCameraImage(320,200)
+            p.stepSimulation()
+
+        target_positions = [x_move, y_move, rotation]
         
-        # p.setJointMotorControlArray(self.id, Agent.joint_indices[:2], p.POSITION_CONTROL,
-        #                             targetPositions=[x_move, y_move], forces=[force]*2)
-
         # set motor to move robot to next position (uses PD control)
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.POSITION_CONTROL,
-                                    targetPositions=[x_move, y_move, rotation], forces=[force]*3)
+        for i in range(2):
+            p.setJointMotorControl2(self.id, Agent.joint_indices[i], p.POSITION_CONTROL,
+                                    targetPosition=target_positions[i], force=force, maxVelocity=self.max_velocity, velocityGain=1.5)

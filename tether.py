@@ -9,7 +9,7 @@ import math
 
 class Tether:
     label = "tether"
-    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, mu):
+    def __init__(self, position_0, length_0, orientation_0, num_segments, stiffness, mass, mu):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
 
@@ -17,6 +17,7 @@ class Tether:
         length_0: Nominal length of the tether in meters
         orientation_0: A quaternion in the form of a 4-element list [w, x, y, z]
         num_segments: number of flexible spring-like segments the tether is spliced into
+        stiffness: stiffness of the tether in N/m
         mass: mass of the tether in kg
         mu: contact friction coefficient of the tether
         """
@@ -38,15 +39,17 @@ class Tether:
         tether_filename = f"objects/tether.obj"
         open(tether_filename, "w").write("\n".join(lines))
 
+        total_stiffness = stiffness / length_0
+
         self.id = p.loadSoftBody(tether_filename, 
                                 basePosition = position_0, 
                                 baseOrientation = orientation_0,
                                 scale=1, 
                                 mass=mass, 
-                                useNeoHookean=1, 
+                                useNeoHookean=0, 
                                 useBendingSprings=1,
                                 useMassSpring=1, 
-                                springElasticStiffness=30, 
+                                springElasticStiffness=total_stiffness, 
                                 springDampingStiffness=.1,
                                 springDampingAllDirections=1, 
                                 useSelfCollision=0, 
