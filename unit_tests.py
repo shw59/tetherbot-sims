@@ -132,7 +132,7 @@ def test_angle_vector_270_to_90():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -173,7 +173,7 @@ def test_angle_vector_90_to_270():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -214,7 +214,7 @@ def test_angle_vector_90_to_90():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -255,7 +255,7 @@ def test_angle_vector_270_to_270():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -296,7 +296,7 @@ def test_angle_vector_90_to_180():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -337,7 +337,7 @@ def test_angle_vector_270_to_180():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -378,7 +378,7 @@ def test_angle_vector_180_to_270():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -419,7 +419,7 @@ def test_angle_vector_180_to_90():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()
@@ -460,7 +460,7 @@ def test_angle_vector_180_to_180():
         p.getCameraImage(320,200)
         
         if my_world.agent_list[1].reached_target_position():
-            my_world.agent_list[1].compute_next_step()
+            my_world.agent_list[1].set_next_step()
             my_world.agent_list[1].move_to()
         
         p.stepSimulation()     
@@ -507,7 +507,7 @@ def test_strain():
 
         for agent in my_world.agent_list:
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         p.stepSimulation()
@@ -555,7 +555,7 @@ def test_gradient():
 
         for agent in my_world.agent_list:
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         p.stepSimulation()
@@ -610,7 +610,7 @@ def test_gradient_strain():
 
         for agent in my_world.agent_list:
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         p.stepSimulation()
@@ -665,7 +665,7 @@ def test_repulsion_gradient():
 
         for agent in my_world.agent_list:
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         p.stepSimulation()
@@ -712,7 +712,7 @@ def test_strain_angle():
             
         for agent in my_world.agent_list:
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         runs = runs + 1
@@ -769,7 +769,7 @@ def test_repulsion_gradient_strain():
 
         for agent in my_world.agent_list:
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         p.stepSimulation()
@@ -819,10 +819,10 @@ def test_gradient_strain_angle():
 
         for agent in my_world.agent_list:
             if runs%5 == 0:
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
             if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         runs = runs + 1
@@ -975,7 +975,7 @@ def test_moveable_obstacle():
 
         for agent in my_world.agent_list:
             if runs % 5 == 0 or agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         runs = runs + 1
@@ -989,7 +989,7 @@ def test_all():
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(gradient_source)
 
-    Agent.set_weights([10, 100, 500, 100]) # angle, strain, gradient, repulsion
+    Agent.set_weights([10, 50, 50, 100]) # angle, strain, gradient, repulsion
 
     # set initial object positions
     initial_robot_positions = [[0, 0, 0],
@@ -1030,10 +1030,7 @@ def test_all():
 
         for agent in my_world.agent_list:
             if runs % 5 == 0:
-                agent.compute_next_step()
-                agent.move_to()
-            if agent.reached_target_position():
-                agent.compute_next_step()
+                agent.set_next_step()
                 agent.move_to()
 
         runs = runs + 1
@@ -1042,7 +1039,7 @@ def test_all():
   
 
 def main():
-    test_friction_default()
+    test_all()
 
 if __name__ == "__main__":
     main()

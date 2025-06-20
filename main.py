@@ -258,7 +258,7 @@ def storm_drain():
         if runs % SENSING_PERIOD == 0:
             for i in range(len(shuffled_list)):
                 if i == agent_to_update_next:
-                    shuffled_list[i].compute_next_step()
+                    shuffled_list[i].set_next_step()
                 
             agent_to_update_next = agent_to_update_next + 1
 
