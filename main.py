@@ -275,10 +275,10 @@ def basic_test():
     """
     n = 3
 
-    a_weight = 30 # angle vector weighting
-    s_weight = 300 # strain vector weighting
-    g_weight = 0.6 # gradient vector weighting
-    r_weight = 1 # repulsion vector weighting
+    a_weight = 6 # angle vector weighting
+    s_weight = 4 # strain vector weighting
+    g_weight = 7 # gradient vector weighting
+    r_weight = 3 # repulsion vector weighting
 
     gradient = [0,0]
 
@@ -337,7 +337,7 @@ def basic_test():
         if runs % SENSING_PERIOD == 0:
             for i in range(len(shuffled_list)):
                 if i == agent_to_update_next:
-                    shuffled_list[i].compute_next_step()
+                    shuffled_list[i].set_next_step()
                 
             agent_to_update_next = agent_to_update_next + 1
 

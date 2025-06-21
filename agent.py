@@ -15,9 +15,9 @@ class Agent:
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     desired_strain = 0.2 # how much strain the agents will attempt to maintain in their tethers, if they have any
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
-    err_strain = 0.04 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    err_strain = 0.09 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
     err_heading = 10
-    err_velocity = 10
+    err_velocity = .1
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
 
     @classmethod
@@ -169,8 +169,8 @@ class Agent:
             p.changeDynamics(self.id, i, jointDamping=mu_dynamic)
 
         # set static friction coefficient
-        force_friction = utils.normal_force(mass) * mu_static
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[force_friction]*3)
+        self.force_friction_static = utils.normal_force(mass) * mu_static
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[self.force_friction_static]*3)
     
     def instantiate_m_tether(self, m_tether):
         """
@@ -421,14 +421,12 @@ class Agent:
         """
         Returns the repulsion vector given close-range sensor data.
         """
-        amplitude = 16 * self.radius
-        std_dev = self.radius
         v_r = np.array([0, 0])
 
         for i in range(len(self.cr_sensor_data)):
             u_r, d, obj_type = self.cr_sensor_data[i]
-            v_r = 10**3 * (v_r + amplitude * math.exp(-d**2 / (2 * std_dev**2)) * u_r) # Gaussian
-            # do something here if the obj_type is not "unknown"
+            v_r = v_r + 0.05 * math.exp(-d**2 / self.sensing_radius) * u_r # Gaussian
+            # can do something here if the obj_type is not "unknown"
 
         return v_r
     
@@ -453,7 +451,7 @@ class Agent:
 
         abs_difference = abs(difference)
 
-        if (abs_difference > Agent.err_delta):
+        if (abs_difference > Agent.err_delta) and self.desired_tether_angle is not None:
 
             if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
                 heading = np.array(self.get_pose()[1])
@@ -489,7 +487,7 @@ class Agent:
 
                 coefficient = sign * math.sqrt((abs_difference)/(10 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
-                vector = 0.005 * np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
+                vector = 0.01 * np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
 
         else:
             vector = np.array([0,0])
@@ -502,51 +500,79 @@ class Agent:
         the resultant weighted vector sum and its current close-range sensor data.
         The function then calls move_to so that the robot begins to move in that direction.
         """
-        curr_position = np.array(self.get_pose()[0])
-        
-        try: # if agent has one tether instantiated
-            tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
-            v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
-            v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
-            v_angle = np.array([0, 0])
-        except ValueError: # if agent has two tethers instantiated
-            v_m_strain = self.compute_vector_strain(0)
-            v_p_strain = self.compute_vector_strain(1)
-            v_angle = self.compute_vector_angle()
+        if self.is_stable():
 
-        if self.desired_tether_angle == None:
-            v_angle = np.array([0, 0])
+            curr_position = np.array(self.get_pose()[0])
+            
+            try: # if agent has one tether instantiated
+                tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
+                v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
+                v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
+                v_angle = np.array([0, 0])
+            except ValueError: # if agent has two tethers instantiated
+                v_m_strain = self.compute_vector_strain(0)
+                v_p_strain = self.compute_vector_strain(1)
+                v_angle = self.compute_vector_angle()
 
-        if self.gradient_sensor_data is None:
-            v_gradient = np.array([0, 0])
-        else:
             v_gradient = self.compute_vector_gradient()
+            v_repulsion = self.compute_vector_repulsion()
 
-        v_repulsion = self.compute_vector_repulsion()
+            resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
+                                + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+            
+            print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
+            print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
+            print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
+            print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
+            print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
+            print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
+            
+            if utils.magnitude_of_vector(resulting_vector) > 0.25:
+                self.next_position = curr_position + 0.25 * utils.normalize(resulting_vector)
+                print(utils.magnitude_of_vector(0.25 * utils.normalize(resulting_vector)))
+            else:
+                self.next_position = curr_position + resulting_vector
 
-        resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
+            # self.next_position = curr_position + resulting_vector
+
+            self.move_to(self.max_force)
+
+    def is_stable(self, step_size=3):
+        """
+        Checks the vectors calculated in the next few steps and ensures they are roughly in a similar direction (within 90 degrees of each other) before proceeding
+        """
+        curr_position = np.array(self.get_pose()[0])
+        next_vectors = []
+
+        for _ in range(step_size):
+            try:
+                tether_num = not self.tethers.index(None)
+                v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
+                v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
+                v_angle = np.array([0, 0])
+            except ValueError:
+                v_m_strain = self.compute_vector_strain(0)
+                v_p_strain = self.compute_vector_strain(1)
+                v_angle = self.compute_vector_angle()
+
+            v_gradient = self.compute_vector_gradient()
+            v_repulsion = self.compute_vector_repulsion()
+
+            resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                             + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
-        
-        print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
-        print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
-        print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
-        print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
-        print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
-        print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
-        
-        # if utils.magnitude_of_vector(resulting_vector) > 0.5:
-        #     self.next_position = curr_position + 0.5 * utils.normalize(resulting_vector)
-        #     print(0.5 * utils.normalize(resulting_vector))
-        #     print(f"next_position: {self.next_position}", f"current position: {self.get_pose()[0]}", f"distance traveled: {math.dist(self.next_position, self.get_pose()[0])}\n")
-        # else:
-        #     self.next_position = curr_position + resulting_vector
-        #     print(0.5 * utils.normalize(resulting_vector))
-        #     print(f"next_position: {self.next_position}", f"current position: {self.get_pose()[0]}", f"distance traveled: {math.dist(self.next_position, self.get_pose()[0])}\n")
 
-        self.next_position = curr_position + resulting_vector
+            next_vectors.append(resulting_vector)
+            curr_position += resulting_vector  # simulate moving in this direction
 
-        self.move_to(self.max_force)
-    
+        next_directions = [math.degrees(math.atan2(v[1], v[0])) for v in next_vectors]
+        for i in range(len(next_directions) - 1):
+            delta_angle = abs(next_directions[i+1] - next_directions[i])
+            delta_angle = min(delta_angle, 360 - delta_angle)  # shortest angular difference
+            if delta_angle >= 90:
+                return False
+            
+        return True
+
     def move_to(self, force=float('inf')):
         """
         Moves the agent from its current position to its next_position.
@@ -566,7 +592,7 @@ class Agent:
         rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
 
         # stop the robot's current motion and check that it is stopped before continuing
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[100]*3)
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[self.force_friction_static]*3)
         while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
             p.getCameraImage(320,200)
             p.stepSimulation()
@@ -583,4 +609,4 @@ class Agent:
         for i in range(2):
             p.setJointMotorControl2(self.id, Agent.joint_indices[i], p.POSITION_CONTROL,
                                     targetPosition=target_positions[i], force=force, maxVelocity=self.max_velocity,
-                                    positionGain=0.1)
+                                    positionGain=0.05)

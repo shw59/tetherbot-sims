@@ -938,7 +938,7 @@ def test_friction_high_static_low_dynamic():
 
         p.stepSimulation()
 
-def test_moveable_obstacle():
+def test_movable_obstacle():
     n = 3
     gradient_source = [6, 0]
 
@@ -1001,7 +1001,7 @@ def test_all():
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(gradient_source)
 
-    Agent.set_weights([1, 1, 1, 1]) # angle, strain, gradient, repulsion
+    Agent.set_weights([6, 4, 10, 3]) # angle, strain, gradient, repulsion
 
     # set initial object positions
     initial_robot_positions = [[0, 0, 0],
@@ -1009,7 +1009,7 @@ def test_all():
                                [1, 1, 0]]
     
     # Goal angles for each agent
-    goal_angles = [None, 90, None]
+    goal_angles = [None, 180, None]
 
     # populates the list of robot objects with robot objects
     for i in range(n):
@@ -1030,11 +1030,17 @@ def test_all():
     while p.isConnected():
         p.getCameraImage(320,200)
 
-        if runs % 200 == 0:
-            strain_m = my_world.agent_list[1].tethers[0].get_strain()
-            strain_p = my_world.agent_list[1].tethers[1].get_strain()
-            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
-                        [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+        strain_m = my_world.agent_list[1].tethers[0].get_strain()
+        strain_p = my_world.agent_list[1].tethers[1].get_strain()
+        delta = my_world.agent_list[1].get_delta()
+        p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f} delta = {delta:.2f}",
+                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+        # if runs % 200 == 0:
+        #     strain_m = my_world.agent_list[1].tethers[0].get_strain()
+        #     strain_p = my_world.agent_list[1].tethers[1].get_strain()
+        #     p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
+        #                 [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
             
         for agent in my_world.agent_list:
             agent.sense_gradient(my_world.gradient_source)
