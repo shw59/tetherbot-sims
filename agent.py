@@ -14,6 +14,7 @@ class Agent:
     label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     desired_strain = 0.2 # how much strain the agents will attempt to maintain in their tethers, if they have any
+    err_pos = 0.1
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
     err_strain = 0.09 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
     err_heading = 10
@@ -408,13 +409,16 @@ class Agent:
         """
         v_g = np.array([0, 0])
 
-        if self.gradient_sensor_data is not None:
+        if self.gradient_sensor_data is not None and not self.deactivate_gradient:
             u_g, distance = self.gradient_sensor_data
 
-            scale = len(self.cr_sensor_data) < 3
-            
-            # The vector pointing in the direction of the source (inverted gaussian)
-            v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
+            if distance > Agent.err_pos:
+                scale = len(self.cr_sensor_data) < 3
+                
+                # The vector pointing in the direction of the source (inverted gaussian)
+                v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
+            else:
+                self.deactivate_gradient
 
         return v_g
     
@@ -513,11 +517,8 @@ class Agent:
             v_p_strain = self.compute_vector_strain(1)
             v_angle = self.compute_vector_angle()
 
-        if self.deactivate_gradient:
-            v_gradient = np.array([0, 0])
-        else:
-            v_gradient = self.compute_vector_gradient()
-            
+        v_gradient = self.compute_vector_gradient()
+
         v_repulsion = self.compute_vector_repulsion()
 
         resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
@@ -540,6 +541,7 @@ class Agent:
 
         self.stop_move()
 
+        # check the strain and angles of attached tethers right after stopping moving
         tether_strains_before = []
         tether_angles_before = []
         for i in range(2):
@@ -549,6 +551,7 @@ class Agent:
 
         self.move_to(self.max_force)
 
+        # check tether strains and angles after some time has passed since the robot stopped moving
         tether_strains_after = []
         tether_angles_after = []
         for i in range(2):
@@ -556,9 +559,18 @@ class Agent:
                 tether_strains_after.append(self.tethers[i].get_strain())
                 tether_angles_after.append(self.get_theta(i))
 
+        # if the strains and angles are equal before and after, then an adjacent robot has likely reached the gradient point
         for i in range(len(tether_strains_before)):
             if tether_strains_before[i] == tether_strains_after and tether_angles_before[i] == tether_angles_after[i]:
                 self.deactivate_gradient = True
+
+        # this logic above to determine whether an adjacent agent still cares about gradient or not might need some work
+        # this relies on the assumption that if the robot doesn't care about gradient anymore, it will eventually be able to 
+        # reach roughly 0 movement as demonstrated in the basic test in main.py (they only seemed to move to adjust for gradient, 
+        # everything else like strain and angle became 0 vectors)
+
+        # also might need to weigh the gradient more or change the scaling function a little to make sure at least one robot will 
+        # make it exactly to the gradient source
             
     def stop_move(self):
         """
