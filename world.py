@@ -69,7 +69,7 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         
-    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=17, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.5, mu_dynamic=0.7, max_velocity=2, max_velocity_angular=10, drive_power=500):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=17, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.5, mu_dynamic=0.9, max_velocity=2, max_velocity_angular=10, drive_power=500):
         """
         Adds an agent to the simulation world and returns its object.
         """
@@ -80,7 +80,7 @@ class World:
 
         return agent
     
-    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, num_segments=10, stiffness=1800, mass=1.0, mu=0.0):
+    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, num_segments=10, stiffness=1800, mass=0, mu=0.0):
         """
         Creates and anchors a tether between two specified agent objects, returns the tether object.
         """

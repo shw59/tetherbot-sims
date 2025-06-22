@@ -13,9 +13,7 @@ def normalize(vec):
     Normalize a vector (must be a numpy array).
     """
     norm = np.linalg.norm(vec)
-    if norm == 0:
-        return vec
-    return vec / norm
+    return vec / norm if norm != 0 else vec
 
 def magnitude_of_vector(vec):
     """
