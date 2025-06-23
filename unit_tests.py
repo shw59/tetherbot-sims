@@ -1001,7 +1001,7 @@ def test_all():
     my_world = World(20, 20, TIME_STEP)
     my_world.set_gradient_source(gradient_source)
 
-    Agent.set_weights([6, 4, 10, 3]) # angle, strain, gradient, repulsion
+    Agent.set_weights([10, 7, 5, 4]) # angle, strain, gradient, repulsion
 
     # set initial object positions
     initial_robot_positions = [[0, 0, 0],
@@ -1009,7 +1009,7 @@ def test_all():
                                [1, 1, 0]]
     
     # Goal angles for each agent
-    goal_angles = [None, 180, None]
+    goal_angles = [None, 90, None]
 
     # populates the list of robot objects with robot objects
     for i in range(n):

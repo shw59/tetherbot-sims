@@ -8,7 +8,7 @@ This repository holds the PyBullet simulation framework for realistically simula
 
 - All units for inputs and outputs are in SI units (kg, newtons, meters, seconds, etc.) unless stated otherwise in comments or documentation.
 
-- All tetherbots and obstacles are situated on planar joints (technically two prismatic joints stacked on each other because PyBullet does not support planar joints directly) with a continuous joints that enable rotation. This is to restrict their motion and physics to 2D.
+- All tetherbots and obstacles are situated on planar joints (technically two prismatic joints stacked on each other because PyBullet does not support planar joints directly) with a continuous joints that enable on-axis rotation. This is to restrict their motion and physics to 2D.
 
 ## PyBullet Notes
 
