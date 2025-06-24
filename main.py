@@ -12,11 +12,11 @@ import numpy as np
 import math
 import random
 
-HEIGHT = 0.01
+HEIGHT = 0.25
 TIME_STEP = 1./240.
 N = 5
 UNSTRETCHED_TETHER_LENGTH = 1
-RADIUS = 0.1
+RADIUS = 0.29
 GRADIENT_SOURCE = [0, 0]
 ANGLE_WEIGHT = 2.5 # weighting of the angle vector in the overall resulting vector, normally 2.5
 STRAIN_WEIGHT = 300 # weighting of the angle vector in the overall resulting vector, normally 300
@@ -337,7 +337,12 @@ def basic_test():
             strain_m = my_world.agent_list[1].tethers[0].get_strain()
             strain_p = my_world.agent_list[1].tethers[1].get_strain()
 
-            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}",
+            x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
+            y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
+
+            total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
+
+            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
                                [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
             
             if runs % SENSING_PERIOD == 0:

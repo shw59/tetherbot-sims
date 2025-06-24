@@ -43,6 +43,7 @@ class Agent:
         mu_dynamic: the coefficient of dynamic friction, a float
         max_velocity: the maximum velocity that the agent can move in m/s, a float
         """
+        self.height = height
         self.next_position = position_0[:2] # gets the (x,y) of the position
         self.max_velocity = max_velocity
         self.max_velocity_angular = max_velocity_angular
