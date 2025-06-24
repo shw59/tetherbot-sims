@@ -11,10 +11,12 @@ from agent import Agent
 import numpy as np
 import math
 import random
+import csv
+import time
 
 HEIGHT = 0.25
 TIME_STEP = 1./240.
-N = 5
+N = 3
 
 UNSTRETCHED_TETHER_LENGTH = 2
 RADIUS = 0.29
@@ -25,6 +27,7 @@ GRADIENT_WEIGHT = 0.6 # weighting of the angle vector in the overall resulting v
 REPULSION_WEIGHT = 1 # weighting of the angle vector in the overall resulting vector, normally 1
 SENSING_PERIOD = 5 # The number of while loop iterations that should run before a singular, random
                    # agent updates its goal position
+LOGGING_PERIOD = 20 # The number of while loop iterstions that pass before data is written to a csv file
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
@@ -363,17 +366,154 @@ def basic_test():
         
         p.stepSimulation()
         
-def angle_and_position_offset(n, angle, offset):
-    return 0
+def angle_and_position_offset(n, angle, offset, seperation):
+    """
+    Returns 2D positions that are in a straight line that is some angle off of the 
+    y-axis from the y-intercept position, and the y-intercept is determined based
+    on the offset.
+    n: number of positions to generate
+    angle: angle off of +y-axis towards +x-axis in degrees
+    offset: value of the y-offset of the center of the line of agents about (0,0)
+    """
 
-def obstacle_avoidance():
-    return 0
+    positions = []
+
+    for i in range(n):
+        positions.append([0,0,0])
+
+    bottom = 0.5*seperation*(1-n)
+    positions[0] = [bottom, 0]
+
+    for i in range(1, n):
+        positions[i] = [bottom+seperation*(i), 0, 0]
+
+    angle_off_positive_x = np.radians(90 - angle)
+
+    for i in range(n):
+        positions[i] = [round(np.cos(angle_off_positive_x)*positions[i][0], 5), round(np.sin(angle_off_positive_x)*positions[i][0], 5) + offset, 0]
+
+    return positions
+
+def log_to_csv(filename, data_row, header=None):
+    """
+    Logs a data row to a CSV file.
+    If header is provided and the file is new, it writes the header first.
+    """
+    with open(filename, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+
+        # Check if the file is empty to write header
+        if csvfile.tell() == 0 and header:
+            writer.writerow(header)
+
+        writer.writerow(data_row)
+
+def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 2, r_weight = 3, gradient = [20,0], obst_pos = [10,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000):
+    """
+    Generates a very simple formation of agents in order to test the hysteresis.
+    """
+
+    my_world = World(200, 200, TIME_STEP)
+
+    my_world.set_gradient_source(gradient)
+
+    Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+    
+    initial_agent_positions = angle_and_position_offset(n, angle_off_y, y_offset, l_0)
+
+    goals = []
+    for i in range(n):
+        if i == 0 or i == (n-1):
+            goals.append(None)
+        else:
+            goals.append(180)
+
+    # populates the list of robot objects with agent objects
+    for i in range(n):
+        my_world.create_agent(initial_agent_positions[i], 0, radius = RADIUS, goal_delta = goals[i], height=HEIGHT, color=(1, 0, 0, 1))
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], l_0, num_segments = 5)
+
+    my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
+
+    add_axis_labels()
+    
+    runs = 0
+
+    agent_to_update_next = 0
+
+    shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+
+    log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset.csv"
+
+    log_header = ['Timestep']
+
+    for i in range(n):
+        log_header.append('agent-' + str(i) + '_x')
+        log_header.append('agent_' + str(i) + '_y')
+
+    
+    # main simulation loop
+    while (runs < stop) and (p.isConnected()):
+        if runs%30:
+            p.getCameraImage(320,200)
+
+        for agent in shuffled_list:
+            agent.sense_gradient(my_world.gradient_source)
+            agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+        if runs % SENSING_PERIOD == 0:
+            for i in range(len(shuffled_list)):
+                if i == agent_to_update_next:
+                    shuffled_list[i].set_next_step()
+            
+            # strain_m = my_world.agent_list[1].tethers[0].get_strain()
+            # strain_p = my_world.agent_list[1].tethers[1].get_strain()
+
+            # x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
+            # y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
+
+            # total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
+
+            # p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
+            #                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
+            agent_to_update_next = agent_to_update_next + 1
+
+            if agent_to_update_next >= len(shuffled_list):
+                agent_to_update_next = 0
+
+        if runs%LOGGING_PERIOD == 0:
+            data = [runs]
+            for agent in my_world.agent_list:
+                data.append(round(agent.get_pose()[0][0], 5))
+                data.append(round(agent.get_pose()[0][1], 5))
+        
+            log_to_csv(log_file, data, header=log_header)
+
+        runs = runs + 1
+        
+        p.stepSimulation()
+
+    return
+
+def run_obstacle_simulations(n, l_0, number_of_runs, offsets, angles_to_try):
+    for o in offsets:
+        for a in angles_to_try:
+            print("a is: " +str(a))
+            obstacle_avoidance(n, l_0, o, a, stop = number_of_runs)
+
+
 
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    basic_test()
+    run_obstacle_simulations(n=N, l_0=UNSTRETCHED_TETHER_LENGTH, number_of_runs=15, offsets=[1,0,-1], angles_to_try=[0, 15, 30])
+    # obstacle_avoidance(N, UNSTRETCHED_TETHER_LENGTH, 0, 0, stop = 15)
+
 
 if __name__ == "__main__":
     main()
