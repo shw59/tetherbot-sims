@@ -15,17 +15,18 @@ import random
 HEIGHT = 0.25
 TIME_STEP = 1./240.
 N = 5
-UNSTRETCHED_TETHER_LENGTH = 1
+
+UNSTRETCHED_TETHER_LENGTH = 2
 RADIUS = 0.29
 GRADIENT_SOURCE = [0, 0]
 ANGLE_WEIGHT = 2.5 # weighting of the angle vector in the overall resulting vector, normally 2.5
 STRAIN_WEIGHT = 300 # weighting of the angle vector in the overall resulting vector, normally 300
 GRADIENT_WEIGHT = 0.6 # weighting of the angle vector in the overall resulting vector, normally 0.6
 REPULSION_WEIGHT = 1 # weighting of the angle vector in the overall resulting vector, normally 1
-SENSING_PERIOD = 15 # The number of while loop iterations that should run before a singular, random
+SENSING_PERIOD = 5 # The number of while loop iterations that should run before a singular, random
                    # agent updates its goal position
 
-def get_starting_positions(l_0, n, angles, starting_position, direction):
+def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
     Calculates and returns a list the starting position based on the list of 
     desired starting angles and the unstretched length of the tether between 
@@ -46,13 +47,13 @@ def get_starting_positions(l_0, n, angles, starting_position, direction):
     for i in range(1, n):
         if angles[i-1] == None:
             if direction == "+x":
-                next_position = [the_list[i-1][0] + 1, the_list[i-1][1], the_list[i-1][2]]
+                next_position = [the_list[i-1][0] + UNSTRETCHED_TETHER_LENGTH, the_list[i-1][1], the_list[i-1][2]]
             elif direction == "-x":
-                next_position = [the_list[i-1][0] - 1, the_list[i-1][1], the_list[i-1][2]]
+                next_position = [the_list[i-1][0] - UNSTRETCHED_TETHER_LENGTH, the_list[i-1][1], the_list[i-1][2]]
             elif direction == "+y":
-                next_position = [the_list[i-1][0], the_list[i-1][1] + 1, the_list[i-1][2]]
+                next_position = [the_list[i-1][0], the_list[i-1][1] + UNSTRETCHED_TETHER_LENGTH, the_list[i-1][2]]
             elif direction == "-y":
-                next_position = [the_list[i-1][0], the_list[i-1][1] - 1, the_list[i-1][2]]
+                next_position = [the_list[i-1][0], the_list[i-1][1] - UNSTRETCHED_TETHER_LENGTH, the_list[i-1][2]]
             else:
                 print("Please specify the direction you want to build the robots. Can be '+x', '-x', '+y', or '-y'")
                 return the_list
@@ -116,7 +117,7 @@ def storm_drain():
 
     angles = [None, 180, 180, 180, 180, 180, 180, 180, None]
     
-    initial_robot_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, n, angles, [-30,-7,0], "+x")
+    initial_robot_positions = basic_starting_positions(UNSTRETCHED_TETHER_LENGTH, n, angles, [-30,-7,0], "+x")
     
     goal_angles = [None, 180, 180, 180, 180, 180, 180, 180, None]
 
@@ -275,12 +276,14 @@ def basic_test():
     """
     n = 3
 
-    a_weight = 1 # angle vector weighting
-    s_weight = 1 # strain vector weighting
-    g_weight = 1 # gradient vector weighting
-    r_weight = 1 # repulsion vector weighting
 
-    gradient = [0,0]
+    a_weight = 10 # angle vector weighting
+    s_weight = 15 # strain vector weighting
+    g_weight = 2 # gradient vector weighting
+    r_weight = 3 # repulsion vector weighting
+
+
+    gradient = [0,-10]
 
     my_world = World(15, 15, TIME_STEP)
 
@@ -290,7 +293,7 @@ def basic_test():
 
     angles = [None, 90, None]
     
-    initial_agent_positions = get_starting_positions(UNSTRETCHED_TETHER_LENGTH, n, angles, [-1,0,0], "+x")
+    initial_agent_positions = basic_starting_positions(UNSTRETCHED_TETHER_LENGTH, n, angles, [-1,0,0], "+x")
     
     goal_angles = [None, 270, None]
 
@@ -334,6 +337,12 @@ def basic_test():
             agent.sense_gradient(my_world.gradient_source)
             agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
+
+        if runs % SENSING_PERIOD == 0:
+            for i in range(len(shuffled_list)):
+                if i == agent_to_update_next:
+                    shuffled_list[i].set_next_step()
+              
             strain_m = my_world.agent_list[1].tethers[0].get_strain()
             strain_p = my_world.agent_list[1].tethers[1].get_strain()
 
@@ -344,12 +353,7 @@ def basic_test():
 
             p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
                                [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
-            
-            if runs % SENSING_PERIOD == 0:
-                for i in range(len(shuffled_list)):
-                    if i == agent_to_update_next:
-                        shuffled_list[i].set_next_step()
-                
+
             agent_to_update_next = agent_to_update_next + 1
 
             if agent_to_update_next >= len(shuffled_list):
@@ -359,6 +363,12 @@ def basic_test():
         
         p.stepSimulation()
         
+def angle_and_position_offset(n, angle, offset):
+    return 0
+
+def obstacle_avoidance():
+    return 0
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
