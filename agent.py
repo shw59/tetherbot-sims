@@ -14,7 +14,7 @@ class Agent:
     label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
     desired_strain = 0.2 # how much strain the agents will attempt to maintain in their tethers, if they have any
-    err_pos = 0.1
+    err_pos = 0.5
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
     err_strain = 0.09 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
     err_heading = 10
@@ -43,6 +43,7 @@ class Agent:
         mu_dynamic: the coefficient of dynamic friction, a float
         max_velocity: the maximum velocity that the agent can move in m/s, a float
         """
+        self.height = height
         self.next_position = position_0[:2] # gets the (x,y) of the position
         self.max_velocity = max_velocity
         self.max_velocity_angular = max_velocity_angular
@@ -53,7 +54,6 @@ class Agent:
         self.tethers = [None, None] # initializes no attached tethers to the agent
         self.cr_sensor_data = [] # initializes an empty list of sensor data
         self.gradient_sensor_data = None # initializes the gradient sensor data to none
-        self.deactivate_gradient = False
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -398,7 +398,7 @@ class Agent:
 
         # The vector from the center of the agent to the point where the tether connects to the agent
         vector_norm = utils.normalize(np.array(self.get_tether_heading(tether_num)))
-        v_t = sign * (strain_diff ** 2) * vector_norm
+        v_t = sign * 8 * (strain_diff ** 2) * vector_norm
 
         return v_t
     
@@ -409,16 +409,13 @@ class Agent:
         """
         v_g = np.array([0, 0])
 
-        if self.gradient_sensor_data is not None and not self.deactivate_gradient:
+        if self.gradient_sensor_data is not None:
             u_g, distance = self.gradient_sensor_data
 
             if distance > Agent.err_pos:
                 scale = len(self.cr_sensor_data) < 3
-                
-                # The vector pointing in the direction of the source (inverted gaussian)
-                v_g = scale * (1 - math.exp(-distance**2 / 500)) * u_g
-            else:
-                self.deactivate_gradient
+
+                v_g = 0.36 * scale * (1 - math.exp(-distance**2 / (self.radius * 30))) * u_g
 
         return v_g
     
@@ -430,7 +427,7 @@ class Agent:
 
         for i in range(len(self.cr_sensor_data)):
             u_r, d, obj_type = self.cr_sensor_data[i]
-            v_r = v_r + 0.05 * math.exp(-d**2 / self.sensing_radius) * u_r # Gaussian
+            v_r = v_r + 0.54 * math.exp(-d**2 / self.sensing_radius) * u_r # Gaussian
             # can do something here if the obj_type is not "unknown"
 
         return v_r
@@ -442,8 +439,8 @@ class Agent:
         """
         delta = self.get_delta()
 
-        tether_m_heading = self.get_tether_heading(0)
-        tether_p_heading = self.get_tether_heading(1)
+        tether_m_heading = np.array(self.get_tether_heading(0))
+        tether_p_heading = np.array(self.get_tether_heading(1))
 
         normalized_tether_m_heading = utils.normalize(tether_m_heading)
         normalized_tether_p_heading = utils.normalize(tether_p_heading)
@@ -490,9 +487,9 @@ class Agent:
                 else:
                     sign = 1
 
-                coefficient = sign * math.sqrt((abs_difference)/(10 * math.pi)) * (magnitude_of_summed_nomralized_headings)
+                coefficient = sign * math.sqrt((math.radians(abs_difference))/(2 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
-                vector = 0.01 * np.array([coefficient * summed_normalized_tether_headings[0], coefficient * summed_normalized_tether_headings[1]])
+                vector = 0.36 * coefficient * summed_normalized_tether_headings
 
         else:
             vector = np.array([0,0])
@@ -537,40 +534,8 @@ class Agent:
         else:
             self.next_position = curr_position + resulting_vector
 
-        # self.next_position = curr_position + resulting_vector
-
         self.stop_move()
-
-        # check the strain and angles of attached tethers right after stopping moving
-        tether_strains_before = []
-        tether_angles_before = []
-        for i in range(2):
-            if self.tethers[i] is not None:
-                tether_strains_before.append(self.tethers[i].get_strain())
-                tether_angles_before.append(self.get_theta(i))
-
         self.move_to(self.max_force)
-
-        # check tether strains and angles after some time has passed since the robot stopped moving
-        tether_strains_after = []
-        tether_angles_after = []
-        for i in range(2):
-            if self.tethers[i] is not None:
-                tether_strains_after.append(self.tethers[i].get_strain())
-                tether_angles_after.append(self.get_theta(i))
-
-        # if the strains and angles are equal before and after, then an adjacent robot has likely reached the gradient point
-        for i in range(len(tether_strains_before)):
-            if tether_strains_before[i] == tether_strains_after and tether_angles_before[i] == tether_angles_after[i]:
-                self.deactivate_gradient = True
-
-        # this logic above to determine whether an adjacent agent still cares about gradient or not might need some work
-        # this relies on the assumption that if the robot doesn't care about gradient anymore, it will eventually be able to 
-        # reach roughly 0 movement as demonstrated in the basic test in main.py (they only seemed to move to adjust for gradient, 
-        # everything else like strain and angle became 0 vectors)
-
-        # also might need to weigh the gradient more or change the scaling function a little to make sure at least one robot will 
-        # make it exactly to the gradient source
             
     def stop_move(self):
         """

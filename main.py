@@ -12,11 +12,11 @@ import numpy as np
 import math
 import random
 
-HEIGHT = 0.01
+HEIGHT = 0.25
 TIME_STEP = 1./240.
 N = 5
 UNSTRETCHED_TETHER_LENGTH = 1
-RADIUS = 0.1
+RADIUS = 0.29
 GRADIENT_SOURCE = [0, 0]
 ANGLE_WEIGHT = 2.5 # weighting of the angle vector in the overall resulting vector, normally 2.5
 STRAIN_WEIGHT = 300 # weighting of the angle vector in the overall resulting vector, normally 300
@@ -31,10 +31,10 @@ def get_starting_positions(l_0, n, angles, starting_position, direction):
     desired starting angles and the unstretched length of the tether between 
     the agents. Builds the agents in the direction specified by the input parameter,
     of which there are four allowable directions.
+
     starting_position: the position of the first agent, given as [x, y, z].
     direction: a string, can be "+x", "-x", "+y", or "-y", and will build the robots
                in the direction that is described in the string from the starting_position
-
     """
     the_list = []
 
@@ -275,10 +275,10 @@ def basic_test():
     """
     n = 3
 
-    a_weight = 6 # angle vector weighting
-    s_weight = 4 # strain vector weighting
-    g_weight = 7 # gradient vector weighting
-    r_weight = 3 # repulsion vector weighting
+    a_weight = 1 # angle vector weighting
+    s_weight = 1 # strain vector weighting
+    g_weight = 1 # gradient vector weighting
+    r_weight = 1 # repulsion vector weighting
 
     gradient = [0,0]
 
@@ -334,10 +334,21 @@ def basic_test():
             agent.sense_gradient(my_world.gradient_source)
             agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-        if runs % SENSING_PERIOD == 0:
-            for i in range(len(shuffled_list)):
-                if i == agent_to_update_next:
-                    shuffled_list[i].set_next_step()
+            strain_m = my_world.agent_list[1].tethers[0].get_strain()
+            strain_p = my_world.agent_list[1].tethers[1].get_strain()
+
+            x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
+            y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
+
+            total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
+
+            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
+                               [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+            
+            if runs % SENSING_PERIOD == 0:
+                for i in range(len(shuffled_list)):
+                    if i == agent_to_update_next:
+                        shuffled_list[i].set_next_step()
                 
             agent_to_update_next = agent_to_update_next + 1
 
