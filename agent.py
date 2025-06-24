@@ -33,7 +33,7 @@ class Agent:
         """
         Initializes an agent object and its position and id attributes.
 
-        position_0: a three dimenstional vector in the form [x, y, z]
+        position_0: a three dimenstional vector in the form [x, y, z] (z is the offset from the plane where a z of 0 means the agent is resting exactly on top of the plane)
         heading_0: the direction the heading will face, a float in degrees whose angle is measured from the +x-axis
         radius: the radius of the cylindrical body of the agent, a float
         mass: the mass of the agent, a float
@@ -43,7 +43,7 @@ class Agent:
         mu_dynamic: the coefficient of dynamic friction, a float
         max_velocity: the maximum velocity that the agent can move in m/s, a float
         """
-        self.height = height
+        self.height = height # height of the agent
         self.next_position = position_0[:2] # gets the (x,y) of the position
         self.max_velocity = max_velocity
         self.max_velocity_angular = max_velocity_angular
@@ -54,6 +54,7 @@ class Agent:
         self.tethers = [None, None] # initializes no attached tethers to the agent
         self.cr_sensor_data = [] # initializes an empty list of sensor data
         self.gradient_sensor_data = None # initializes the gradient sensor data to none
+        self.failed = False # True if agent has failed and stopped working
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -172,7 +173,7 @@ class Agent:
 
         # set static friction coefficient
         self.force_friction_static = utils.normal_force(mass) * mu_static
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[self.force_friction_static]*3)
+        p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[self.force_friction_static]*3)
     
     def instantiate_m_tether(self, m_tether):
         """
@@ -210,6 +211,16 @@ class Agent:
         angle = math.degrees(p.getJointState(self.id, 2)[0])
 
         return [agent_pos, heading, angle]
+    
+    def get_velocity(self):
+        """
+        Returns the current velocity of the agent
+        """
+        x_velocity = p.getJointState(self.id, 1)[1]
+        y_velocity = p.getJointState(self.id, 0)[1]
+        total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
+
+        return total_velocity
     
     def get_tether_heading(self, tether_num=0):
         """
@@ -437,62 +448,60 @@ class Agent:
         Returns which direction the agent should move in so that it
         can attempt to reach its desired delta value
         """
-        delta = self.get_delta()
+        vector = np.array([0, 0])
 
-        tether_m_heading = np.array(self.get_tether_heading(0))
-        tether_p_heading = np.array(self.get_tether_heading(1))
+        if self.desired_tether_angle is not None:
+            delta = self.get_delta()
 
-        normalized_tether_m_heading = utils.normalize(tether_m_heading)
-        normalized_tether_p_heading = utils.normalize(tether_p_heading)
+            tether_m_heading = np.array(self.get_tether_heading(0))
+            tether_p_heading = np.array(self.get_tether_heading(1))
 
-        summed_normalized_tether_headings = normalized_tether_m_heading + normalized_tether_p_heading
+            normalized_tether_m_heading = utils.normalize(tether_m_heading)
+            normalized_tether_p_heading = utils.normalize(tether_p_heading)
 
-        magnitude_of_summed_nomralized_headings = utils.magnitude_of_vector(summed_normalized_tether_headings)
+            summed_normalized_tether_headings = normalized_tether_m_heading + normalized_tether_p_heading
 
-        difference = self.desired_tether_angle - delta
+            magnitude_of_summed_nomralized_headings = utils.magnitude_of_vector(summed_normalized_tether_headings)
 
-        abs_difference = abs(difference)
+            difference = self.desired_tether_angle - delta
 
-        if (abs_difference > Agent.err_delta) and self.desired_tether_angle is not None:
+            abs_difference = abs(difference)
 
-            if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
-                heading = np.array(self.get_pose()[1])
+            if (abs_difference > Agent.err_delta):
 
-                vector = np.array(heading)
+                if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
+                    heading = np.array(self.get_pose()[1])
 
-                normalized_heading = np.array(utils.normalize(heading))
-                normalized_t_m = np.array(utils.normalize(tether_m_heading))
-                normalized_t_p = np.array(utils.normalize(tether_p_heading))
-
-                if (round(normalized_heading[0]) == round(normalized_t_m[0])) and (round(normalized_heading[1]) == round(normalized_t_m[1])):
-                    vector[0] = 20*round(normalized_heading[1])
-                    vector[0] = -20*round(normalized_heading[0])
-
-                elif (round(normalized_heading[0]) == round(normalized_t_p[0])) and (round(normalized_heading[1]) == round(normalized_t_p[1])):
-                    vector[0] = 20*round(normalized_heading[1])
-                    vector[0] = -20*round(normalized_heading[0])
-               
-                else:
                     vector = np.array(heading)
-                    vector[0] = 20*heading[0]
-                    vector[1] = 20*heading[1]
 
-            else:
-                if (delta < 180) and (delta > self.desired_tether_angle):
-                    sign = -1
-                elif (delta < 180) and (delta < self.desired_tether_angle):
-                    sign = 1
-                elif (delta > 180) and (delta < self.desired_tether_angle):
-                    sign = -1
+                    normalized_heading = np.array(utils.normalize(heading))
+                    normalized_t_m = np.array(utils.normalize(tether_m_heading))
+                    normalized_t_p = np.array(utils.normalize(tether_p_heading))
+
+                    if (round(normalized_heading[0]) == round(normalized_t_m[0])) and (round(normalized_heading[1]) == round(normalized_t_m[1])):
+                        vector[0] = 20*round(normalized_heading[1])
+                        vector[0] = -20*round(normalized_heading[0])
+
+                    elif (round(normalized_heading[0]) == round(normalized_t_p[0])) and (round(normalized_heading[1]) == round(normalized_t_p[1])):
+                        vector[0] = 20*round(normalized_heading[1])
+                        vector[0] = -20*round(normalized_heading[0])
+                
+                    else:
+                        vector = 20 * np.array(heading)
+
                 else:
-                    sign = 1
+                    if (delta < 180) and (delta > self.desired_tether_angle):
+                        sign = -1
+                    elif (delta < 180) and (delta < self.desired_tether_angle):
+                        sign = 1
+                    elif (delta > 180) and (delta < self.desired_tether_angle):
+                        sign = -1
+                    else:
+                        sign = 1
 
-                coefficient = sign * math.sqrt((math.radians(abs_difference))/(2 * math.pi)) * (magnitude_of_summed_nomralized_headings)
+                    coefficient = sign * math.sqrt((math.radians(abs_difference))/(2 * math.pi)) * (magnitude_of_summed_nomralized_headings)
 
-                vector = 0.36 * coefficient * summed_normalized_tether_headings
-
-        else:
-            vector = np.array([0,0])
+                    vector = 0.36 * coefficient * summed_normalized_tether_headings
 
         return vector
     
@@ -502,40 +511,41 @@ class Agent:
         the resultant weighted vector sum and its current close-range sensor data.
         The function then calls move_to so that the robot begins to move in that direction.
         """
-        curr_position = np.array(self.get_pose()[0])
-        
-        try: # if agent has one tether instantiated
-            tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
-            v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
-            v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
-            v_angle = np.array([0, 0])
-        except ValueError: # if agent has two tethers instantiated
-            v_m_strain = self.compute_vector_strain(0)
-            v_p_strain = self.compute_vector_strain(1)
-            v_angle = self.compute_vector_angle()
-
-        v_gradient = self.compute_vector_gradient()
-
-        v_repulsion = self.compute_vector_repulsion()
-
-        resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
-                            + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
-        
-        print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
-        print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
-        print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
-        print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
-        print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
-        print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
-        
-        if utils.magnitude_of_vector(resulting_vector) > 0.25:
-            self.next_position = curr_position + 0.25 * utils.normalize(resulting_vector)
-            print(utils.magnitude_of_vector(0.25 * utils.normalize(resulting_vector)))
-        else:
-            self.next_position = curr_position + resulting_vector
-
         self.stop_move()
-        self.move_to(self.max_force)
+        if not self.failed:
+            curr_position = np.array(self.get_pose()[0])
+            
+            try: # if agent has one tether instantiated
+                tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
+                v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
+                v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
+                v_angle = np.array([0, 0])
+            except ValueError: # if agent has two tethers instantiated
+                v_m_strain = self.compute_vector_strain(0)
+                v_p_strain = self.compute_vector_strain(1)
+                v_angle = self.compute_vector_angle()
+
+            v_gradient = self.compute_vector_gradient()
+
+            v_repulsion = self.compute_vector_repulsion()
+
+            resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
+                                + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+            
+            print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
+            print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
+            print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
+            print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
+            print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
+            print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
+            
+            if utils.magnitude_of_vector(resulting_vector) > 0.25:
+                self.next_position = curr_position + 0.25 * utils.normalize(resulting_vector)
+                print(utils.magnitude_of_vector(0.25 * utils.normalize(resulting_vector)))
+            else:
+                self.next_position = curr_position + resulting_vector
+
+            self.move_to(self.max_force)
             
     def stop_move(self):
         """
