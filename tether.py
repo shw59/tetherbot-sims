@@ -9,7 +9,7 @@ import math
 
 class Tether:
     label = "tether"
-    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, mu):
+    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, youngs_modulus, diameter, mu):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
 

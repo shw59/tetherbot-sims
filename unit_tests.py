@@ -50,6 +50,98 @@ def display_axis_labels():
     p.addUserDebugText("+y", [0, 1, 0], lifeTime=0, textColorRGB=[0, 0, 0])
     p.addUserDebugText("+z", [0, 0, 1], lifeTime=0, textColorRGB=[0, 0, 0])
 
+def basic_test():
+    """
+    Generates a very simple formation of agents in order to test the hysteresis.
+    """
+    n = 3
+
+
+    a_weight = 10 # angle vector weighting
+    s_weight = 15 # strain vector weighting
+    g_weight = 2 # gradient vector weighting
+    r_weight = 3 # repulsion vector weighting
+
+
+    gradient = [0,-10]
+
+    my_world = World(15, 15, TIME_STEP)
+
+    my_world.set_gradient_source(gradient)
+
+    Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+
+    angles = [None, 90, None]
+    
+    initial_agent_positions = basic_starting_positions(UNSTRETCHED_TETHER_LENGTH, n, angles, [-1,0,0], "+x")
+    
+    goal_angles = [None, 270, None]
+
+    # populates the list of robot objects with agent objects
+    for i in range(n):
+        my_world.create_agent(initial_agent_positions[i], 0, radius = RADIUS, goal_delta = goal_angles[i], height=HEIGHT, color=(1, 0, 0, 1))
+
+    # populates the list of tether objects with tether objects
+    for i in range(n-1):
+        my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 5)
+
+    number_of_fixed_obstacles = 0
+
+    for i in range(number_of_fixed_obstacles):
+        x = random.uniform(-9,9)
+        y = random.uniform(-1, 29)
+        sizes = random.uniform(0.5,1)
+        my_world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(1, 0, 1, 1), fixed=True, height=0.25)
+
+    number_of_non_fixed_obstacles = 0
+
+    for i in range(number_of_non_fixed_obstacles):
+        x = random.uniform(-9,9)
+        y = random.uniform(1, 29)
+        size = random.uniform(0.1,0.25)
+        my_world.create_obstacle("hexagon", [x, y], length=size, width=size, color=(1, 0, 1, 1), fixed=False, height=0.25, mass=0.01)
+
+    display_axis_labels()
+    
+    runs = 0
+
+    agent_to_update_next = 0
+
+    shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+
+    # main simulation loop
+    while p.isConnected():
+        p.getCameraImage(320,200)
+
+        for agent in shuffled_list:
+            agent.sense_gradient(my_world.gradient_source)
+            agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+        if runs % SENSING_PERIOD == 0:
+            for i in range(len(shuffled_list)):
+                if i == agent_to_update_next:
+                    shuffled_list[i].set_next_step()
+              
+            strain_m = my_world.agent_list[1].tethers[0].get_strain()
+            strain_p = my_world.agent_list[1].tethers[1].get_strain()
+
+            x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
+            y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
+
+            total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
+
+            p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
+                               [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
+
+            agent_to_update_next = agent_to_update_next + 1
+
+            if agent_to_update_next >= len(shuffled_list):
+                agent_to_update_next = 0
+
+        runs = runs + 1
+        
+        p.stepSimulation()
+
 # The following tests all relate to the calculation of the angle vector
 
 # Successful!

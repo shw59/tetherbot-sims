@@ -81,7 +81,7 @@ class World:
 
         return agent
     
-    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, num_segments=10, mass=0, mu=0.0):
+    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, youngs_modulus, diameter, num_segments=10, mass=0, mu=0.0):
         """
         Creates and anchors a tether between two specified agent objects, returns the tether object.
         """
@@ -109,7 +109,7 @@ class World:
 
         orientation = p.getQuaternionFromEuler([0, 0, theta]) # [0, 0,-1*theta]
 
-        tether = Tether(tether_pos, tether_length_0, orientation, num_segments, mass, mu) # create the tether object
+        tether = Tether(tether_pos, tether_length_0, orientation, num_segments, mass, youngs_modulus, diameter, mu) # create the tether object
         self.obj_list.append(tether)
         agent_1.instantiate_p_tether(tether)
         agent_2.instantiate_m_tether(tether)
