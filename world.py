@@ -28,7 +28,7 @@ class World:
         self.agent_list = []
         self.gradient_source = None
 
-        p.connect(p.GUI) # connect to PyBullet GUI
+        p.connect(p.DIRECT) # connect to PyBullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # add pybullet_data to search path
 
         # set parameters

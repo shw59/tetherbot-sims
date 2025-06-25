@@ -407,7 +407,7 @@ def log_to_csv(filename, data_row, header=None):
 
         writer.writerow(data_row)
 
-def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 2, r_weight = 3, gradient = [20,0], obst_pos = [10,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000):
+def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [10,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
     """
     Generates a very simple formation of agents in order to test the hysteresis.
     """
@@ -437,7 +437,7 @@ def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 
 
     my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
 
-    add_axis_labels()
+    display_axis_labels()
     
     runs = 0
 
@@ -445,17 +445,18 @@ def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 
 
     shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
-    log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset.csv"
+    # log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset_.csv"
+    log_file = "trial: " + str(trial) + ", degree: " + str(angle_off_y) + ", offset: " + str(y_offset) + ".csv"
 
     log_header = ['Timestep']
 
     for i in range(n):
-        log_header.append('agent-' + str(i) + '_x')
+        log_header.append('agent_' + str(i) + '_x')
         log_header.append('agent_' + str(i) + '_y')
 
     
     # main simulation loop
-    while (runs < stop) and (p.isConnected()):
+    while (runs <= stop) and (p.isConnected()):
         if runs%30:
             p.getCameraImage(320,200)
 
@@ -496,13 +497,82 @@ def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 
         
         p.stepSimulation()
 
-    return
+    p.disconnect()
 
-def run_obstacle_simulations(n, l_0, number_of_runs, offsets, angles_to_try):
-    for o in offsets:
-        for a in angles_to_try:
-            print("a is: " +str(a))
-            obstacle_avoidance(n, l_0, o, a, stop = number_of_runs)
+    return log_file
+
+def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs):
+
+    if (number_of_while_runs-4*LOGGING_PERIOD <= 0):
+        print("Increase the number of while loop iterations please")
+
+        return 0
+    
+    else:
+
+        each_runs_trial = []
+
+        for i in range(number_of_runs_per_trial):
+            set_up = []
+            for k in range(number_of_trials):
+                set_up.append(list_of_files[i+k*number_of_runs_per_trial])
+            each_runs_trial.append(set_up)
+
+        success_list = []
+
+        for i in range(number_of_trials):
+            success_list.append(0)
+
+
+        for i in range(len(each_runs_trial)):
+            total = 0
+            successful = 0
+            for k in range(number_of_trials):
+                with open(each_runs_trial[i][k]) as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=',')
+                    initial_x = 0
+                    initial_y = 0
+                    final_x = 0
+                    final_y = 0
+                    for row in csv_reader:
+                    
+                        if row[0] == (number_of_while_runs*(0.9)):
+                            initial_x = row[1]
+                            initial_y = row[2]
+
+                        if row[0] == (number_of_while_runs):
+                            final_x = row[1]
+                            final_y = row[2]
+
+                    print(initial_x)
+                    print(initial_y)
+                    print(final_x)
+                    print(final_y)
+                    if (abs(final_x - initial_x) <=1 and abs(final_y - initial_y) <=1):
+                        total = total + 1
+                    else:
+                        successful = successful + 1
+                        total = total + 1
+
+            success_list[i] = successful/total
+
+        print(success_list)
+        
+        return 0
+
+def run_obstacle_simulations(n, l_0, length_of_simulation, offsets, angles_to_try, number_of_trials):
+    """
+    length_of_simulation: this number is an integer, and it is multiplied by the 
+                          LOGGING_PERIOD to determine how long to run the while loop for
+
+    """
+    list_of_file_names = []
+    for t in range(number_of_trials):
+        for o in offsets:
+            for a in angles_to_try:
+                list_of_file_names.append(obstacle_avoidance(n, l_0, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=4*l_0))
+
+    obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD)
 
 
 
@@ -510,7 +580,7 @@ def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    run_obstacle_simulations(n=N, l_0=UNSTRETCHED_TETHER_LENGTH, number_of_runs=15, offsets=[1,0,-1], angles_to_try=[0, 15, 30])
+    run_obstacle_simulations(n=5, l_0=UNSTRETCHED_TETHER_LENGTH, length_of_simulation=10, offsets=[0,1], angles_to_try=[0, 5], number_of_trials=2)
     # obstacle_avoidance(N, UNSTRETCHED_TETHER_LENGTH, 0, 0, stop = 15)
 
 
