@@ -13,10 +13,10 @@ import utils
 class Agent:
     label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
-    desired_strain = 0.2 # how much strain the agents will attempt to maintain in their tethers, if they have any
+    desired_strain = 0.15 # how much strain the agents will attempt to maintain in their tethers, if they have any
     err_pos = 0.5
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
-    err_strain = 0.09 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
     err_heading = 10
     err_velocity = .1
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
