@@ -541,7 +541,6 @@ class Agent:
             
             if utils.magnitude_of_vector(resulting_vector) > 0.25:
                 self.next_position = curr_position + 0.25 * utils.normalize(resulting_vector)
-                print(utils.magnitude_of_vector(0.25 * utils.normalize(resulting_vector)))
             else:
                 self.next_position = curr_position + resulting_vector
 
