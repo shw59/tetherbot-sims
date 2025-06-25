@@ -474,24 +474,20 @@ class Agent:
 
                     vector = np.array(heading)
 
-                if (round(normalized_heading[0]) == round(normalized_t_m[0])) and (round(normalized_heading[1]) == round(normalized_t_m[1])):
-                    vector[0] = 20*round(normalized_heading[1])
-                    vector[1] = -20*round(normalized_heading[0])
+                    normalized_heading = np.array(utils.normalize(heading))
+                    normalized_t_m = np.array(utils.normalize(tether_m_heading))
+                    normalized_t_p = np.array(utils.normalize(tether_p_heading))
 
-                elif (round(normalized_heading[0]) == round(normalized_t_p[0])) and (round(normalized_heading[1]) == round(normalized_t_p[1])):
-                    vector[0] = -20*round(normalized_heading[1])
-                    vector[1] = 20*round(normalized_heading[0])
-               
-                else:
-                    vector = np.array(heading)
-                    vector[0] = 20*heading[0]
-                    vector[1] = 20*heading[1]
+                    if (round(normalized_heading[0]) == round(normalized_t_m[0])) and (round(normalized_heading[1]) == round(normalized_t_m[1])):
+                        vector[0] = 20*round(normalized_heading[1])
+                        vector[1] = -20*round(normalized_heading[0])
 
                     elif (round(normalized_heading[0]) == round(normalized_t_p[0])) and (round(normalized_heading[1]) == round(normalized_t_p[1])):
-                        vector[0] = 20*round(normalized_heading[1])
-                        vector[0] = -20*round(normalized_heading[0])
-                
+                        vector[0] = -20*round(normalized_heading[1])
+                        vector[1] = 20*round(normalized_heading[0])
+               
                     else:
+                        vector = np.array(heading)
                         vector = 20 * np.array(heading)
 
                 else:
