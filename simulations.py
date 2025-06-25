@@ -16,7 +16,7 @@ import random
 
 class Simulation:
     def __init__(self, time_step, agent_mass, agent_radius, agent_height, agent_max_speed, agent_drive_power, agent_static_mu, agent_dynamic_mu, 
-                 unstretched_tether_length, tether_youngs_modulus, tether_diameter, sensing_period, logging_period):
+                 unstretched_tether_length, tether_youngs_modulus, tether_diameter, sensing_period, logging_period, gui_on):
         self.time_step = time_step
         self.agent_mass = agent_mass
         self.agent_radius = agent_radius
@@ -30,6 +30,7 @@ class Simulation:
         self.tether_diameter = tether_diameter
         self.sensing_period = sensing_period
         self.logging_period = logging_period
+        self.gui_on = gui_on
 
     def storm_drain(self):
         """
@@ -45,7 +46,7 @@ class Simulation:
 
         gradient = [0,0]
 
-        my_world = World(100, 100, self.self.time_step)
+        my_world = World(100, 100, self.time_step, self.gui_on)
 
         my_world.set_gradient_source(gradient)
 
@@ -59,8 +60,8 @@ class Simulation:
 
         # populates the list of robot objects with robot objects
         for i in range(n):
-            my_world.create_agent(initial_robot_positions[i], 0, radius = self.radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+            my_world.create_agent(initial_robot_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -213,7 +214,7 @@ class Simulation:
         Generates a very simple formation of agents in order to test the hysteresis.
         """
 
-        my_world = World(200, 200, self.self.time_step)
+        my_world = World(200, 200, self.time_step, self.gui_on)
 
         my_world.set_gradient_source(gradient)
 
@@ -230,8 +231,8 @@ class Simulation:
 
         # populates the list of robot objects with agent objects
         for i in range(n):
-                    my_world.create_agent(initial_agent_positions[i], 0, radius = self.radius, goal_delta = goals[i], 
-                                  mass=self.agent_mass, height=self.height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                    my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goals[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -308,7 +309,7 @@ class Simulation:
         This experiment takes a group of n agents in a W formation and causes one of them to fail at t = 100.
         The other agents attempt to tow the failed agent as the collective advances towards the gradient source goal.
         """
-        my_world = World(50, 10, self.time_step)
+        my_world = World(50, 10, self.time_step, self.gui_on)
 
         a_weight = 8 # angle vector weighting
         s_weight = 5 # strain vector weighting
@@ -335,8 +336,8 @@ class Simulation:
 
         # populates the list of robot objects with agent objects
         for i in range(n):
-                    my_world.create_agent(initial_agent_positions[i], 0, radius = self.radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                    my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -355,22 +356,23 @@ class Simulation:
         while p.isConnected():
             p.getCameraImage(320,200)
 
-            failed_x = []
-            non_failed_x = []
-            for i in range(len(my_world.agent_list)):
-                if i != failed_agent_num:
-                    non_failed_x.append(my_world.agent_list[i].get_pose()[0][0])
-                else:
-                    non_failed_x = my_world.agent_list[i].get_pose()[0][0]
+            if runs % self.logging_period == 0:
+                failed_x = 0
+                non_failed_x = []
+                for i in range(len(my_world.agent_list)):
+                    if i != failed_agent_num:
+                        non_failed_x.append(my_world.agent_list[i].get_pose()[0][0])
+                    else:
+                        failed_x = my_world.agent_list[i].get_pose()[0][0]
 
-            sum_velocities = 0
-            for agent in my_world.agent_list:
-                sum_velocities += agent.get_velocity()
-            avg_velocity = sum_velocities / n
-                
-            csv_row = [runs, failed_x, avg_velocity] + non_failed_x
-            filename = f"data/tow_failed_agents_trial{trial_num}_agent_{failed_agent_num}_failed.csv"
-            sims_utils.log_to_csv(filename, csv_row, header=["time step", f"agent {failed_agent_num} x-position", "formation velocity", "other agent x-positions"])
+                sum_velocities = 0
+                for agent in my_world.agent_list:
+                    sum_velocities += agent.get_velocity()
+                avg_velocity = sum_velocities / n
+                    
+                csv_row = [runs, failed_x, avg_velocity] + non_failed_x
+                filename = f"data/tow_failed_agents_trial{trial_num}_agent_{failed_agent_num}_failed.csv"
+                sims_utils.log_to_csv(filename, csv_row, header=["time step", f"agent {failed_agent_num} x-position", "formation velocity", "other agent x-positions"])
 
             if runs == 100:
                 my_world.agent_list[failed_agent_num].failed = True
@@ -405,7 +407,7 @@ class Simulation:
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.
         """
-        my_world = World(50, 20, self.time_step)
+        my_world = World(50, 20, self.time_step, self.gui_on)
 
         a_weight = 5 # angle vector weighting
         s_weight = 10 # strain vector weighting
@@ -429,8 +431,8 @@ class Simulation:
 
         # populates the list of robot objects with agent objects
         for i in range(n):
-            my_world.create_agent(initial_agent_positions[i], 0, radius = self.radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+            my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -451,31 +453,29 @@ class Simulation:
         while p.isConnected():
             p.getCameraImage(320,200)
 
-            obstacle_pos = []
-            for obj in my_world.obj_list:
-                if obj.label == "obstacle":
-                    obstacle_pos.append(obj.get_pose()[0])
-                    for agent in my_world.agent_list:
-                        if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
-                                if not obj.collected:
-                                    obj_collected += 1
-                                    obj.collected = True
-                                    break
-                        else:
-                            if obj.collected:
-                                obj_collected -= 1
-                                obj.collected = False
-            
-            print(obj_collected)
-            
-            agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
-            collective_radius = utils.get_collective_radius(agent_pos)
+            if runs % self.logging_period == 0:
+                obstacle_pos = []
+                for obj in my_world.obj_list:
+                    if obj.label == "obstacle":
+                        obstacle_pos.append(obj.get_pose()[0])
+                        for agent in my_world.agent_list:
+                            if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
+                                    if not obj.collected:
+                                        obj_collected += 1
+                                        obj.collected = True
+                                        break
+                            else:
+                                if obj.collected:
+                                    obj_collected -= 1
+                                    obj.collected = False
+                
+                agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
+                collective_radius = utils.get_collective_radius(agent_pos)
 
-            csv_row = [runs, collective_radius, obj_collected] + agent_pos + obstacle_pos
+                csv_row = [runs, collective_radius, obj_collected] + agent_pos + obstacle_pos
 
-            filename =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects_{num_objects}.csv"
-            sims_utils.log_to_csv(filename, csv_row,
-                    header=["time step", "collective radius", "# of objects collected", "agent positions", "", "", "", "", "", "", "", "", "", "obstacle positions"])
+                filename =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects_{num_objects}.csv"
+                sims_utils.log_to_csv(filename, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions", "", "", "", "", "", "", "", "", "", "obstacle positions"])
 
             if runs == 10000:
                 break

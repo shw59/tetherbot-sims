@@ -533,12 +533,12 @@ class Agent:
             resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
                                 + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
             
-            print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
-            print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
-            print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
-            print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
-            print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
-            print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
+            # print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
+            # print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
+            # print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
+            # print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
+            # print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
+            # print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
             
             if utils.magnitude_of_vector(resulting_vector) > 0.25:
                 self.next_position = curr_position + 0.25 * utils.normalize(resulting_vector)
