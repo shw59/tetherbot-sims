@@ -29,6 +29,8 @@ class Obstacle:
         fixed: True if the obstacle is fixed and False if the obstacle is movable in the 2D plane
         """
         self.height = height
+        self.collected = False # only used for movable obstacles by a main loop to flag objects collected by an agent formation
+
         urdf_text = ""
         rgba = " ".join(map(str, color))
 
@@ -97,6 +99,82 @@ class Obstacle:
                         <origin xyz="0 0 0" rpy="0 0 0"/>
                         <geometry>
                             <mesh filename="hex.obj" scale="{length} {width} {height}"/>
+                        </geometry>
+                    </collision>
+
+                    <inertial>
+                        <origin xyz="0 0 0" rpy="0 0 0"/>
+                        <mass value="{mass}"/>
+                        <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0" ixz="0" iyz="0"/>
+                    </inertial>
+                </link>
+            </robot>
+            """
+        elif shape == "cylinder":
+            urdf_text = f"""<?xml version="1.0"?>
+            <robot name="cyl_block">
+                <link name="world">
+                    <inertial>
+                        <mass value="0"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                        <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+                    </inertial>
+                </link>
+
+                <joint name="y_to_world" type="prismatic">
+                    <parent link="world"/>
+                    <child link="y_prismatic"/>
+                    <axis xyz="0 1 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="y_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="x_to_y" type="prismatic">
+                    <parent link="y_prismatic"/>
+                    <child link="x_prismatic"/>
+                    <axis xyz="1 0 0"/>
+                    <limit effort="0.0" lower="1" upper="-1" velocity="1000.0"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="x_prismatic">
+                    <inertial>
+                        <mass value="0.01"/>
+                        <inertia ixx="0.2125" ixy="-0.005" ixz="0.0225" iyy="0.205" iyz="0.045" izz="0.0125"/>
+                        <origin rpy="0 0 0" xyz="0 0 0"/>
+                    </inertial>
+                </link>
+
+                <joint name="cyl_to_x" type="continuous">
+                    <parent link="x_prismatic"/>
+                    <child link="cyl_block_link"/>
+                    <axis xyz="0 0 1"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                </joint>
+
+                <link name="cyl_block_link">
+                    <visual>
+                        <origin xyz="0 0 {height/2}" rpy="0 0 0"/>
+                        <geometry>
+                            <mesh filename="objects/cylinder.obj" scale="{length} {width} {height}"/>
+                        </geometry>
+                        <material name="color">
+                            <color rgba="{rgba}"/>
+                        </material>
+                    </visual>
+
+                    <collision>
+                        <origin xyz="0 0 {height/2}" rpy="0 0 0"/>
+                        <geometry>
+                            <mesh filename="objects/cylinder.obj" scale="{length} {width} {height}"/>
                         </geometry>
                     </collision>
 
@@ -264,7 +342,7 @@ class Obstacle:
         filename = f"objects/{shape}.urdf"
         open(filename, "w").write(urdf_text)
 
-        position_3d = position + [height / 2]
+        position_3d = position + [0]
         self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
         if fixed:

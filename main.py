@@ -87,7 +87,7 @@ def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, c
         if no_overlap:
             world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(0, 1, 0, 1), fixed=True)
 
-def add_axis_labels():
+def display_axis_labels():
     """
     Adds x, y, and z axis labels so that it is easier to orient oneself
     """
@@ -243,7 +243,7 @@ def storm_drain():
         size = random.uniform(0.1,0.25)
         my_world.create_obstacle("hexagon", [x, y], length=size, width=size, color=(1, 0, 1, 1), fixed=False, height=0.25, mass=0.01)
 
-    add_axis_labels()
+    display_axis_labels()
     
     runs = 0
 
@@ -324,7 +324,7 @@ def basic_test():
         size = random.uniform(0.1,0.25)
         my_world.create_obstacle("hexagon", [x, y], length=size, width=size, color=(1, 0, 1, 1), fixed=False, height=0.25, mass=0.01)
 
-    add_axis_labels()
+    display_axis_labels()
     
     runs = 0
 
@@ -339,7 +339,6 @@ def basic_test():
         for agent in shuffled_list:
             agent.sense_gradient(my_world.gradient_source)
             agent.sense_close_range(my_world.obj_list, sensing_mode=2)
-
 
         if runs % SENSING_PERIOD == 0:
             for i in range(len(shuffled_list)):

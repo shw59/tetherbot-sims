@@ -42,7 +42,7 @@ def set_straight_line(n, spacing):
 
     return positions
 
-def add_axis_labels():
+def display_axis_labels():
     p.addUserDebugLine([0, 0, 0], [1, 0, 0], lineColorRGB=[0, 0, 1], lineWidth=10, lifeTime=0)
     p.addUserDebugLine([0, 0, 0], [0, 1, 0], lineColorRGB=[1, 0, 0], lineWidth=10, lifeTime=0)
     p.addUserDebugLine([0, 0, 0], [0, 0, 1], lineColorRGB=[.68, .12, .94], lineWidth=10, lifeTime=0)
@@ -80,7 +80,7 @@ def test_delta_calculation():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -125,7 +125,7 @@ def test_angle_vector_270_to_90():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -165,7 +165,7 @@ def test_angle_vector_90_to_270():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -205,7 +205,7 @@ def test_angle_vector_90_to_90():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -245,7 +245,7 @@ def test_angle_vector_270_to_270():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -285,7 +285,7 @@ def test_angle_vector_90_to_180():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -325,7 +325,7 @@ def test_angle_vector_270_to_180():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -365,7 +365,7 @@ def test_angle_vector_180_to_270():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -405,7 +405,7 @@ def test_angle_vector_180_to_90():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -445,7 +445,7 @@ def test_angle_vector_180_to_180():
     for i in range(N-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments = 1)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -482,7 +482,7 @@ def test_strain():
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -534,7 +534,7 @@ def test_gradient():
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=10)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -580,7 +580,7 @@ def test_gradient_strain():
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=10)
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -633,7 +633,7 @@ def test_repulsion_gradient():
     # create an obstacle
     my_world.create_obstacle("hexagon", [2, 0])
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -685,7 +685,7 @@ def test_strain_angle():
 
     runs = 0
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -735,7 +735,7 @@ def test_repulsion_gradient_strain():
     # create an obstacle
     my_world.create_obstacle("hexagon", [2, 0])
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -787,7 +787,7 @@ def test_gradient_strain_angle():
     
     runs = 0
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -830,7 +830,7 @@ def test_position_movement():
     # for i in range(n-1):
     #     my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
 
-    add_axis_labels()
+    display_axis_labels()
 
     for agent in my_world.agent_list[::1]:
         agent.next_position = [3, 3]
@@ -862,7 +862,7 @@ def test_friction_default():
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
 
-    add_axis_labels()
+    display_axis_labels()
 
     for agent in my_world.agent_list[::2]:
         agent.next_position = [5, 5]
@@ -894,7 +894,7 @@ def test_friction_high_dynamic_low_static():
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
 
-    add_axis_labels()
+    display_axis_labels()
 
     for agent in my_world.agent_list[1:]:
         agent.next_position = [5, 5]
@@ -926,7 +926,7 @@ def test_friction_high_static_low_dynamic():
     for i in range(n-1):
         my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], UNSTRETCHED_TETHER_LENGTH, num_segments=5)
 
-    add_axis_labels()
+    display_axis_labels()
 
     for agent in my_world.agent_list[1:]:
         agent.next_position = [5, 5]
@@ -970,7 +970,7 @@ def test_movable_obstacle():
 
     runs = 0
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
@@ -1024,7 +1024,7 @@ def test_all():
 
     runs = 0
 
-    add_axis_labels()
+    display_axis_labels()
 
     # main simulation loop
     while p.isConnected():
