@@ -8,6 +8,7 @@ import pybullet as p
 import pybullet_data
 from world import World
 from agent import Agent
+from simulations import Simulation
 import numpy as np
 import math
 import random
@@ -510,8 +511,8 @@ def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    run_obstacle_simulations(n=N, l_0=UNSTRETCHED_TETHER_LENGTH, number_of_runs=15, offsets=[1,0,-1], angles_to_try=[0, 15, 30])
-    # obstacle_avoidance(N, UNSTRETCHED_TETHER_LENGTH, 0, 0, stop = 15)
+    sim = Simulation(1/240, 17, 0.29, 0.25, 2, 500, 1.25, 0.9, 1, 60, .0019, 5, 20, False)
+    sim.run_tow_failed_agents_simulations(5, 10, [0, 1, 2, 3, 4])
 
 
 if __name__ == "__main__":

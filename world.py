@@ -15,7 +15,7 @@ from obstacle import Obstacle
 GRAVITYZ = -9.81
 
 class World:
-    def __init__(self, length, width, time_step=1/240):
+    def __init__(self, length, width, time_step=1/240, gui_on=True):
         """
         Initialize the simulation world with attributes dimensions, list of all objects and agents, and gradient source.
 
@@ -28,7 +28,10 @@ class World:
         self.agent_list = []
         self.gradient_source = None
 
-        p.connect(p.GUI) # connect to PyBullet GUI
+        if gui_on:
+            p.connect(p.GUI) # connect to PyBullet GUI
+        else:
+            p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # add pybullet_data to search path
 
         # set parameters
