@@ -9,7 +9,7 @@ import math
 
 class Tether:
     label = "tether"
-    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, mu):
+    def __init__(self, position_0, length_0, orientation_0, num_segments, mass, youngs_modulus, diameter, mu):
         """
         Initializes the tether object and its length_0 (unstretched length) and id attributes.
 
@@ -40,10 +40,10 @@ class Tether:
         open(tether_filename, "w").write("\n".join(lines))
 
         # properties of paracord type I
-        youngs_mod = 60e6
-        tether_diameter = 0.0019
-        cross_area = math.pi * (tether_diameter / 2)**2
-        stiffness = youngs_mod * cross_area / length_0
+        # cross_area = math.pi * (diameter / 2)**2
+        # stiffness = youngs_modulus * cross_area / length_0
+
+        stiffness = 2500 # should figure out what it is for a paracord 550 or something stiffer
 
         self.id = p.loadSoftBody(tether_filename, 
                                 basePosition = position_0, 
@@ -53,7 +53,7 @@ class Tether:
                                 useNeoHookean=0, 
                                 useBendingSprings=1,
                                 useMassSpring=1, 
-                                springElasticStiffness=2500, 
+                                springElasticStiffness=stiffness, 
                                 springDampingStiffness=1.5,
                                 springDampingAllDirections=10,
                                 useSelfCollision=0, 
