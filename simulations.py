@@ -244,7 +244,7 @@ class Simulation:
 
         my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
 
-        sims_utils.display_axis_labels()
+        my_world.display_axis_labels()
         
         runs = 0
 
@@ -260,6 +260,7 @@ class Simulation:
         for i in range(n):
             log_header.append('agent_' + str(i) + '_x')
             log_header.append('agent_' + str(i) + '_y')
+            log_header.append('agent_' + str(i) + '_velocity')
 
         
         # main simulation loop
@@ -297,6 +298,7 @@ class Simulation:
                 for agent in my_world.agent_list:
                     data.append(round(agent.get_pose()[0][0], 5))
                     data.append(round(agent.get_pose()[0][1], 5))
+                    data.append(agent.get_velocity())
             
                 sims_utils.log_to_csv(log_file, data, header=log_header)
 
@@ -499,7 +501,7 @@ class Simulation:
 
         return log_file
 
-    def run_obstacle_simulations(n, l_0, length_of_simulation, offsets, angles_to_try, number_of_trials):
+    def run_obstacle_simulations(self, n, l_0, length_of_simulation, offsets, angles_to_try, number_of_trials, obst_position):
         """
         length_of_simulation: this number is an integer, and it is multiplied by the 
                             LOGGING_PERIOD to determine how long to run the while loop for
@@ -508,11 +510,11 @@ class Simulation:
         for t in range(number_of_trials):
             for o in offsets:
                 for a in angles_to_try:
-                    list_of_file_names.append(obstacle_avoidance(n, l_0, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=4*l_0))
+                    list_of_file_names.append(self.obstacle_avoidance(n, l_0, o, a, stop = length_of_simulation*self.logging_period, trial = t + 1, obst_radius=4*l_0, obst_pos = obst_position))
 
-        data = obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD)
+        data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*self.logging_period, logging_period = self.logging_period, n=n, obst_position = obst_position, l_0 = l_0)
 
-        make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
+        sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
 
     def run_tow_failed_agents_simulations(self, n, num_runs, agents_to_fail):
         """

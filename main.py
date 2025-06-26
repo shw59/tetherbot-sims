@@ -35,15 +35,29 @@ YOUNGS_MODULUS = 650e6
 DIAMETER = 0.0019 # m
 
 
+# def main():
+#     """
+#     Is the function called when running the program. This function calls which ever function you want to test.
+#     """
+#     sim = Simulation(TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+#                      UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, gui_on=True)
+    
+#     sim.run_tow_failed_agents_simulations(5, 10, [0, 1, 2, 3, 4])
+#     sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=False)
+#     sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=True)
+# if __name__ == "__main__":
+#     main()
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
+
     sim = Simulation(TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
                      UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, gui_on=True)
-    
-    sim.run_tow_failed_agents_simulations(5, 10, [0, 1, 2, 3, 4])
-    sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=False)
-    sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=True)
+    sim.run_obstacle_simulations(n=9, l_0=UNSTRETCHED_TETHER_LENGTH, length_of_simulation=100, offsets=[-9, -4, 0], angles_to_try=[-15, 0, 15], number_of_trials=2, obst_position = [10,0])
+    # obstacle_avoidance(N, UNSTRETCHED_TETHER_LENGTH, 0, 0, stop = 15)
+
+
 if __name__ == "__main__":
     main()
