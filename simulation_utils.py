@@ -11,6 +11,7 @@ import math
 import random
 import csv
 import pandas as pd
+import os
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
@@ -220,7 +221,62 @@ def make_heat_map(data, angles, offsets, num_trials):
     plt.xlabel("Offset")
     plt.ylabel("Angle")
     plt.title("Rate of Success out of " + str((num_trials)) + " trials")
-    plt.savefig("data/success_heat_map.png", format='png', dpi=300)  # dpi controls resolution
+    plt.savefig("data/figures/success_heat_map.png", format='png', dpi=300)  # dpi controls resolution
     plt.show()
     plt.close()  # Closes the figure to free memory
     return 0
+
+def average_csv_trials(csv_files, output_filename, select_columns=0):
+    """
+    Averages all data points across different trials and saves to a new csv file
+
+    csv_files (list of str): List of CSV file paths
+    output_filename (str): Path to save the averaged result CSV file
+    """
+    data = {}
+    for i in range(len(csv_files)):
+        data[i] = pd.read_csv(f"data/test_runs/{csv_files[i]}", usecols=[i for i in range(select_columns)], index_col=False).reset_index(drop=True)
+
+    df = pd.concat(data)
+
+    # Convert numeric columns to numeric (if necessary), errors to NaN
+    df = df.apply(pd.to_numeric, errors='coerce')
+
+    # Average row-wise across trials (group by original row index)
+    avg = df.groupby(level=1).mean()
+
+    # Save to CSV
+    avg.to_csv(f"data/{output_filename}", index=False)
+
+    return avg
+
+def make_graph(csv_files, x_column, y_column, labels=None, title="Tetherbot Plot",
+                      x_label="x-axis", y_label="y-axis", file_name="graph.png"):
+    """
+    Plots the specified x and y columns from one or more CSV files.
+
+    csv_files (list of str): Paths to the CSV files
+    x_column (str): Name of the column to use as the x-axis
+    y_column (str): Name of the column to use as the y-axis
+    labels (list of str, optional): Labels for each CSV file's plot
+    title (str, optional): Title of the plot
+    xlabel (str, optional): Label for the x-axis
+    ylabel (str, optional): Label for the y-axis
+    file_name (str, optional): If provided, saves the figure with this file name
+    """
+    plt.figure(figsize=(10, 6))
+
+    for i, file in enumerate(csv_files):
+        df = pd.read_csv(file, index_col=False)
+        plt.plot(df[x_column], df[y_column], label=labels[i])
+
+    plt.title(title)
+    plt.xlabel(x_label if x_label else x_column)
+    plt.ylabel(y_label if y_label else y_column)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    plt.savefig(f"data/{file_name}", format='png')
+
+    plt.show()

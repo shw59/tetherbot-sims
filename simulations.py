@@ -378,7 +378,7 @@ class Simulation:
                 avg_velocity = sum_velocities / n
                     
                 csv_row = [runs, failed_x, avg_velocity] + non_failed_x
-                sims_utils.log_to_csv(log_file, csv_row, header=["time step", f"agent {failed_agent_num} x-position", "formation velocity", "other agent x-positions"])
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "failed agent x-position", "formation velocity", "other agent x-positions"] + ["" for _ in range(n - 2)])
 
             if runs == 100:
                 my_world.agent_list[failed_agent_num].failed = True
@@ -477,7 +477,7 @@ class Simulation:
                 collective_radius = utils.get_collective_radius(agent_pos)
 
                 csv_row = [runs, collective_radius, obj_collected] + agent_pos + obstacle_pos
-                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions", "", "", "", "", "", "", "", "", "", "obstacle positions"])
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects - 1)])
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
