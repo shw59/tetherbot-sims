@@ -182,7 +182,7 @@ class Simulation:
             size = random.uniform(0.1,0.25)
             my_world.create_obstacle("hexagon", [x, y], length=size, width=size, color=(1, 0, 1, 1), fixed=False, height=0.25, mass=0.01)
 
-        sims_utils.display_axis_labels()
+        my_world.display_axis_labels()
         
         runs = 0
 
@@ -191,8 +191,8 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # main simulation loop
-        while p.isConnected():
-            p.getCameraImage(320,200)
+        while my_world.id.isConnected():
+            my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -210,13 +210,12 @@ class Simulation:
 
             runs = runs + 1
             
-            p.stepSimulation()
+            my_world.id.stepSimulation()
 
     def obstacle_avoidance(self, n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 2, r_weight = 3, gradient = [20,0], obst_pos = [10,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
-
         my_world = World(200, 200, self.time_step, self.gui_on)
 
         my_world.set_gradient_source(gradient)
@@ -244,7 +243,7 @@ class Simulation:
 
         my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
 
-        sims_utils.display_axis_labels()
+        my_world.display_axis_labels()
         
         runs = 0
 
@@ -262,9 +261,9 @@ class Simulation:
 
         
         # main simulation loop
-        while (runs < stop) and (p.isConnected()):
+        while (runs < stop) and (my_world.id.isConnected()):
             if runs%30:
-                p.getCameraImage(320,200)
+                my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -278,12 +277,12 @@ class Simulation:
                 # strain_m = my_world.agent_list[1].tethers[0].get_strain()
                 # strain_p = my_world.agent_list[1].tethers[1].get_strain()
 
-                # x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
-                # y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
+                # x_velocity = my_world.id.getJointState(my_world.agent_list[1].id, 1)[1]
+                # y_velocity = my_world.id.getJointState(my_world.agent_list[1].id, 0)[1]
 
                 # total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
 
-                # p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
+                # my_world.id.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
                 #                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
                 
                 agent_to_update_next = agent_to_update_next + 1
@@ -301,9 +300,9 @@ class Simulation:
 
             runs = runs + 1
             
-            p.stepSimulation()
+            my_world.id.stepSimulation()
 
-        p.disconnect()
+        my_world.id.disconnect()
 
         return log_file
 
@@ -333,7 +332,7 @@ class Simulation:
                 start_angles.append(90)
         start_angles.append(None)
         
-        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2,0,0], "+y")
+        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, (n - 1) * self.unstretched_tether_length / 2, 0], "+y")
 
         goal_angles = [None] + start_angles[1:]
 
@@ -347,7 +346,7 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        sims_utils.display_axis_labels()
+        my_world.display_axis_labels()
         
         log_file = f"data/tow_failed_agents_trial{trial_num}_agent_{failed_agent_num}_failed.csv"
         runs = 0
@@ -357,8 +356,8 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # main simulation loop
-        while p.isConnected() and runs < 5000:
-            p.getCameraImage(320,200)
+        while my_world.id.isConnected() and runs < 5000:
+            my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
                 failed_x = 0
@@ -396,9 +395,9 @@ class Simulation:
 
             runs = runs + 1
             
-            p.stepSimulation()
+            my_world.id.stepSimulation()
         
-        p.disconnect()
+        my_world.id.disconnect()
 
         return log_file
 
@@ -409,7 +408,7 @@ class Simulation:
         """
         my_world = World(50, 20, self.time_step, self.gui_on)
 
-        a_weight = 5 # angle vector weighting
+        a_weight = 100 # angle vector weighting
         s_weight = 10 # strain vector weighting
         g_weight = 4 # gradient vector weighting
         r_weight = 3 # repulsion vector weighting
@@ -422,7 +421,7 @@ class Simulation:
 
         start_angles = [None] + [180] * (n - 2) + [None]
         
-        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -4.5, 0], "+y")
+        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -(n - 1) * self.unstretched_tether_length / 2, 0], "+y")
 
         if maintain_line:
             goal_angles = start_angles[:]
@@ -441,7 +440,7 @@ class Simulation:
 
         sims_utils.generate_obstacles(my_world, [0, -2], [3, 2], num_objects, "cylinder", 0.1, 0.1, False)
 
-        sims_utils.display_axis_labels()
+        my_world.display_axis_labels()
         
         log_file =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects_{num_objects}.csv"
         runs = 0
@@ -451,8 +450,8 @@ class Simulation:
         obj_collected = 0
 
         # main simulation loop
-        while p.isConnected() and runs < 5000:
-            p.getCameraImage(320,200)
+        while my_world.id.isConnected() and runs < 5000:
+            my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
                 obstacle_pos = []
@@ -492,13 +491,21 @@ class Simulation:
 
             runs = runs + 1
             
-            p.stepSimulation()
+            my_world.id.stepSimulation()
         
-        p.disconnect()
+        my_world.id.disconnect()
 
         return log_file
 
     def run_obstacle_simulations(self, n, number_of_runs, offsets, angles_to_try):
+        """
+        Runs a series of obstacle bypassing simulations.
+
+        n: Number of agents
+        number_of_runs: Number of trials per each combination of offsets and angles
+        offsets: List of y-position offsets
+        angles_to_try: List of group starting angles to try bypassing an obstacle with
+        """
         for o in offsets:
             for a in angles_to_try:
                 print("a is: " +str(a))

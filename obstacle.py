@@ -28,6 +28,7 @@ class Obstacle:
         mu_dynamic: Obstacle's dynamic coefficient of friction (only applicable if not movable)
         fixed: True if the obstacle is fixed and False if the obstacle is movable in the 2D plane
         """
+        self.world_id = p
         self.height = height
         self.collected = False # only used for movable obstacles by a main loop to flag objects collected by an agent formation
 
@@ -343,26 +344,25 @@ class Obstacle:
         open(filename, "w").write(urdf_text)
 
         position_3d = position + [0]
-        self.id = p.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
+        self.id = self.world_id.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
         if fixed:
-            p.createConstraint(self.id, 2, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
+            self.world_id.createConstraint(self.id, 2, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)
         else:
             # set dynamic friction coefficient
-            p.changeDynamics(self.id, 0, linearDamping=mu_dynamic)
-            p.changeDynamics(self.id, 1, linearDamping=mu_dynamic)
-            p.changeDynamics(self.id, 2, linearDamping=mu_dynamic)
+            for i in range(3):
+                self.world_id.changeDynamics(self.id, i, jointDamping=mu_dynamic)
 
             # set static friction coefficient
             force_friction = utils.normal_force(mass) * mu_static
-            p.setJointMotorControlArray(self.id, Obstacle.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[force_friction]*3)
+            self.world_id.setJointMotorControlArray(self.id, Obstacle.joint_indices, controlMode=p.VELOCITY_CONTROL, forces=[force_friction]*3)
         
     def get_pose(self):
         """
         Return the current position and heading orientation of the obstacle as a list [[x, y], heading in degrees].
         """
-        curr_pos = p.getLinkState(self.id, 2)[0][:2]
-        curr_orn = math.degrees(p.getEulerFromQuaternion(p.getLinkState(self.id, 2)[1])[2])
+        curr_pos = self.world_id.getLinkState(self.id, 2)[0][:2]
+        curr_orn = math.degrees(p.getEulerFromQuaternion(self.world_id.getLinkState(self.id, 2)[1])[2])
 
         return [curr_pos, curr_orn]
 
@@ -374,4 +374,4 @@ class Obstacle:
         heading: Newly specified heading of an obstacle object in degrees ranging from 0 to 360 starting from the +x axis
         """
         new_position.append(self.height / 2)
-        p.resetBasePositionAndOrientation(self.id, new_position, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
+        self.world_id.resetBasePositionAndOrientation(self.id, new_position, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
