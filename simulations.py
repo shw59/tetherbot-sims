@@ -17,6 +17,9 @@ import random
 class Simulation:
     def __init__(self, time_step, agent_mass, agent_radius, agent_height, agent_max_speed, agent_drive_power, agent_static_mu, agent_dynamic_mu, 
                  unstretched_tether_length, tether_youngs_modulus, tether_diameter, sensing_period, logging_period, gui_on):
+        """
+        Initializes a simulation object with the given attributes that apply to all simulations run from that instance.
+        """
         self.time_step = time_step
         self.agent_mass = agent_mass
         self.agent_radius = agent_radius
@@ -346,6 +349,7 @@ class Simulation:
 
         sims_utils.display_axis_labels()
         
+        log_file = f"data/tow_failed_agents_trial{trial_num}_agent_{failed_agent_num}_failed.csv"
         runs = 0
 
         agent_to_update_next = 0
@@ -353,7 +357,7 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # main simulation loop
-        while p.isConnected():
+        while p.isConnected() and runs < 5000:
             p.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
@@ -371,14 +375,10 @@ class Simulation:
                 avg_velocity = sum_velocities / n
                     
                 csv_row = [runs, failed_x, avg_velocity] + non_failed_x
-                filename = f"data/tow_failed_agents_trial{trial_num}_agent_{failed_agent_num}_failed.csv"
-                sims_utils.log_to_csv(filename, csv_row, header=["time step", f"agent {failed_agent_num} x-position", "formation velocity", "other agent x-positions"])
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", f"agent {failed_agent_num} x-position", "formation velocity", "other agent x-positions"])
 
             if runs == 100:
                 my_world.agent_list[failed_agent_num].failed = True
-
-            if runs == 5000:
-                break
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -400,7 +400,7 @@ class Simulation:
         
         p.disconnect()
 
-        return filename
+        return log_file
 
     def object_capture_trial(self, n, trial_num, num_objects, maintain_line):
         """
@@ -420,7 +420,7 @@ class Simulation:
 
         Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
 
-        start_angles = [None] + [180] * n - 2 + [None]
+        start_angles = [None] + [180] * (n - 2) + [None]
         
         initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -4.5, 0], "+y")
 
@@ -443,6 +443,7 @@ class Simulation:
 
         sims_utils.display_axis_labels()
         
+        log_file =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects_{num_objects}.csv"
         runs = 0
         agent_to_update_next = 0
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
@@ -450,7 +451,7 @@ class Simulation:
         obj_collected = 0
 
         # main simulation loop
-        while p.isConnected():
+        while p.isConnected() and runs < 5000:
             p.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
@@ -473,12 +474,7 @@ class Simulation:
                 collective_radius = utils.get_collective_radius(agent_pos)
 
                 csv_row = [runs, collective_radius, obj_collected] + agent_pos + obstacle_pos
-
-                filename =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects_{num_objects}.csv"
-                sims_utils.log_to_csv(filename, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions", "", "", "", "", "", "", "", "", "", "obstacle positions"])
-
-            if runs == 10000:
-                break
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions", "", "", "", "", "", "", "", "", "", "obstacle positions"])
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -500,7 +496,7 @@ class Simulation:
         
         p.disconnect()
 
-        return filename
+        return log_file
 
     def run_obstacle_simulations(self, n, number_of_runs, offsets, angles_to_try):
         for o in offsets:

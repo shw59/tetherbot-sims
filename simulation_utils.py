@@ -70,8 +70,10 @@ def basic_starting_positions(l_0, n, angles, starting_position, direction):
     return the_list
 
 def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, course_radius):
-
-    for i in range(n_obstacles):
+    """
+    Generates a circular obstacle within a specified radius with obstacles of specified size.
+    """
+    for _ in range(n_obstacles):
         r = random.uniform(0, course_radius - (obstacle_size_range[1] / 2))
         theta = random.uniform(0, 2 * math.pi)
         x = r * math.cos(theta)
