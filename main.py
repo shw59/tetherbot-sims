@@ -60,7 +60,8 @@ def main():
     sim.run_object_capture_simulations(n=9, num_runs=10, object_nums=[5, 10, 30, 50], maintain_line=False)
     sim.run_object_capture_simulations(n=9, num_runs=10, object_nums=[5, 10, 30, 50], maintain_line=True)
     sim.run_obstacle_simulations(n=9, l_0=UNSTRETCHED_TETHER_LENGTH, length_of_simulation=300, offsets=[-9, -4, 0], angles_to_try=[-15, 0, 15], number_of_trials=2, obst_position = [8,0])
-    sim.storm_drain()
+    sim.gui_on = True
+    sim.storm_drain() # run and take screenshots
 
 if __name__ == "__main__":
     main()
