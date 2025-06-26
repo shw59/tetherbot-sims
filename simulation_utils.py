@@ -10,6 +10,7 @@ import matplotlib as plt
 import math
 import random
 import csv
+import pandas as pd
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
@@ -220,7 +221,7 @@ def make_heat_map(data, angles, offsets, num_trials):
     plt.xlabel("Offset")
     plt.ylabel("Angle")
     plt.title("Rate of Success out of " + str((num_trials)) + " trials")
-    plt.savefig("success_heat_map.jpg", format='jpg', dpi=300)  # dpi controls resolution
+    plt.savefig("data/success_heat_map.png", format='png', dpi=300)  # dpi controls resolution
     plt.show()
     plt.close()  # Closes the figure to free memory
     return 0

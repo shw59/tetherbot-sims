@@ -253,7 +253,7 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset_.csv"
-        log_file = "trial: " + str(trial) + ", degree: " + str(angle_off_y) + ", offset: " + str(y_offset) + ".csv"
+        log_file = "data/trial: " + str(trial) + ", degree: " + str(angle_off_y) + ", offset: " + str(y_offset) + ".csv"
 
         log_header = ['Timestep']
 
@@ -350,7 +350,7 @@ class Simulation:
 
         my_world.display_axis_labels()
         
-        log_file = f"data/tow_failed_agents_trial{trial_num}_agent_{failed_agent_num}_failed.csv"
+        log_file = f"data/tow_failed_agents_trial{trial_num}_agent{failed_agent_num}_failed.csv"
         runs = 0
 
         agent_to_update_next = 0
@@ -444,7 +444,7 @@ class Simulation:
 
         my_world.display_axis_labels()
         
-        log_file =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects_{num_objects}.csv"
+        log_file =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}.csv"
         runs = 0
         agent_to_update_next = 0
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))

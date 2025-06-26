@@ -9,6 +9,7 @@ import pybullet_data
 from world import World
 from agent import Agent
 from simulations import Simulation
+import simulation_utils as sims_utils
 import numpy as np
 import math
 import random
@@ -30,8 +31,8 @@ MU_STATIC = 1.25
 MU_DYNAMIC = 0.9
 
 # paracord 550 parameters
-UNSTRETCHED_TETHER_LENGTH = 2
-YOUNGS_MODULUS = 650e6
+UNSTRETCHED_TETHER_LENGTH = 1.5
+YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
 

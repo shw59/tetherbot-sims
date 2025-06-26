@@ -85,7 +85,7 @@ class World:
 
         return agent
     
-    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, youngs_modulus=600e6, diameter=.0019, num_segments=10, mass=0, mu=0.0):
+    def create_and_anchor_tether(self, agent_1, agent_2, tether_length_0, youngs_modulus=20e9, diameter=.0019, num_segments=10, mass=0, mu=0.0):
         """
         Creates and anchors a tether between two specified agent objects, returns the tether object.
         """
