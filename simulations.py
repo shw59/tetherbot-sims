@@ -217,7 +217,7 @@ class Simulation:
         Generates a very simple formation of agents in order to test the hysteresis.
         """
 
-        my_world = World(200, 200, self.time_step)
+        my_world = World(200, 200, self.time_step, gui_on=self.gui_on)
 
         my_world.set_gradient_source(gradient)
 
@@ -253,7 +253,7 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset_.csv"
-        log_file = "data/trial: " + str(trial) + ", degree: " + str(angle_off_y) + ", offset: " + str(y_offset) + ".csv"
+        log_file = "data/trial" + str(trial) + "_degree" + str(angle_off_y) + "_offset" + str(y_offset) + ".csv"
 
         log_header = ['Timestep']
 
