@@ -43,6 +43,7 @@ class Agent:
         mu_dynamic: the coefficient of dynamic friction, a float
         max_velocity: the maximum velocity that the agent can move in m/s, a float
         """
+        self.world_id = p
         self.height = height # height of the agent
         self.next_position = position_0[:2] # gets the (x,y) of the position
         self.max_velocity = max_velocity
@@ -162,18 +163,18 @@ class Agent:
         filename = f"objects/agent.urdf"
         open(filename, "w").write(urdf_text)
 
-        self.id = p.loadURDF(filename, position_0)
+        self.id = self.world_id.loadURDF(filename, position_0)
 
         # set initial heading
-        p.resetJointState(self.id, 2, math.radians(heading_0))
+        self.world_id.resetJointState(self.id, 2, math.radians(heading_0))
 
         # set dynamic friction coefficient
         for i in range(3):
-            p.changeDynamics(self.id, i, jointDamping=mu_dynamic)
+            self.world_id.changeDynamics(self.id, i, jointDamping=mu_dynamic)
 
         # set static friction coefficient
         self.force_friction_static = utils.normal_force(mass) * mu_static
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[self.force_friction_static]*3)
+        self.world_id.setJointMotorControlArray(self.id, Agent.joint_indices, controlMode=p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[self.force_friction_static]*3)
     
     def instantiate_m_tether(self, m_tether):
         """
@@ -205,10 +206,10 @@ class Agent:
 
         Note: the angle heading is unbounded and goes negative for CW and positive for CCW, and based on PyBullet's own angle calculation of a continuous joint
         """
-        agent_pos = p.getLinkState(self.id, 2)[0][:2]
-        head_pos = p.getLinkState(self.id, 3)[0][:2]
+        agent_pos = self.world_id.getLinkState(self.id, 2)[0][:2]
+        head_pos = self.world_id.getLinkState(self.id, 3)[0][:2]
         heading = [head_pos[i] - agent_pos[i] for i in range(2)]
-        angle = math.degrees(p.getJointState(self.id, 2)[0])
+        angle = math.degrees(self.world_id.getJointState(self.id, 2)[0])
 
         return [agent_pos, heading, angle]
     
@@ -216,8 +217,8 @@ class Agent:
         """
         Returns the current velocity of the agent
         """
-        x_velocity = p.getJointState(self.id, 1)[1]
-        y_velocity = p.getJointState(self.id, 0)[1]
+        x_velocity = self.world_id.getJointState(self.id, 1)[1]
+        y_velocity = self.world_id.getJointState(self.id, 0)[1]
         total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
 
         return total_velocity
@@ -227,14 +228,14 @@ class Agent:
         Returns the current heading of the agent's tether with respect to the agent's center.
         tether_num: either 0 or 1, representing the m_tether or the p_tether, respectively
         """
-        n_verts, verts, *_ = p.getMeshData(self.tethers[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = self.world_id.getMeshData(self.tethers[tether_num].id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         # get both end vertices of the tether
         p1 = [(verts[0][k] + verts[1][k]) / 2.0 for k in range(2)]
         p2 = [(verts[n_verts - 2][k] + verts[n_verts - 1][k]) / 2.0 for k in range(2)]
 
         # get the agent's position
-        agent_pos = p.getLinkState(self.id, 2)[0][:2]
+        agent_pos = self.world_id.getLinkState(self.id, 2)[0][:2]
         
         # check which vertex pair is closer and use the second to next pair to calculate heading
         dist1 = math.dist(agent_pos, p1)
@@ -315,7 +316,7 @@ class Agent:
 
                 return closest_point, nearest_dist
             elif (obj.label == "agent" or obj.label == "obstacle"):
-                closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
+                closest_points = self.world_id.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
             # match obj.label:
             #     case "tether": # if object is a tether, loop through its vertices and find the closest one to the agent
             #         verts = obj.get_verts()[1]
@@ -329,7 +330,7 @@ class Agent:
 
             #         return closest_point, nearest_dist
             #     case "agent" | "obstacle":
-            #         closest_points = p.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
+            #         closest_points = self.world_id.getClosestPoints(self.id, obj.id, float('inf'), linkIndexA=2, linkIndexB=2)
 
             if closest_points: # for obstacles and other agents, loop through the list of closest points and find the closest
                 closest_point = closest_points[0][6][:2]
@@ -551,20 +552,20 @@ class Agent:
         """
         Stop the agent's current motion and check that it is stopped.
         """
-        p.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[self.force_friction_static]*3)
-        while p.getJointState(self.id, 2)[1] > Agent.err_velocity or p.getJointState(self.id, 2)[1] < -Agent.err_velocity:
-            p.getCameraImage(320,200)
-            p.stepSimulation()
+        self.world_id.setJointMotorControlArray(self.id, Agent.joint_indices, p.VELOCITY_CONTROL, targetVelocities=[0, 0, 0], forces=[self.force_friction_static]*3)
+        while self.world_id.getJointState(self.id, 2)[1] > Agent.err_velocity or self.world_id.getJointState(self.id, 2)[1] < -Agent.err_velocity:
+            self.world_id.getCameraImage(320,200)
+            self.world_id.stepSimulation()
 
     def move_to(self, force=float('inf')):
         """
         Moves the agent from its current position to its next_position.
         """
         # amount to move (relative to base position)
-        x_move, y_move = self.next_position - np.array(p.getBasePositionAndOrientation(self.id)[0][:2])
+        x_move, y_move = self.next_position - np.array(self.world_id.getBasePositionAndOrientation(self.id)[0][:2])
 
         # calculate rotation to face direction of movement
-        base_heading = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
+        base_heading = p.getEulerFromQuaternion(self.world_id.getBasePositionAndOrientation(self.id)[1])[2] # starting heading
         curr_heading = math.radians(self.get_pose()[2])
         
         desired_h_x, desired_h_y = self.next_position - np.array(self.get_pose()[0])
@@ -575,15 +576,15 @@ class Agent:
         rotation = base_heading + curr_heading + (desired_heading - curr_heading + math.pi) % (2 * math.pi) - math.pi
 
         # set the robot to rotate to the desired heading and check that it reaches that heading before moving forward
-        p.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force, maxVelocity=self.max_velocity_angular)
+        self.world_id.setJointMotorControl2(self.id, Agent.joint_indices[2], p.POSITION_CONTROL, targetPosition=rotation, force=force, maxVelocity=self.max_velocity_angular)
         while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
-            p.getCameraImage(320,200)
-            p.stepSimulation()
+            self.world_id.getCameraImage(320,200)
+            self.world_id.stepSimulation()
 
         target_positions = [x_move, y_move, rotation]
         
         # set motor to move robot to next position (uses PD control)
         for i in range(2):
-            p.setJointMotorControl2(self.id, Agent.joint_indices[i], p.POSITION_CONTROL,
+            self.world_id.setJointMotorControl2(self.id, Agent.joint_indices[i], p.POSITION_CONTROL,
                                     targetPosition=target_positions[i], force=force, maxVelocity=self.max_velocity,
                                     positionGain=0.05)

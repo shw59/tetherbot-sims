@@ -70,8 +70,10 @@ def basic_starting_positions(l_0, n, angles, starting_position, direction):
     return the_list
 
 def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, course_radius):
-
-    for i in range(n_obstacles):
+    """
+    Generates a circular obstacle within a specified radius with obstacles of specified size.
+    """
+    for _ in range(n_obstacles):
         r = random.uniform(0, course_radius - (obstacle_size_range[1] / 2))
         theta = random.uniform(0, 2 * math.pi)
         x = r * math.cos(theta)
@@ -84,25 +86,6 @@ def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, c
                 break
         if no_overlap:
             world.create_obstacle("hexagon", [x, y], length=sizes, width=sizes, color=(0, 1, 0, 1), fixed=True)
-
-def display_axis_labels():
-    """
-    Adds x, y, and z axis labels so that it is easier to orient oneself
-    """
-    p.addUserDebugLine([0, 0, 0], [1, 0, 0], lineColorRGB=[0, 0, 1], lineWidth=10, lifeTime=0)
-    p.addUserDebugLine([0, 0, 0], [0, 1, 0], lineColorRGB=[1, 0, 0], lineWidth=10, lifeTime=0)
-    p.addUserDebugLine([0, 0, 0], [0, 0, 1], lineColorRGB=[.68, .12, .94], lineWidth=10, lifeTime=0)
-    p.addUserDebugText("+x", [1, 0, 0], lifeTime=0, textColorRGB=[0, 0, 0])
-    p.addUserDebugText("+y", [0, 1, 0], lifeTime=0, textColorRGB=[0, 0, 0])
-    p.addUserDebugText("+z", [0, 0, 1], lifeTime=0, textColorRGB=[0, 0, 0])
-
-def display_stats(labels, values, position=[0, 0, 0.5], color=[0, 0, 0]):
-    """
-    Display values with a labels in the GUI visualization for clarity. Provide a list of labels and a list of corresponding values.
-    """
-    text_list = [f"{labels[i]} = {values[i]}" for i in range(len(labels))]
-    display_text = ", ".join(text_list)
-    p.addUserDebugText(display_text, position, textColorRGB=color, lifeTime=1)
         
 def angle_and_position_offset(n, angle, offset, seperation):
     """
@@ -113,7 +96,6 @@ def angle_and_position_offset(n, angle, offset, seperation):
     angle: angle off of +y-axis towards +x-axis in degrees
     offset: value of the y-offset of the center of the line of agents about (0,0)
     """
-
     positions = []
 
     for i in range(n):

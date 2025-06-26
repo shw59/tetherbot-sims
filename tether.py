@@ -21,6 +21,7 @@ class Tether:
         mass: mass of the tether in kg
         mu: contact friction coefficient of the tether
         """
+        self.world_id = p
         self.length_0 = length_0
 
         dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
@@ -39,13 +40,11 @@ class Tether:
         tether_filename = f"objects/tether.obj"
         open(tether_filename, "w").write("\n".join(lines))
 
-        # properties of paracord type I
-        # cross_area = math.pi * (diameter / 2)**2
-        # stiffness = youngs_modulus * cross_area / length_0
+        # properties of paracord 550 (type 3)
+        cross_area = math.pi * (diameter / 2)**2
+        stiffness = youngs_modulus * cross_area / length_0
 
-        stiffness = 2500 # should figure out what it is for a paracord 550 or something stiffer
-
-        self.id = p.loadSoftBody(tether_filename, 
+        self.id = self.world_id.loadSoftBody(tether_filename, 
                                 basePosition = position_0, 
                                 baseOrientation = orientation_0,
                                 scale=1, 
@@ -60,13 +59,13 @@ class Tether:
                                 frictionCoeff=mu, 
                                 useFaceContact=1)
         
-        p.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+        self.world_id.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.2, 0.58, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
     
     def get_strain(self):
         """
         Return the current strain of the tether object.
         """
-        n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = self.world_id.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         length = 0.0
         for i in range(0, n_verts-3, 2): # sum of distances between each pair of vertices on the tether mesh
@@ -80,7 +79,7 @@ class Tether:
         """
         Return the tether's number of vertices and the mesh vertices themselves as a tuple (n_verts, verts).
         """
-        n_verts, verts, *_ = p.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = self.world_id.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
         return n_verts, verts
     

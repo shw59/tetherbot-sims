@@ -16,20 +16,31 @@ import csv
 import time
 import matplotlib.pyplot as plt
 
-HEIGHT = 0.25
-TIME_STEP = 1./240.
+TIME_STEP = 1/240 # seconds
+SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
+LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is written to a csv file
+
+# jackal robot parameters
+MASS = 17 # kg
+RADIUS = 0.29 # m
+HEIGHT = 0.25 # m
+MAX_SPEED = 2 # m/s
+DRIVE_POWER = 500 # watts
+MU_STATIC = 1.25
+MU_DYNAMIC = 0.9
+
+# paracord 550 parameters
+UNSTRETCHED_TETHER_LENGTH = 2
+YOUNGS_MODULUS = 650e6
+DIAMETER = 0.0019 # m
+
 N = 3
 
-UNSTRETCHED_TETHER_LENGTH = 2
-RADIUS = 0.29
 GRADIENT_SOURCE = [0, 0]
 ANGLE_WEIGHT = 2.5 # weighting of the angle vector in the overall resulting vector, normally 2.5
 STRAIN_WEIGHT = 300 # weighting of the angle vector in the overall resulting vector, normally 300
 GRADIENT_WEIGHT = 0.6 # weighting of the angle vector in the overall resulting vector, normally 0.6
 REPULSION_WEIGHT = 1 # weighting of the angle vector in the overall resulting vector, normally 1
-SENSING_PERIOD = 5 # The number of while loop iterations that should run before a singular, random
-                   # agent updates its goal position
-LOGGING_PERIOD = 20 # The number of while loop iterstions that pass before data is written to a csv file
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
@@ -602,9 +613,11 @@ def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    run_obstacle_simulations(n=5, l_0=UNSTRETCHED_TETHER_LENGTH, length_of_simulation=50, offsets=[-9, 0], angles_to_try=[0, 15], number_of_trials=2)
-    # obstacle_avoidance(N, UNSTRETCHED_TETHER_LENGTH, 0, 0, stop = 15)
-
-
+    sim = Simulation(TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+                     UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, gui_on=True)
+    
+    sim.run_tow_failed_agents_simulations(5, 10, [0, 1, 2, 3, 4])
+    sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=False)
+    sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=True)
 if __name__ == "__main__":
     main()
