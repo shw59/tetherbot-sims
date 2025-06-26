@@ -6,7 +6,7 @@ This file contains useful functions for generating and running simulations.
 
 import pybullet as p
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import math
 import random
 import csv
@@ -70,8 +70,8 @@ def basic_starting_positions(l_0, n, angles, starting_position, direction):
 
     return the_list
 
-def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs):
-    if (number_of_while_runs-4*LOGGING_PERIOD <= 0):
+def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, l_0):
+    if (number_of_while_runs-4*logging_period <= 0):
         print("Increase the number of while loop iterations please")
 
         return 0
@@ -88,35 +88,34 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
 
         success_list = []
 
+        print(each_runs_trial)
+
         for i in range(len(each_runs_trial)):
             total = 0
             successful = 0
             for k in range(number_of_trials):
                 with open(each_runs_trial[i][k]) as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
-                    initial_x = 0
-                    initial_y = 0
-                    final_x = 0
-                    final_y = 0
+
+                    avg_velocity = 0
+
+                    avg_distance_from_obstacle = 0
 
                     line_count = 0
 
                     for row in csv_reader:
                         if line_count != 0:
-                    
-                            if (int(row[0]) == (number_of_while_runs*(0.8))):
-                                initial_x = float(row[1])
-                                initial_y = float(row[2])
 
                             if (int(row[0]) == (number_of_while_runs)):
-                                final_x = float(row[1])
-                                final_y = float(row[2])
+                                for m in range(n):
+                                    avg_velocity = avg_velocity + float(row[(m+1)*3])
+                                    avg_distance_from_obstacle = avg_distance_from_obstacle + math.sqrt(((obst_position[0]-float(row[(m*3)+1]))**2)+((obst_position[1]-float(row[(m*3)+2]))**2))
 
                             line_count = line_count + 1
                         else:
                             line_count = line_count + 1
 
-                    if (abs(final_x - initial_x) <= 0.3 and abs(final_y - initial_y) <= 0.3):
+                    if (avg_velocity/n) <= 0.3 and ((avg_distance_from_obstacle/n) <= 2*l_0):
                         total = total + 1
                     else:
                         successful = successful + 1
