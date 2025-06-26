@@ -6,6 +6,7 @@ This file contains useful functions for generating and running simulations.
 
 import pybullet as p
 import numpy as np
+import matplotlib as plt
 import math
 import random
 import csv
@@ -68,6 +69,62 @@ def basic_starting_positions(l_0, n, angles, starting_position, direction):
         the_list[i] = next_position
 
     return the_list
+
+def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs):
+    if (number_of_while_runs-4*LOGGING_PERIOD <= 0):
+        print("Increase the number of while loop iterations please")
+
+        return 0
+    
+    else:
+
+        each_runs_trial = []
+
+        for i in range(number_of_runs_per_trial):
+            set_up = []
+            for k in range(number_of_trials):
+                set_up.append(list_of_files[i+k*number_of_runs_per_trial])
+            each_runs_trial.append(set_up)
+
+        success_list = []
+
+        for i in range(len(each_runs_trial)):
+            total = 0
+            successful = 0
+            for k in range(number_of_trials):
+                with open(each_runs_trial[i][k]) as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=',')
+                    initial_x = 0
+                    initial_y = 0
+                    final_x = 0
+                    final_y = 0
+
+                    line_count = 0
+
+                    for row in csv_reader:
+                        if line_count != 0:
+                    
+                            if (int(row[0]) == (number_of_while_runs*(0.8))):
+                                initial_x = float(row[1])
+                                initial_y = float(row[2])
+
+                            if (int(row[0]) == (number_of_while_runs)):
+                                final_x = float(row[1])
+                                final_y = float(row[2])
+
+                            line_count = line_count + 1
+                        else:
+                            line_count = line_count + 1
+
+                    if (abs(final_x - initial_x) <= 0.3 and abs(final_y - initial_y) <= 0.3):
+                        total = total + 1
+                    else:
+                        successful = successful + 1
+                        total = total + 1
+
+            success_list.append(successful/total)
+        
+        return success_list
 
 def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, course_radius):
     """
@@ -146,3 +203,24 @@ def log_to_csv(filename, data_row, header=None):
             writer.writerow(header)
 
         writer.writerow(data_row)
+
+def make_heat_map(data, angles, offsets, num_trials):
+    organized_data = []
+
+    for i in range(len(angles)):
+        new = []
+        for k in range(len(offsets)):
+            new.append(data[i+k*len(offsets)])
+        organized_data.append(new)
+
+    plt.imshow(organized_data, cmap='viridis', aspect='auto')
+    plt.colorbar(label='Success Rate')
+    plt.xticks(ticks=np.arange(len(offsets)), labels=offsets)
+    plt.yticks(ticks=np.arange(len(angles)), labels=angles)
+    plt.xlabel("Offset")
+    plt.ylabel("Angle")
+    plt.title("Rate of Success out of " + str((num_trials)) + " trials")
+    plt.savefig("success_heat_map.jpg", format='jpg', dpi=300)  # dpi controls resolution
+    plt.show()
+    plt.close()  # Closes the figure to free memory
+    return 0
