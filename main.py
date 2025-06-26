@@ -55,10 +55,12 @@ def main():
     """
 
     sim = Simulation(TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                     UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, gui_on=True)
+                     UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, gui_on=False)
+    sim.run_tow_failed_agents_simulations(n=5, num_runs=10, agents_to_fail=[0, 1, 2, 3, 4])
+    sim.run_object_capture_simulations(n=9, num_runs=10, object_nums=[5, 10, 30, 50], maintain_line=False)
+    sim.run_object_capture_simulations(n=9, num_runs=10, object_nums=[5, 10, 30, 50], maintain_line=True)
     sim.run_obstacle_simulations(n=9, l_0=UNSTRETCHED_TETHER_LENGTH, length_of_simulation=300, offsets=[-9, -4, 0], angles_to_try=[-15, 0, 15], number_of_trials=2, obst_position = [8,0])
-    # obstacle_avoidance(N, UNSTRETCHED_TETHER_LENGTH, 0, 0, stop = 15)
-
+    sim.storm_drain()
 
 if __name__ == "__main__":
     main()
