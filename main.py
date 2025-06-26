@@ -14,6 +14,7 @@ import math
 import random
 import csv
 import time
+import matplotlib.pyplot as plt
 
 HEIGHT = 0.25
 TIME_STEP = 1./240.
