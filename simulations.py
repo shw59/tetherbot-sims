@@ -212,11 +212,12 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-    def obstacle_avoidance(self, n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 2, r_weight = 3, gradient = [20,0], obst_pos = [10,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000):
+    def obstacle_avoidance(self, n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
-        my_world = World(200, 200, self.time_step, self.gui_on)
+
+        my_world = World(200, 200, self.time_step)
 
         my_world.set_gradient_source(gradient)
 
@@ -233,17 +234,17 @@ class Simulation:
 
         # populates the list of robot objects with agent objects
         for i in range(n):
-                    my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goals[i], 
+            my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goals[i], 
                                   mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
         for i in range(n-1):
-            my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], l_0, self.tether_youngs_modulus, self.tether_diameter, num_segments = 5)
+            my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments = 10)
 
         my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
 
-        my_world.display_axis_labels()
+        sims_utils.display_axis_labels()
         
         runs = 0
 
@@ -251,19 +252,20 @@ class Simulation:
 
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
-        log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset.csv"
+        # log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset_.csv"
+        log_file = "trial: " + str(trial) + ", degree: " + str(angle_off_y) + ", offset: " + str(y_offset) + ".csv"
 
         log_header = ['Timestep']
 
         for i in range(n):
-            log_header.append('agent-' + str(i) + '_x')
+            log_header.append('agent_' + str(i) + '_x')
             log_header.append('agent_' + str(i) + '_y')
 
         
         # main simulation loop
-        while (runs < stop) and (my_world.id.isConnected()):
+        while (runs <= stop) and (p.isConnected()):
             if runs%30:
-                my_world.id.getCameraImage(320,200)
+                p.getCameraImage(320,200)
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -277,12 +279,12 @@ class Simulation:
                 # strain_m = my_world.agent_list[1].tethers[0].get_strain()
                 # strain_p = my_world.agent_list[1].tethers[1].get_strain()
 
-                # x_velocity = my_world.id.getJointState(my_world.agent_list[1].id, 1)[1]
-                # y_velocity = my_world.id.getJointState(my_world.agent_list[1].id, 0)[1]
+                # x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
+                # y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
 
                 # total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
 
-                # my_world.id.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
+                # p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
                 #                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
                 
                 agent_to_update_next = agent_to_update_next + 1
@@ -290,7 +292,7 @@ class Simulation:
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
 
-            if runs%self.logging_period == 0:
+            if runs % self.logging_period == 0:
                 data = [runs]
                 for agent in my_world.agent_list:
                     data.append(round(agent.get_pose()[0][0], 5))
@@ -300,9 +302,9 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            p.stepSimulation()
 
-        my_world.id.disconnect()
+        p.disconnect()
 
         return log_file
 
@@ -497,19 +499,20 @@ class Simulation:
 
         return log_file
 
-    def run_obstacle_simulations(self, n, number_of_runs, offsets, angles_to_try):
+    def run_obstacle_simulations(n, l_0, length_of_simulation, offsets, angles_to_try, number_of_trials):
         """
-        Runs a series of obstacle bypassing simulations.
+        length_of_simulation: this number is an integer, and it is multiplied by the 
+                            LOGGING_PERIOD to determine how long to run the while loop for
+        """
+        list_of_file_names = []
+        for t in range(number_of_trials):
+            for o in offsets:
+                for a in angles_to_try:
+                    list_of_file_names.append(obstacle_avoidance(n, l_0, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=4*l_0))
 
-        n: Number of agents
-        number_of_runs: Number of trials per each combination of offsets and angles
-        offsets: List of y-position offsets
-        angles_to_try: List of group starting angles to try bypassing an obstacle with
-        """
-        for o in offsets:
-            for a in angles_to_try:
-                print("a is: " +str(a))
-                self.obstacle_avoidance(n, self.unstretched_tether_length, o, a, stop = number_of_runs)
+        data = obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD)
+
+        make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
 
     def run_tow_failed_agents_simulations(self, n, num_runs, agents_to_fail):
         """
