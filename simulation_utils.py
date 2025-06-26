@@ -239,13 +239,13 @@ def average_csv_trials(csv_files, output_filename, select_columns=0):
 
     df = pd.concat(data)
 
-    # Convert numeric columns to numeric (if necessary), errors to NaN
+    # convert numeric columns to numeric (if necessary), errors to NaN
     df = df.apply(pd.to_numeric, errors='coerce')
 
-    # Average row-wise across trials (group by original row index)
+    # average row-wise across trials (group by original row index)
     avg = df.groupby(level=1).mean()
 
-    # Save to CSV
+    # save to csv
     avg.to_csv(f"data/{output_filename}", index=False)
 
     return avg
