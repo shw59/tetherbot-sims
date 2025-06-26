@@ -14,6 +14,7 @@ import math
 import random
 import csv
 import time
+import matplotlib.pyplot as plt
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -419,7 +420,7 @@ def log_to_csv(filename, data_row, header=None):
 
         writer.writerow(data_row)
 
-def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [10,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+def obstacle_avoidance(n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
     """
     Generates a very simple formation of agents in order to test the hysteresis.
     """
@@ -532,10 +533,6 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
 
         success_list = []
 
-        for i in range(number_of_trials):
-            success_list.append(0)
-
-
         for i in range(len(each_runs_trial)):
             total = 0
             successful = 0
@@ -546,37 +543,59 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                     initial_y = 0
                     final_x = 0
                     final_y = 0
+
+                    line_count = 0
+
                     for row in csv_reader:
+                        if line_count != 0:
                     
-                        if row[0] == (number_of_while_runs*(0.9)):
-                            initial_x = row[1]
-                            initial_y = row[2]
+                            if (int(row[0]) == (number_of_while_runs*(0.8))):
+                                initial_x = float(row[1])
+                                initial_y = float(row[2])
 
-                        if row[0] == (number_of_while_runs):
-                            final_x = row[1]
-                            final_y = row[2]
+                            if (int(row[0]) == (number_of_while_runs)):
+                                final_x = float(row[1])
+                                final_y = float(row[2])
 
-                    print(initial_x)
-                    print(initial_y)
-                    print(final_x)
-                    print(final_y)
-                    if (abs(final_x - initial_x) <=1 and abs(final_y - initial_y) <=1):
+                            line_count = line_count + 1
+                        else:
+                            line_count = line_count + 1
+
+                    if (abs(final_x - initial_x) <= 0.3 and abs(final_y - initial_y) <= 0.3):
                         total = total + 1
                     else:
                         successful = successful + 1
                         total = total + 1
 
-            success_list[i] = successful/total
-
-        print(success_list)
+            success_list.append(successful/total)
         
-        return 0
+        return success_list
+    
+def make_heat_map(data, angles, offsets, num_trials):
+    organized_data = []
+
+    for i in range(len(angles)):
+        new = []
+        for k in range(len(offsets)):
+            new.append(data[i+k*len(offsets)])
+        organized_data.append(new)
+
+    plt.imshow(organized_data, cmap='viridis', aspect='auto')
+    plt.colorbar(label='Success Rate')
+    plt.xticks(ticks=np.arange(len(offsets)), labels=offsets)
+    plt.yticks(ticks=np.arange(len(angles)), labels=angles)
+    plt.xlabel("Offset")
+    plt.ylabel("Angle")
+    plt.title("Rate of Success out of " + str((num_trials)) + " trials")
+    plt.savefig("success_heat_map.jpg", format='jpg', dpi=300)  # dpi controls resolution
+    plt.show()
+    plt.close()  # Closes the figure to free memory
+    return 0
 
 def run_obstacle_simulations(n, l_0, length_of_simulation, offsets, angles_to_try, number_of_trials):
     """
     length_of_simulation: this number is an integer, and it is multiplied by the 
                           LOGGING_PERIOD to determine how long to run the while loop for
-
     """
     list_of_file_names = []
     for t in range(number_of_trials):
@@ -584,7 +603,9 @@ def run_obstacle_simulations(n, l_0, length_of_simulation, offsets, angles_to_tr
             for a in angles_to_try:
                 list_of_file_names.append(obstacle_avoidance(n, l_0, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=4*l_0))
 
-    obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD)
+    data = obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD)
+
+    make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
 
 
 
@@ -598,6 +619,5 @@ def main():
     sim.run_tow_failed_agents_simulations(5, 10, [0, 1, 2, 3, 4])
     sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=False)
     sim.run_object_capture_simulations(9, 10, [5, 10, 30, 50], maintain_line=True)
-
 if __name__ == "__main__":
     main()
