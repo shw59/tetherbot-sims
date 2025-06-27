@@ -10,7 +10,6 @@ from world import World
 from agent import Agent
 import utils
 import simulation_utils as sims_utils
-import numpy as np
 import math
 import random
 

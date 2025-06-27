@@ -11,9 +11,8 @@ import math
 import random
 import csv
 import pandas as pd
-import pyautogui
-import pygetwindow as gw
 import pywinctl as pwc
+import mss
 import time
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
@@ -439,32 +438,27 @@ def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plo
 
 def screenshot_gui(ss_filename="pybullet_screenshot.png"):
     """
-    Takes a screenshot of the Bullet Physics simulation window and saves it.
+    Takes a screenshot of the PyBullet GUI.
     """
+    window_title = "Bullet Physics ExampleBrowser using OpenGL3+ [btgl] Release build"
     try:
-        window_title = "Bullet Physics ExampleBrowser using OpenGL3+ [btgl] Release build"
-
-        # find the window by title (case-sensitive exact match)
         window = pwc.getWindowsWithTitle(window_title)
         if not window:
-            print(f"Window with title '{window_title}' not found.")
+            print(f"Window '{window_title}' not found.")
             return
 
-        target_window = window[0]  # Get the first matching window
-
-        # bring the window to the front and focus it
+        target_window = window[0]
         target_window.activate()
-        time.sleep(0.5)  # allow time to focus
+        time.sleep(0.5)
 
-        # get window geometry
         left, top, width, height = target_window.left, target_window.top, target_window.width, target_window.height
 
-        # take a screenshot of that window region
-        screenshot = pyautogui.screenshot(region=(left, top, width, height))
+        with mss.mss() as sct:
+            monitor = {"top": top, "left": left, "width": width, "height": height}
+            sct_img = sct.grab(monitor)
+            mss.tools.to_png(sct_img.rgb, sct_img.size, output=ss_filename)
 
-        # save it
-        screenshot.save(ss_filename)
-        print(f"Screenshot of '{window_title}' saved to: {ss_filename}")
+        print(f"Screenshot saved to {ss_filename}")
 
     except Exception as e:
         print(f"An error occurred: {e}")
