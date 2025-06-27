@@ -76,13 +76,13 @@ def main():
     Is the function called when running the program. This function calls which ever function you want to test.
     """
     sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, True)
+                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, False)
                 
     processes = [
-        multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
-        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
-        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
-        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, 10, [0, 1], [0], 2, [4.5,0]))
+        # multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
+        # multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
+        # multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
+        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, 10, [0,1], [0,1], 2, [4.5,0]))
     ]
 
     for process in processes:

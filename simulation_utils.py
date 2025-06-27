@@ -280,7 +280,7 @@ def make_heat_map(data, angles, offsets, num_trials):
     for i in range(len(angles)):
         new = []
         for k in range(len(offsets)):
-            new.append(data[i+k*len(offsets)])
+            new.append(data[i+k*(len(offsets)-1)])
         organized_data.append(new)
 
     # Plots this new list as a heat map with angles on the y-axis and offsets on the x-axis,
