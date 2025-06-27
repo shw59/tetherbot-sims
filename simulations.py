@@ -40,14 +40,14 @@ class Simulation:
         Generates an environment like the one described in the research paper. The robots go through a pipe, get
         to a storm drain, and then collect debris in the storm drain and bring it to the top of the tank.
         """
-        n = 9
+        n = 7
 
-        a_weight = 0 # angle vector weighting
-        s_weight = 100 # strain vector weighting
-        g_weight = 50 # gradient vector weighting
-        r_weight = 4 # repulsion vector weighting
+        a_weight = 3 # angle vector weighting
+        s_weight = 10 # strain vector weighting
+        g_weight = 7 # gradient vector weighting
+        r_weight = 0 # repulsion vector weighting
 
-        gradient = [0,0]
+        gradient = [0, 100]
 
         my_world = World(100, 100, self.time_step, self.gui_on)
 
@@ -55,11 +55,11 @@ class Simulation:
 
         Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
 
-        angles = [None, 180, 180, 180, 180, 180, 180, 180, None]
+        angles = [None, 180, 180, 180, 180, 180, None]
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-30,-7,0], "+x")
         
-        goal_angles = [None, 180, 180, 180, 180, 180, 180, 180, None]
+        goal_angles = [None, 180, 180, 180, 180, 180, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -191,7 +191,7 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # main simulation loop
-        while my_world.id.isConnected():
+        while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
             my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
@@ -207,6 +207,9 @@ class Simulation:
 
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
+
+            if runs % 500 == 0:
+                sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_storm_drain_screenshot.png")
 
             runs = runs + 1
             
@@ -315,7 +318,7 @@ class Simulation:
         This experiment takes a group of n agents in a W formation and causes one of them to fail at t = 100.
         The other agents attempt to tow the failed agent as the collective advances towards the gradient source goal.
         """
-        my_world = World(50, 10, self.time_step, self.gui_on)
+        my_world = World(150, 20, self.time_step, self.gui_on)
 
         a_weight = 8 # angle vector weighting
         s_weight = 5 # strain vector weighting
@@ -410,7 +413,7 @@ class Simulation:
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.
         """
-        my_world = World(50, 20, self.time_step, self.gui_on)
+        my_world = World(150, 20, self.time_step, self.gui_on)
 
         a_weight = 100 # angle vector weighting
         s_weight = 10 # strain vector weighting
@@ -446,7 +449,7 @@ class Simulation:
 
         my_world.display_axis_labels()
         
-        log_file =f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}.csv"
+        log_file = f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}.csv"
         runs = 0
         agent_to_update_next = 0
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))

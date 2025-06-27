@@ -7,8 +7,8 @@ This file contains the main driver program for running the tetherbot PyBullet si
 import pybullet as p
 from simulations import Simulation
 import simulation_utils as sims_utils
-import multiprocessing
 import time
+import multiprocessing as mp
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -64,9 +64,15 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     start_time = time.perf_counter()
 
     sim = Simulation(*sim_args)
+    csv_averages_list = []
     for failed_agent_num in agents_to_fail:
+        trial_list = []
         for trial in range(1, num_runs + 1):
-            sim.tow_failed_agents_trial(n, trial, failed_agent_num)
+            trial_list.append(sim.tow_failed_agents_trial(n, trial, failed_agent_num))
+        csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/tow_failed_agents_trialavg_agent{failed_agent_num}_failed.csv"))
+
+    sims_utils.make_graph(csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
+                          title="Failed Agent X-position vs Time Step", file_name="towing_agents_graph.png")
 
     end_time = time.perf_counter()
 
@@ -86,9 +92,15 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
     start_time = time.perf_counter()
 
     sim = Simulation(*sim_args)
+    csv_averages_list = []
     for object_num in object_nums:
+        trial_list = []
         for trial in range(1, num_runs + 1):
-            sim.object_capture_trial(n, trial, object_num, maintain_line)
+            trial_list.append(sim.object_capture_trial(n, trial, object_num, maintain_line))
+        csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}.csv"))
+
+    sims_utils.make_graph(csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
+                          title="Collective Radius and # of Objects Collected vs Time Step", file_name=f"object_capture_maintain_line_{maintain_line}_graph.png")
 
     end_time = time.perf_counter()
 
@@ -104,9 +116,9 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, False)
                 
     processes = [
-        # multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
-        # multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
-        # multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
+        multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
+        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
+        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
         multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH))
     ]
 
@@ -116,13 +128,9 @@ def main():
     for process in processes:
         process.join()
 
-    # sim = Simulation(*sim_args)
-    # sim.gui_on = True
-    # sim.storm_drain() # run and take screenshots later (maybe automate)
+    sim = Simulation(*sim_args)
+    sim.gui_on = True
+    sim.storm_drain()
     
-    # # examples of averaging/plotting results
-    # sims_utils.make_graph(["data/test_runs/tow_failed_agents_trial8_agent_2_failed.csv"], "time step", "agent 2 x-position", ["agent2"])
-    # sims_utils.average_csv_trials(["object_capture_maintain_line_False_trial1_objects_5.csv", "object_capture_maintain_line_False_trial2_objects_5.csv"], "object_capture_maintain_line_false_trialavg_objects_5.csv", select_columns=3)
-
 if __name__ == "__main__":
     main()
