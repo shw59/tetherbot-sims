@@ -13,6 +13,7 @@ import csv
 import pandas as pd
 import pyautogui
 import pygetwindow as gw
+import pywinctl as pwc
 import time
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
@@ -438,32 +439,30 @@ def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plo
 
 def screenshot_gui(ss_filename="pybullet_screenshot.png"):
     """
-    Takes a screenshot of a specific window and saves it.
-
-    window_title (str): The title of the target window.
-    save_path (str): The path to save the screenshot.
+    Takes a screenshot of the Bullet Physics simulation window and saves it.
     """
     try:
         window_title = "Bullet Physics ExampleBrowser using OpenGL3+ [btgl] Release build"
-        # find the window by its title
-        window = gw.getWindowsWithTitle(window_title)
+
+        # find the window by title (case-sensitive exact match)
+        window = pwc.getWindowsWithTitle(window_title)
         if not window:
             print(f"Window with title '{window_title}' not found.")
             return
 
         target_window = window[0]  # Get the first matching window
 
-        # activate the window to ensure it's in focus
+        # bring the window to the front and focus it
         target_window.activate()
-        time.sleep(0.5)  # Give the system time to focus the window
+        time.sleep(0.5)  # allow time to focus
 
-        # get the window's coordinates
+        # get window geometry
         left, top, width, height = target_window.left, target_window.top, target_window.width, target_window.height
 
-        # take the screenshot of the specific region
+        # take a screenshot of that window region
         screenshot = pyautogui.screenshot(region=(left, top, width, height))
 
-        # save the screenshot
+        # save it
         screenshot.save(ss_filename)
         print(f"Screenshot of '{window_title}' saved to: {ss_filename}")
 
