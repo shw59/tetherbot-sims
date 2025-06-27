@@ -7,6 +7,7 @@ This file contains the main driver program for running the tetherbot PyBullet si
 import pybullet as p
 from simulations import Simulation
 import simulation_utils as sims_utils
+import time
 import multiprocessing as mp
 
 TIME_STEP = 1/240 # seconds
@@ -33,6 +34,8 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     length_of_simulation: this number is an integer, and it is multiplied by the 
                         LOGGING_PERIOD to determine how long to run the while loop for
     """
+    start_time = time.perf_counter()
+
     sim = Simulation(*sim_args)
     list_of_file_names = []
     for t in range(number_of_trials):
@@ -44,6 +47,12 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
 
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the obstacle avoidance simulation was " + str(elapsed_time) + " seconds.")
+
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     """
     Runs a series of towing failed agents simulations. 
@@ -52,6 +61,8 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     num_runs: Number of trials per failed agent
     agents_to_fail: List of agent numbers within n that are to fail
     """
+    start_time = time.perf_counter()
+
     sim = Simulation(*sim_args)
     csv_averages_list = []
     for failed_agent_num in agents_to_fail:
@@ -63,6 +74,12 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     sims_utils.make_graph(csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
                           title="Failed Agent X-position vs Time Step", file_name="towing_agents_graph.png")
 
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the towing simulation was " + str(elapsed_time) + " seconds.")
+
 def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_line):
     """
     Runs a series of object-capture simulations.
@@ -72,6 +89,8 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
     object_nums: List of object numbers to run for
     maintain_line: True if we want the agents to maintain a straight line, False otherwise
     """
+    start_time = time.perf_counter()
+
     sim = Simulation(*sim_args)
     csv_averages_list = []
     for object_num in object_nums:
@@ -82,6 +101,12 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
 
     sims_utils.make_graph(csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
                           title="Collective Radius and # of Objects Collected vs Time Step", file_name=f"object_capture_maintain_line_{maintain_line}_graph.png")
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the object capture simulation was " + str(elapsed_time) + " seconds.")
 
 def main():
     """
