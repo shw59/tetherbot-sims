@@ -75,7 +75,7 @@ def basic_starting_positions(l_0, n, angles, starting_position, direction):
 
     return the_list
 
-def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, l_0):
+def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, obst_radius, l_0):
     """
     This function returns a list that is number_of_angles*number_of_offsets long, 
     where each entry corresponds with the success rate of a particular 
@@ -140,6 +140,12 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
 
                     csv_reader = csv.reader(csv_file, delimiter=',')
                     avg_velocity = 0
+                    avg0 = 0
+                    avg1 = 0
+                    avg2 = 0
+                    avg3 = 0
+                    avg4 = 0
+                    avg5 = 0
                     avg_distance_from_obstacle = 0
                     line_count = 0
 
@@ -149,24 +155,74 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                         # skips the first row, which only has headings and no data
                         if line_count != 0:
 
-                            # checks to see if the number of runs of the while loop
-                            # matches the number of runs that the data in this row
-                            # was collected at. We only want velocity and distance
-                            # data at the end of the simulation
+                            if (int(row[0]) == (number_of_while_runs-5*logging_period)):
+
+                                # sums velocity and distance from obstacel of all agents
+                                for m in range(n):
+                                    avg5 = avg5 + float(row[(m+1)*3])
+
+                                avg5 = avg5/n
+
+                            if (int(row[0]) == (number_of_while_runs-4*logging_period)):
+
+                                # sums velocity and distance from obstacel of all agents
+                                for m in range(n):
+                                    avg4 = avg4 + float(row[(m+1)*3])
+                                
+                                avg4 = avg4/n
+
+                            if (int(row[0]) == (number_of_while_runs-3*logging_period)):
+
+                                # sums velocity and distance from obstacel of all agents
+                                for m in range(n):
+                                    avg3 = avg3 + float(row[(m+1)*3])
+                                
+                                avg3 = avg3/n
+
+                            if (int(row[0]) == (number_of_while_runs-2*logging_period)):
+
+                                # sums velocity and distance from obstacel of all agents
+                                for m in range(n):
+                                    avg2 = avg2 + float(row[(m+1)*3])
+
+                                avg2 = avg2/n
+
+                            if (int(row[0]) == (number_of_while_runs-logging_period)):
+
+                                # sums velocity and distance from obstacel of all agents
+                                for m in range(n):
+                                    avg1 = avg1 + float(row[(m+1)*3])
+
+                                avg1 = avg1/n
+
                             if (int(row[0]) == (number_of_while_runs)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
-                                    avg_velocity = avg_velocity + float(row[(m+1)*3])
+                                    avg0 = avg0 + float(row[(m+1)*3])
                                     avg_distance_from_obstacle = avg_distance_from_obstacle + math.sqrt(((obst_position[0]-float(row[(m*3)+1]))**2)+((obst_position[1]-float(row[(m*3)+2]))**2))
+
+                                avg0 = avg0/n
+
+                            avg_velocity = (avg0+avg1+avg2+avg3+avg4+avg5)*(1/5)
 
                         else:
                             line_count = line_count + 1
 
+                    print("\n")
+                    print("\n")
+
+                    print("average velocity: " + str(avg_velocity))
+                    print("average distance: " + str(avg_distance_from_obstacle/n))
+                    print("1.5*l_0: " + str(1.5*l_0))
+                    print("1.5*obst_radius: " + str(1.5*obst_radius))
+
+                    print("\n")
+                    print("\n")
                     # if the average velocity is less than 0.3 and the average distance is less than
                     # 1.5 obstacles away, then we consider the test to have been unsuccessful because 
                     # the agents are moving very slowly and are not far from the obstacle
-                    if (avg_velocity/n) <= 0.3 and ((avg_distance_from_obstacle/n) <= 1.5*l_0):
+                    if (avg_velocity) <= 0.5 and ((avg_distance_from_obstacle/n) <= 1.5*obst_radius):
                         total = total + 1
                     else:
                         successful = successful + 1
