@@ -82,7 +82,7 @@ def main():
         multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
         multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
         multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
-        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, UNSTRETCHED_TETHER_LENGTH, 300, [-9, -4, 0], [-15, 0, 15], 2, [8, 0]))
+        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, 10, [0, 1], [0], 2, [4.5,0]))
     ]
 
     for process in processes:
@@ -91,13 +91,13 @@ def main():
     for process in processes:
         process.join()
 
-    sim = Simulation(*sim_args)
-    sim.gui_on = True
-    sim.storm_drain() # run and take screenshots later (maybe automate)
-
+#     sim = Simulation(*sim_args)
+#     sim.gui_on = True
+#     sim.storm_drain() # run and take screenshots later (maybe automate)
+    
     # examples of averaging/plotting results
-    sims_utils.make_graph(["data/test_runs/tow_failed_agents_trial8_agent_2_failed.csv"], "time step", "agent 2 x-position", ["agent2"])
-    sims_utils.average_csv_trials(["object_capture_maintain_line_False_trial1_objects_5.csv", "object_capture_maintain_line_False_trial2_objects_5.csv"], "object_capture_maintain_line_false_trialavg_objects_5.csv", select_columns=3)
+    # sims_utils.make_graph(["data/test_runs/tow_failed_agents_trial8_agent_2_failed.csv"], "time step", "agent 2 x-position", ["agent2"])
+    # sims_utils.average_csv_trials(["object_capture_maintain_line_False_trial1_objects_5.csv", "object_capture_maintain_line_False_trial2_objects_5.csv"], "object_capture_maintain_line_false_trialavg_objects_5.csv", select_columns=3)
 
 if __name__ == "__main__":
     main()
