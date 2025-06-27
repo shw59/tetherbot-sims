@@ -11,7 +11,9 @@ import math
 import random
 import csv
 import pandas as pd
-import os
+import pyautogui
+import pygetwindow as gw
+import time
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
@@ -321,10 +323,10 @@ def average_csv_trials(csv_files, output_filename, select_columns=0):
     # save to csv
     avg.to_csv(f"data/{output_filename}", index=False)
 
-    return avg
+    return f"data/{output_filename}"
 
-def make_graph(csv_files, x_column, y_column, labels=None, title="Tetherbot Plot",
-                      x_label="x-axis", y_label="y-axis", file_name="graph.png"):
+def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plot",
+                      x_label="x-axis", y_labels=None, file_name="graph.png"):
     """
     Plots the specified x and y columns from one or more CSV files.
 
@@ -337,19 +339,77 @@ def make_graph(csv_files, x_column, y_column, labels=None, title="Tetherbot Plot
     ylabel (str, optional): Label for the y-axis
     file_name (str, optional): If provided, saves the figure with this file name
     """
-    plt.figure(figsize=(10, 6))
+    if y_labels is None:
+        y_labels = y_columns
+
+    fig, ax1 = plt.subplots(figsize=(10, 6))
 
     for i, file in enumerate(csv_files):
-        df = pd.read_csv(file, index_col=False)
-        plt.plot(df[x_column], df[y_column], label=labels[i])
+        with open(file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            x_vals = []
+            y1_vals = []
+            y2_vals = []
 
+            for row in reader:
+                x_vals.append(float(row[x_column]))
+                y1_vals.append(float(row[y_columns[0]]))
+                if len(y_columns) == 2:
+                    y2_vals.append(float(row[y_columns[1]]))
+
+        label = labels[i] if labels else f"File {i+1}"
+        ax1.plot(x_vals, y1_vals, label=label)
+
+        if len(y_columns) == 2:
+            if i == 0:
+                ax2 = ax1.twinx()
+            ax2.plot(x_vals, y2_vals, linestyle='--')
+
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(y_labels[0])
+    ax1.grid(True)
+
+    if len(y_columns) == 2:
+        ax2.set_ylabel(y_labels[1])
+
+    ax1.legend(loc='best')
     plt.title(title)
-    plt.xlabel(x_label if x_label else x_column)
-    plt.ylabel(y_label if y_label else y_column)
-    plt.legend()
-    plt.grid(True)
     plt.tight_layout()
 
     plt.savefig(f"data/figures/{file_name}", format='png')
 
     plt.show()
+
+def screenshot_gui(ss_filename="pybullet_screenshot.png"):
+    """
+    Takes a screenshot of a specific window and saves it.
+
+    window_title (str): The title of the target window.
+    save_path (str): The path to save the screenshot.
+    """
+    try:
+        window_title = "Bullet Physics ExampleBrowser using OpenGL3+ [btgl] Release build"
+        # find the window by its title
+        window = gw.getWindowsWithTitle(window_title)
+        if not window:
+            print(f"Window with title '{window_title}' not found.")
+            return
+
+        target_window = window[0]  # Get the first matching window
+
+        # activate the window to ensure it's in focus
+        target_window.activate()
+        time.sleep(0.5)  # Give the system time to focus the window
+
+        # get the window's coordinates
+        left, top, width, height = target_window.left, target_window.top, target_window.width, target_window.height
+
+        # take the screenshot of the specific region
+        screenshot = pyautogui.screenshot(region=(left, top, width, height))
+
+        # save the screenshot
+        screenshot.save(ss_filename)
+        print(f"Screenshot of '{window_title}' saved to: {ss_filename}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
