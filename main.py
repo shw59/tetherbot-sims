@@ -8,6 +8,7 @@ import pybullet as p
 from simulations import Simulation
 import simulation_utils as sims_utils
 import multiprocessing
+import time
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -33,6 +34,8 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     length_of_simulation: this number is an integer, and it is multiplied by the 
                         LOGGING_PERIOD to determine how long to run the while loop for
     """
+    start_time = time.perf_counter()
+
     sim = Simulation(*sim_args)
     list_of_file_names = []
     for t in range(number_of_trials):
@@ -44,6 +47,12 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
 
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the obstacle avoidance simulation was " + str(elapsed_time) + " seconds.")
+
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     """
     Runs a series of towing failed agents simulations. 
@@ -52,10 +61,18 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     num_runs: Number of trials per failed agent
     agents_to_fail: List of agent numbers within n that are to fail
     """
+    start_time = time.perf_counter()
+
     sim = Simulation(*sim_args)
     for failed_agent_num in agents_to_fail:
         for trial in range(1, num_runs + 1):
             sim.tow_failed_agents_trial(n, trial, failed_agent_num)
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the towing simulation was " + str(elapsed_time) + " seconds.")
 
 def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_line):
     """
@@ -66,10 +83,18 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
     object_nums: List of object numbers to run for
     maintain_line: True if we want the agents to maintain a straight line, False otherwise
     """
+    start_time = time.perf_counter()
+
     sim = Simulation(*sim_args)
     for object_num in object_nums:
         for trial in range(1, num_runs + 1):
             sim.object_capture_trial(n, trial, object_num, maintain_line)
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the object capture simulation was " + str(elapsed_time) + " seconds.")
 
 def main():
     """
