@@ -350,6 +350,6 @@ def make_graph(csv_files, x_column, y_column, labels=None, title="Tetherbot Plot
     plt.grid(True)
     plt.tight_layout()
 
-    plt.savefig(f"data/{file_name}", format='png')
+    plt.savefig(f"data/figures/{file_name}", format='png')
 
     plt.show()

@@ -212,7 +212,7 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-    def obstacle_avoidance(self, n, l_0, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
@@ -223,7 +223,7 @@ class Simulation:
 
         Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
         
-        initial_agent_positions = sims_utils.angle_and_position_offset(n, angle_off_y, y_offset, l_0)
+        initial_agent_positions = sims_utils.angle_and_position_offset(n, angle_off_y, y_offset, self.unstretched_tether_length)
 
         goals = []
         for i in range(n):
@@ -458,10 +458,11 @@ class Simulation:
             my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
-                obstacle_pos = []
+                obstacle_pos_flattened = []
                 for obj in my_world.obj_list:
                     if obj.label == "obstacle":
-                        obstacle_pos.append(obj.get_pose()[0])
+                        obstacle_pos_flattened.append(obj.get_pose()[0][0])
+                        obstacle_pos_flattened.append(obj.get_pose()[0][1])
                         for agent in my_world.agent_list:
                             if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
                                     if not obj.collected:
@@ -476,8 +477,12 @@ class Simulation:
                 agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
                 collective_radius = utils.get_collective_radius(agent_pos)
 
-                csv_row = [runs, collective_radius, obj_collected] + agent_pos + obstacle_pos
-                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects - 1)])
+                agent_pos_flattened = []
+                for pos in agent_pos:
+                    agent_pos_flattened.append(pos[0])
+                    agent_pos_flattened.append(pos[1])
+                csv_row = [runs, collective_radius, obj_collected] + agent_pos_flattened + obstacle_pos_flattened
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n * 2 - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects * 2 - 1)])
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -500,43 +505,3 @@ class Simulation:
         my_world.id.disconnect()
 
         return log_file
-
-    def run_obstacle_simulations(self, n, l_0, length_of_simulation, offsets, angles_to_try, number_of_trials, obst_position):
-        """
-        length_of_simulation: this number is an integer, and it is multiplied by the 
-                            LOGGING_PERIOD to determine how long to run the while loop for
-        """
-        list_of_file_names = []
-        for t in range(number_of_trials):
-            for o in offsets:
-                for a in angles_to_try:
-                    list_of_file_names.append(self.obstacle_avoidance(n, l_0, o, a, stop = length_of_simulation*self.logging_period, trial = t + 1, obst_radius=4*l_0, obst_pos = obst_position))
-
-        data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*self.logging_period, logging_period = self.logging_period, n=n, obst_position = obst_position, l_0 = l_0)
-
-        sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
-
-    def run_tow_failed_agents_simulations(self, n, num_runs, agents_to_fail):
-        """
-        Runs a series of towing failed agents simulations. 
-
-        n: Number of agents in simulation
-        num_runs: Number of trials per failed agent
-        agents_to_fail: List of agent numbers within n that are to fail
-        """
-        for failed_agent_num in agents_to_fail:
-            for trial in range(1, num_runs + 1):
-                self.tow_failed_agents_trial(n, trial, failed_agent_num)
-
-    def run_object_capture_simulations(self, n, num_runs, object_nums, maintain_line):
-        """
-        Runs a series of object-capture simulations.
-
-        n: Number of agents
-        num_runs: Number of trials for each object amount
-        object_nums: List of object numbers to run for
-        maintain_line: True if we want the agents to maintain a straight line, False otherwise
-        """
-        for object_num in object_nums:
-            for trial in range(1, num_runs + 1):
-                self.object_capture_trial(n, trial, object_num, maintain_line)
