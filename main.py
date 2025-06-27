@@ -5,17 +5,9 @@ This file contains the main driver program for running the tetherbot PyBullet si
 """
 
 import pybullet as p
-import pybullet_data
-from world import World
-from agent import Agent
 from simulations import Simulation
 import simulation_utils as sims_utils
-import numpy as np
-import math
-import random
-import csv
-import time
-import matplotlib.pyplot as plt
+import multiprocessing
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -36,19 +28,72 @@ YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
 
+def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_to_try, number_of_trials, obst_position):
+    """
+    length_of_simulation: this number is an integer, and it is multiplied by the 
+                        LOGGING_PERIOD to determine how long to run the while loop for
+    """
+    sim = Simulation(*sim_args)
+    list_of_file_names = []
+    for t in range(number_of_trials):
+        for o in offsets:
+            for a in angles_to_try:
+                list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=4*UNSTRETCHED_TETHER_LENGTH, obst_pos = obst_position))
+
+    data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, l_0 = UNSTRETCHED_TETHER_LENGTH)
+
+    sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
+
+def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
+    """
+    Runs a series of towing failed agents simulations. 
+
+    n: Number of agents in simulation
+    num_runs: Number of trials per failed agent
+    agents_to_fail: List of agent numbers within n that are to fail
+    """
+    sim = Simulation(*sim_args)
+    for failed_agent_num in agents_to_fail:
+        for trial in range(1, num_runs + 1):
+            sim.tow_failed_agents_trial(n, trial, failed_agent_num)
+
+def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_line):
+    """
+    Runs a series of object-capture simulations.
+
+    n: Number of agents
+    num_runs: Number of trials for each object amount
+    object_nums: List of object numbers to run for
+    maintain_line: True if we want the agents to maintain a straight line, False otherwise
+    """
+    sim = Simulation(*sim_args)
+    for object_num in object_nums:
+        for trial in range(1, num_runs + 1):
+            sim.object_capture_trial(n, trial, object_num, maintain_line)
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    # create simulation instance and run simulations
-    sim = Simulation(TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                     UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, gui_on=False)
-    sim.run_tow_failed_agents_simulations(n=5, num_runs=10, agents_to_fail=[0, 1, 2, 3, 4])
-    sim.run_object_capture_simulations(n=9, num_runs=10, object_nums=[5, 10, 30, 50], maintain_line=False)
-    sim.run_object_capture_simulations(n=9, num_runs=10, object_nums=[5, 10, 30, 50], maintain_line=True)
-    sim.run_obstacle_simulations(n=9, l_0=UNSTRETCHED_TETHER_LENGTH, length_of_simulation=300, offsets=[-9, -4, 0], angles_to_try=[-15, 0, 15], number_of_trials=2, obst_position = [8,0])
+    sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, True)
+                
+    processes = [
+        multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
+        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
+        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
+        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, UNSTRETCHED_TETHER_LENGTH, 300, [-9, -4, 0], [-15, 0, 15], 2, [8, 0]))
+    ]
+
+    for process in processes:
+        process.start()
+
+    for process in processes:
+        process.join()
+
+    sim = Simulation(*sim_args)
     sim.gui_on = True
-    sim.storm_drain() # run and take screenshots
+    sim.storm_drain() # run and take screenshots later (maybe automate)
 
     # examples of averaging/plotting results
     sims_utils.make_graph(["data/test_runs/tow_failed_agents_trial8_agent_2_failed.csv"], "time step", "agent 2 x-position", ["agent2"])
