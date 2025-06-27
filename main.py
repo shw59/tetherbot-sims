@@ -108,6 +108,19 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
 
     print("The time it took to run the object capture simulation was " + str(elapsed_time) + " seconds.")
 
+def run_storm_drain(sim_args):
+    start_time = time.perf_counter()
+    
+    sim = Simulation(*sim_args)
+    sim.gui_on = True
+    sim.storm_drain()
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    print("The time it took to run the storm drain simulation was " + str(elapsed_time) + " seconds.")
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
@@ -116,10 +129,11 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, False)
                 
     processes = [
-        multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
-        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
-        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
-        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH))
+        mp.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
+        mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
+        mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
+        mp.Process(target=run_obstacle_simulations, args=(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)),
+        mp.Process(target=run_storm_drain, args=(sim_args,))
     ]
 
     for process in processes:
@@ -127,10 +141,6 @@ def main():
 
     for process in processes:
         process.join()
-
-    sim = Simulation(*sim_args)
-    sim.gui_on = True
-    sim.storm_drain()
     
 if __name__ == "__main__":
     main()
