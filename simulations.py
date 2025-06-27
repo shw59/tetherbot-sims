@@ -42,13 +42,13 @@ class Simulation:
         n = 7
 
         a_weight = 3 # angle vector weighting
-        s_weight = 10 # strain vector weighting
+        s_weight = 15 # strain vector weighting
         g_weight = 7 # gradient vector weighting
-        r_weight = 0 # repulsion vector weighting
+        r_weight = 3 # repulsion vector weighting
 
-        gradient = [0, 100]
+        gradient = [0, 50]
 
-        my_world = World(100, 100, self.time_step, self.gui_on)
+        my_world = World(120, 120, self.time_step, self.gui_on)
 
         my_world.set_gradient_source(gradient)
 
@@ -178,7 +178,7 @@ class Simulation:
         for i in range(number_of_non_fixed_obstacles):
             x = random.uniform(-9,9)
             y = random.uniform(1, 29)
-            size = random.uniform(0.1,0.25)
+            size = random.uniform(0.5, 1)
             my_world.create_obstacle("cylinder", [x, y], length=size, width=size, color=(1, 0, 1, 1), fixed=False, height=0.5, mass=0.01)
 
         my_world.display_axis_labels()
@@ -207,7 +207,7 @@ class Simulation:
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
 
-            if runs % 500 == 0:
+            if runs % 1000 == 0:
                 sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_storm_drain_screenshot.png")
 
             runs = runs + 1
