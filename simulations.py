@@ -215,7 +215,7 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [20,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [30,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
@@ -383,7 +383,7 @@ class Simulation:
                 csv_row = [runs, failed_x, avg_velocity] + non_failed_x
                 sims_utils.log_to_csv(log_file, csv_row, header=["time step", "failed agent x-position", "formation velocity", "other agent x-positions"] + ["" for _ in range(n - 2)])
 
-            if runs == 100:
+            if runs == 500:
                 my_world.agent_list[failed_agent_num].failed = True
 
             for agent in shuffled_list:

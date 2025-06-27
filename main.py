@@ -28,7 +28,7 @@ YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
 
-def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_to_try, number_of_trials, obst_position):
+def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_to_try, number_of_trials, obst_position, obst_radius):
     """
     length_of_simulation: this number is an integer, and it is multiplied by the 
                         LOGGING_PERIOD to determine how long to run the while loop for
@@ -38,9 +38,9 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     for t in range(number_of_trials):
         for o in offsets:
             for a in angles_to_try:
-                list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=4*UNSTRETCHED_TETHER_LENGTH, obst_pos = obst_position))
+                list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position))
 
-    data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, l_0 = UNSTRETCHED_TETHER_LENGTH)
+    data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, obst_radius = obst_radius, l_0 = UNSTRETCHED_TETHER_LENGTH)
 
     sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
 
@@ -90,22 +90,22 @@ def main():
     sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, False)
                 
-    # processes = [
-    #     mp.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
-    #     mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
-    #     mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
-    #     mp.Process(target=run_obstacle_simulations, args=(sim_args, 9, 10, [0,1], [0,1], 2, [4.5,0]))
-    # ]
+    processes = [
+        multiprocessing.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
+        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
+        multiprocessing.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
+        multiprocessing.Process(target=run_obstacle_simulations, args=(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH))
+    ]
 
-    # for process in processes:
-    #     process.start()
+    for process in processes:
+        process.start()
 
-    # for process in processes:
-    #     process.join()
+    for process in processes:
+        process.join()
 
     sim = Simulation(*sim_args)
     sim.gui_on = True
-    sim.storm_drain() # run and take screenshots later (maybe automate)
+    sim.storm_drain()
     
 if __name__ == "__main__":
     main()
