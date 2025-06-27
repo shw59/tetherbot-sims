@@ -91,11 +91,11 @@ def main():
     for process in processes:
         process.join()
 
-#     sim = Simulation(*sim_args)
-#     sim.gui_on = True
-#     sim.storm_drain() # run and take screenshots later (maybe automate)
+    # sim = Simulation(*sim_args)
+    # sim.gui_on = True
+    # sim.storm_drain() # run and take screenshots later (maybe automate)
     
-    # examples of averaging/plotting results
+    # # examples of averaging/plotting results
     # sims_utils.make_graph(["data/test_runs/tow_failed_agents_trial8_agent_2_failed.csv"], "time step", "agent 2 x-position", ["agent2"])
     # sims_utils.average_csv_trials(["object_capture_maintain_line_False_trial1_objects_5.csv", "object_capture_maintain_line_False_trial2_objects_5.csv"], "object_capture_maintain_line_false_trialavg_objects_5.csv", select_columns=3)
 
