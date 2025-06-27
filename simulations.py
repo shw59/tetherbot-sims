@@ -165,23 +165,7 @@ class Simulation:
         my_world.create_obstacle("cube", [-29, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [-30, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
-        number_of_fixed_obstacles = 0
-
-        for i in range(number_of_fixed_obstacles):
-            x = random.uniform(-9,9)
-            y = random.uniform(-1, 29)
-            sizes = random.uniform(0.5,1)
-            my_world.create_obstacle("cylinder", [x, y], length=sizes, width=sizes, color=(1, 0, 1, 1), fixed=True, height=0.5)
-
-        number_of_non_fixed_obstacles = 200
-
-        for i in range(number_of_non_fixed_obstacles):
-            x = random.uniform(-9,9)
-            y = random.uniform(1, 29)
-            size = random.uniform(0.5, 1)
-            my_world.create_obstacle("cylinder", [x, y], length=size, width=size, color=(1, 0, 1, 1), fixed=False, height=0.5, mass=0.01)
-
-        my_world.display_axis_labels()
+        sims_utils.generate_obstacles(my_world, [10, 30], [-10, -2], 75, "cylinder", 0.5, 0.5, False)
         
         runs = 0
 
