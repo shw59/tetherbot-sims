@@ -9,6 +9,7 @@ from simulations import Simulation
 import simulation_utils as sims_utils
 import time
 import multiprocessing as mp
+import datetime
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -28,6 +29,8 @@ UNSTRETCHED_TETHER_LENGTH = 1.5
 YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
+LOG_FILE = "data/sim_log.csv"
+
 
 def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_to_try, number_of_trials, obst_position, obst_radius):
     """
@@ -35,6 +38,7 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
                         LOGGING_PERIOD to determine how long to run the while loop for
     """
     start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
 
     sim = Simulation(*sim_args)
     list_of_file_names = []
@@ -45,15 +49,17 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, obst_radius = obst_radius, l_0 = UNSTRETCHED_TETHER_LENGTH)
 
-    sims_utils.make_heat_map(data=data, angles = angles_to_try, offsets = offsets, num_trials = number_of_trials)
+    sims_utils.make_heat_map(data=data, angles=angles_to_try, offsets=offsets, num_trials=number_of_trials, output_filename="data/figures/success_heat_map.png")
 
     end_time = time.perf_counter()
 
     elapsed_time = end_time - start_time
 
+    sims_utils.log_to_csv(LOG_FILE, [curr_time, "obstacle avoidance", elapsed_time], ["start time", "simulation type", "elapsed time"])
+
     print("The time it took to run the obstacle avoidance simulation was " + str(elapsed_time) + " seconds.")
 
-def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
+def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail, result_queue=None):
     """
     Runs a series of towing failed agents simulations. 
 
@@ -62,6 +68,7 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     agents_to_fail: List of agent numbers within n that are to fail
     """
     start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
 
     sim = Simulation(*sim_args)
     csv_averages_list = []
@@ -71,16 +78,20 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
             trial_list.append(sim.tow_failed_agents_trial(n, trial, failed_agent_num))
         csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/tow_failed_agents_trialavg_agent{failed_agent_num}_failed.csv"))
 
-    sims_utils.make_graph(csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
-                          title="Failed Agent X-position vs Time Step", file_name="towing_agents_graph.png")
-
     end_time = time.perf_counter()
 
     elapsed_time = end_time - start_time
 
-    print("The time it took to run the towing simulation was " + str(elapsed_time) + " seconds.")
+    sims_utils.log_to_csv(LOG_FILE, [curr_time, "towing failed agents", elapsed_time], ["start time", "simulation type", "elapsed time"])
 
-def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_line):
+    if result_queue is not None:
+        result_queue.put((csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
+                        "Failed Agent x-Position vs Time Step", "Time Step", ["Failed Agent x-Position"], "data/figures/towing_agents_graph.png"))
+    else:
+        return (csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
+                "Failed Agent x-Position vs Time Step", "Time Step", ["Failed Agent x-Position"], "data/figures/towing_agents_graph.png")
+
+def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_line, result_queue=None):
     """
     Runs a series of object-capture simulations.
 
@@ -90,6 +101,7 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
     maintain_line: True if we want the agents to maintain a straight line, False otherwise
     """
     start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
 
     sim = Simulation(*sim_args)
     csv_averages_list = []
@@ -99,14 +111,18 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
             trial_list.append(sim.object_capture_trial(n, trial, object_num, maintain_line))
         csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}.csv"))
 
-    sims_utils.make_graph(csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
-                          title="Collective Radius and # of Objects Collected vs Time Step", file_name=f"object_capture_maintain_line_{maintain_line}_graph.png")
-
     end_time = time.perf_counter()
 
     elapsed_time = end_time - start_time
 
-    print("The time it took to run the object capture simulation was " + str(elapsed_time) + " seconds.")
+    sims_utils.log_to_csv(LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", elapsed_time], ["start time", "simulation type", "elapsed time"])
+
+    if result_queue is not None:
+        result_queue.put((csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
+                        "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/bject_capture_maintain_line_{maintain_line}_graph.png"))
+    else:
+        return (csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
+                "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/bject_capture_maintain_line_{maintain_line}_graph.png")
 
 def run_storm_drain(sim_args):
     start_time = time.perf_counter()
@@ -127,20 +143,40 @@ def main():
     """
     sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD, False)
-                
-    processes = [
-        mp.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4])),
-        mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False)),
-        mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True)),
-        mp.Process(target=run_obstacle_simulations, args=(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)),
-        mp.Process(target=run_storm_drain, args=(sim_args,))
-    ]
-
-    for process in processes:
-        process.start()
-
-    for process in processes:
-        process.join()
     
+    towing_graph_params = run_tow_failed_agents_simulations(sim_args, 5, 10, [0, 1, 2, 3, 4])
+    obj_capture_line_false_params = run_object_capture_simulations(sim_args, 9, 10, [5, 10, 30, 50], False)
+    obj_capture_line_true_params = run_object_capture_simulations(sim_args, 9, 10, [5, 10, 30, 50], True)
+    run_obstacle_simulations(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    run_storm_drain(sim_args)
+
+    sims_utils.make_graph(towing_graph_params[0], towing_graph_params[1], towing_graph_params[2], towing_graph_params[3],
+                            towing_graph_params[4], towing_graph_params[5], towing_graph_params[6], towing_graph_params[7])
+    sims_utils.make_graph(obj_capture_line_false_params[0], obj_capture_line_false_params[1], obj_capture_line_false_params[2], obj_capture_line_false_params[3],
+                            obj_capture_line_false_params[4], obj_capture_line_false_params[5], obj_capture_line_false_params[6], obj_capture_line_false_params[7])
+    sims_utils.make_graph(obj_capture_line_true_params[0], obj_capture_line_true_params[1], obj_capture_line_true_params[2], obj_capture_line_true_params[3],
+                            obj_capture_line_true_params[4], obj_capture_line_true_params[5], obj_capture_line_true_params[6], obj_capture_line_true_params[7])
+        
+
+    # result_queue = mp.Queue()
+                
+    # processes = [
+    #     mp.Process(target=run_tow_failed_agents_simulations, args=(sim_args, 5, 10, [0, 1, 2, 3, 4], result_queue)),
+    #     mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], False, result_queue)),
+    #     mp.Process(target=run_object_capture_simulations, args=(sim_args, 9, 10, [5, 10, 30, 50], True, result_queue)),
+    #     mp.Process(target=run_obstacle_simulations, args=(sim_args, 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)),
+    #     mp.Process(target=run_storm_drain, args=(sim_args,))
+    # ]
+
+    # for process in processes:
+    #     process.start()
+
+    # for process in processes:
+    #     process.join()
+
+    # while not result_queue.empty():
+    #     csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, file_name = result_queue.get()
+    #     sims_utils.make_graph(csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, file_name)
+
 if __name__ == "__main__":
     main()

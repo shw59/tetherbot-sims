@@ -320,7 +320,7 @@ def log_to_csv(filename, data_row, header=None):
 
         writer.writerow(data_row)
 
-def make_heat_map(data, angles, offsets, num_trials):
+def make_heat_map(data, angles, offsets, num_trials, output_filename):
     """
     Saves an image of the succes rates for the obstacle avoidance simulation.
 
@@ -350,23 +350,24 @@ def make_heat_map(data, angles, offsets, num_trials):
     plt.xlabel("Offset")
     plt.ylabel("Angle")
     plt.title("Rate of Success out of " + str((num_trials)) + " trials")
-    # plt.savefig("data/figures/success_heat_map.png", format='png', dpi=300)  # dpi controls resolution
-    plt.savefig("data/success_heat_map.png", format='png', dpi=300)  # dpi controls resolution
-    plt.show()
+    plt.savefig(output_filename, format='png', dpi=300)  # dpi controls resolution
     plt.close()  # Closes the figure to free memory
     return 0
 
-def average_csv_trials(csv_files, output_filename, select_columns=0):
+def average_csv_trials(csv_files, output_filename, select_columns=None):
     """
     Averages all data points across different trials and saves to a new csv file
 
     csv_files (list of str): List of CSV file paths
     output_filename (str): Path to save the averaged result CSV file
     """
-    
     data = {}
-    for i in range(len(csv_files)):
-        data[i] = pd.read_csv(f"data/test_runs/{csv_files[i]}", usecols=[i for i in range(select_columns)], index_col=False).reset_index(drop=True)
+    if select_columns is None:
+        for i in range(len(csv_files)):
+            data[i] = pd.read_csv(csv_files[i], index_col=False).reset_index(drop=True)
+    else:
+        for i in range(len(csv_files)):
+            data[i] = pd.read_csv(csv_files[i], usecols=[i for i in range(select_columns)], index_col=False).reset_index(drop=True)
 
     df = pd.concat(data)
 
@@ -377,9 +378,9 @@ def average_csv_trials(csv_files, output_filename, select_columns=0):
     avg = df.groupby(level=1).mean()
 
     # save to csv
-    avg.to_csv(f"data/{output_filename}", index=False)
+    avg.to_csv(output_filename, index=False)
 
-    return f"data/{output_filename}"
+    return output_filename
 
 def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plot",
                       x_label="x-axis", y_labels=None, file_name="graph.png"):
@@ -432,9 +433,9 @@ def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plo
     plt.title(title)
     plt.tight_layout()
 
-    plt.savefig(f"data/figures/{file_name}", format='png')
+    plt.savefig(file_name, format='png')
 
-    plt.show()
+    plt.close()
 
 def screenshot_gui(ss_filename="pybullet_screenshot.png"):
     """
