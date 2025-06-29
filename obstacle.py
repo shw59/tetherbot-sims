@@ -7,6 +7,7 @@ This file defines the Obstacle class.
 import pybullet as p
 import math
 import utils
+import os
 
 class Obstacle:
     label = "obstacle"
@@ -344,7 +345,7 @@ class Obstacle:
         open(filename, "w").write(urdf_text)
 
         position_3d = position + [0]
-        self.id = self.world_id.loadURDF(filename, position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
+        self.id = self.world_id.loadURDF(os.path.abspath(filename), position_3d, p.getQuaternionFromEuler([0, 0, math.radians(heading)]))
 
         if fixed:
             self.world_id.createConstraint(self.id, 2, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position_3d)

@@ -5,7 +5,6 @@ This file contains all experimental simulation functions that we are collecting 
 """
 
 import pybullet as p
-import pybullet_data
 from world import World
 from agent import Agent
 import utils
@@ -41,7 +40,7 @@ class Simulation:
         """
         n = 7
 
-        a_weight = 3 # angle vector weighting
+        a_weight = 10 # angle vector weighting
         s_weight = 15 # strain vector weighting
         g_weight = 7 # gradient vector weighting
         r_weight = 3 # repulsion vector weighting

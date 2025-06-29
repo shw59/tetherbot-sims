@@ -7,8 +7,8 @@ This file defines the agent class.
 import pybullet as p
 import math
 import numpy as np
-from tether import Tether
 import utils
+import os
 
 class Agent:
     label = "agent" # used for the identification of an agent object when sensing
@@ -163,7 +163,7 @@ class Agent:
         filename = f"objects/agent.urdf"
         open(filename, "w").write(urdf_text)
 
-        self.id = self.world_id.loadURDF(filename, position_0)
+        self.id = self.world_id.loadURDF(os.path.abspath(filename), position_0)
 
         # set initial heading
         self.world_id.resetJointState(self.id, 2, math.radians(heading_0))

@@ -211,16 +211,16 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                         else:
                             line_count = line_count + 1
 
-                    print("\n")
-                    print("\n")
+                    # print("\n")
+                    # print("\n")
 
-                    print("average velocity: " + str(avg_velocity))
-                    print("average distance: " + str(avg_distance_from_obstacle/n))
-                    print("1.5*l_0: " + str(1.5*l_0))
-                    print("1.5*obst_radius: " + str(1.5*obst_radius))
+                    # print("average velocity: " + str(avg_velocity))
+                    # print("average distance: " + str(avg_distance_from_obstacle/n))
+                    # print("1.5*l_0: " + str(1.5*l_0))
+                    # print("1.5*obst_radius: " + str(1.5*obst_radius))
 
-                    print("\n")
-                    print("\n")
+                    # print("\n")
+                    # print("\n")
                     # if the average velocity is less than 0.3 and the average distance is less than
                     # 1.5 obstacles away, then we consider the test to have been unsuccessful because 
                     # the agents are moving very slowly and are not far from the obstacle
@@ -338,7 +338,7 @@ def make_heat_map(data, angles, offsets, num_trials, output_filename):
     for i in range(len(angles)):
         new = []
         for k in range(len(offsets)):
-            new.append(data[i+k*(len(offsets)-1)])
+            new.append(data[i * len(offsets) + k])
         organized_data.append(new)
 
     # Plots this new list as a heat map with angles on the y-axis and offsets on the x-axis,
