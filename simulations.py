@@ -197,6 +197,10 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
+        
+        my_world.id.disconnect()
+
+        return None
 
     def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [30,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
@@ -250,9 +254,9 @@ class Simulation:
 
         
         # main simulation loop
-        while (runs <= stop) and (p.isConnected()):
+        while (runs <= stop) and (my_world.id.isConnected()):
             if runs%30:
-                p.getCameraImage(320,200)
+                my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
@@ -262,17 +266,6 @@ class Simulation:
                 for i in range(len(shuffled_list)):
                     if i == agent_to_update_next:
                         shuffled_list[i].set_next_step()
-                
-                # strain_m = my_world.agent_list[1].tethers[0].get_strain()
-                # strain_p = my_world.agent_list[1].tethers[1].get_strain()
-
-                # x_velocity = p.getJointState(my_world.agent_list[1].id, 1)[1]
-                # y_velocity = p.getJointState(my_world.agent_list[1].id, 0)[1]
-
-                # total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
-
-                # p.addUserDebugText(f"tether_m strain = {strain_m:.2f} tether_p strain = {strain_p:.2f}, velocity = {total_velocity:.2f}",
-                #                    [0, 0.5, 0.5], textColorRGB=[0, 0, 0], lifeTime=1)
                 
                 agent_to_update_next = agent_to_update_next + 1
 
@@ -290,9 +283,9 @@ class Simulation:
 
             runs = runs + 1
             
-            p.stepSimulation()
+            my_world.id.stepSimulation()
 
-        p.disconnect()
+        my_world.id.disconnect()
 
         return log_file
 
@@ -346,7 +339,7 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # main simulation loop
-        while my_world.id.isConnected() and runs < 5000:
+        while my_world.id.isConnected() and runs <= 5000:
             my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
@@ -440,7 +433,7 @@ class Simulation:
         obj_collected = 0
 
         # main simulation loop
-        while my_world.id.isConnected() and runs < 5000:
+        while my_world.id.isConnected() and runs <= 5000:
             my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
