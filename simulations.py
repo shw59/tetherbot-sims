@@ -40,7 +40,7 @@ class Simulation:
         """
         n = 7
 
-        a_weight = 10 # angle vector weighting
+        a_weight = 8 # angle vector weighting
         s_weight = 15 # strain vector weighting
         g_weight = 7 # gradient vector weighting
         r_weight = 3 # repulsion vector weighting
@@ -57,7 +57,7 @@ class Simulation:
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-30,-7,0], "+x")
         
-        goal_angles = [None, 270, 180, 180, 180, 90, None]
+        goal_angles = [None, 180, 270, 180, 270, 180, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
