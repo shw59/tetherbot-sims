@@ -6,6 +6,7 @@ This file defines the Tether class.
 
 import pybullet as p
 import math
+import os
 
 class Tether:
     label = "tether"
@@ -44,7 +45,7 @@ class Tether:
         cross_area = math.pi * (diameter / 2)**2
         stiffness = youngs_modulus * cross_area / length_0
 
-        self.id = self.world_id.loadSoftBody(tether_filename, 
+        self.id = self.world_id.loadSoftBody(os.path.abspath(tether_filename), 
                                 basePosition = position_0, 
                                 baseOrientation = orientation_0,
                                 scale=1, 

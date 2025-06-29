@@ -5,13 +5,13 @@ This file defines the World class, which sets up the simulation environment incl
 """
 
 import pybullet as p
-import pybullet_data
 from pybullet_utils import bullet_client as bc
 import math
 import numpy as np
 from agent import Agent
 from tether import Tether
 from obstacle import Obstacle
+import os
 
 GRAVITYZ = -9.81
 
@@ -32,7 +32,7 @@ class World:
         connection_mode = p.GUI if gui_on else p.DIRECT
         self.id = bc.BulletClient(connection_mode)
 
-        self.id.setAdditionalSearchPath(pybullet_data.getDataPath()) # add pybullet_data to search path
+        self.id.setAdditionalSearchPath(os.path.abspath("objects")) # add pybullet_data to search path
 
         # set parameters
         self.id.resetSimulation(p.RESET_USE_DEFORMABLE_WORLD)
