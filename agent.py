@@ -470,7 +470,7 @@ class Agent:
 
             if (abs_difference > Agent.err_delta):
 
-                if (abs_difference > 20) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
+                if (abs_difference > 10) and (-0.5 <= (normalized_tether_m_heading[0]+normalized_tether_p_heading[0]) <= 0.5) and (-0.5 <= (normalized_tether_m_heading[1]+normalized_tether_p_heading[1]) <= 0.5):
                     heading = np.array(self.get_pose()[1])
 
                     vector = np.array(heading)
