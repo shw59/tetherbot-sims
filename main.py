@@ -10,6 +10,8 @@ import simulation_utils as sims_utils
 import time
 import multiprocessing as mp
 import datetime
+import matplotlib.pyplot as plt
+import numpy as np
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -44,8 +46,10 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     sim = Simulation(*args, gui_on=gui_on)
     list_of_file_names = []
     for t in range(number_of_trials):
-        for o in offsets:
-            for a in angles_to_try:
+        # for o in offsets:
+        #     for a in angles_to_try:
+        for a in angles_to_try:
+            for o in offsets:
                 list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position))
 
     data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, obst_radius = obst_radius, l_0 = UNSTRETCHED_TETHER_LENGTH)
@@ -136,22 +140,66 @@ def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    # sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-    #             UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD)
+    sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD)
     
-    # graph_params = []
+    graph_params = []
 
     # run_storm_drain((sim_args, True))
     # graph_params.append(run_tow_failed_agents_simulations((sim_args, False), 5, 10, [0, 1, 2, 3, 4]))
     # graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], False))
     # graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], True))
-    # run_obstacle_simulations((sim_args, False), 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_obstacle_simulations((sim_args, False), 9, 500, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
     # for graph_param in graph_params:
     #     csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename = graph_param
     #     sims_utils.make_graph(csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename)
 
-    sims_utils.make_3D_plot(['data/trial1_degree0_offset18.csv'], n=9, title='degree0, offset18', file_name='3Dplot_degree0_offset18')
+    big_data = []
+    data_to_graph = []
+
+    degree_list = [-15, -10, -5, 0, 5, 10, 15]
+    offsets_list = [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH]
+
+    for d in degree_list:
+        row = []
+        for o in offsets_list:
+            avg = 0
+            for i in range(1,11):
+                dataaa = sims_utils.obstacle_avoidance_success(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, LOGGING_PERIOD, 9, [10,0], 4*UNSTRETCHED_TETHER_LENGTH, UNSTRETCHED_TETHER_LENGTH)
+                avg = avg + dataaa[0]
+                # print(dataaa)
+                # sims_utils.make_3D_plot(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], n=9, title='trial'+str(1)+', degree'+str(d)+', offset'+str(o)+'', file_name='3Dplot_degree0_offset18')
+                # row.append(dataaa)
+            avg = avg/10
+            row.append(avg)
+        big_data.append(row)
+
+    # print(np.array(big_data).shape)
+    # print(big_data)
+
+
+    
+
+    plt.imshow(big_data, cmap='viridis', aspect='auto')
+    plt.colorbar(label='Success Rate')
+    plt.xticks(ticks=np.arange(len(offsets_list)), labels=offsets_list)
+    plt.yticks(ticks=np.arange(len(degree_list)), labels=degree_list)
+    plt.xlabel("Offset")
+    plt.ylabel("Angle")
+    plt.title("Rate of Success out of " + str((10)) + " trials")
+    plt.savefig("ahahahahahaha.png", format='png', dpi=300)  # dpi controls resolution
+
+
+        # deg = 0
+        # if i != 0:
+        #     off = float(-i*3)   
+        # else:
+        #     off = -i*3  
+        # sims_utils.make_3D_plot(['data/boootrial'+str(1)+'_degree'+str(deg)+'_offset'+str(off)+'.csv'], n=9, title='trial'+str(1)+', degree'+str(deg)+', offset'+str(off)+'', file_name='3Dplot_degree0_offset18')
+        # print(sims_utils.obstacle_avoidance_success(['data/boootrial'+str(1)+'_degree'+str(deg)+'_offset'+str(off)+'.csv'], 1, 1, 6000, LOGGING_PERIOD, 9, [10,0], 4*UNSTRETCHED_TETHER_LENGTH, UNSTRETCHED_TETHER_LENGTH))
+
+    # sims_utils.make_3D_plot(['data/trial3_degree10_offset0.csv'], n=9, title='degree0, offset18', file_name='3Dplot_degree0_offset18')
 
 if __name__ == "__main__":
     main()

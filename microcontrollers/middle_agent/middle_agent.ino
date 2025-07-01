@@ -373,4 +373,44 @@ void loop() {
   Serial.print("Assigned IP Address: ");
   Serial.println(WiFi.localIP());
 
+
+  trueAngleDataBottom = as5600_0.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+  trueAngleDataTop = as5600_1.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+  Serial.print("The bottom's measured angle is: "); Serial.print(trueAngleDataBottom); Serial.print("  "); Serial.print("The tops's measured angle is: "); Serial.print(trueAngleDataTop); Serial.println();
+
+
+  // Calibrates the angle of the bottom encoder so that it makes sense on 
+  // a scale of 0-360 counter-clockwise off of the +x-axis
+  // The calibration values differs from agent to agent on
+  if((trueAngleDataBottom > encBottom_90) && (trueAngleDataBottom <= encBottom_0)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_0, encBottom_90, 0, 90);
+  }
+  else if ((trueAngleDataBottom > encBottom_180) && (trueAngleDataBottom <= encBottom_90)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_90, encBottom_180, 90, 180);
+  }
+  else if ((trueAngleDataBottom > encBottom_270) && (trueAngleDataBottom <= encBottom_180)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_180, encBottom_270, 180, 270);
+  }
+  else if ((trueAngleDataBottom > encBottom_360) && (trueAngleDataBottom <= encBottom_270)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_270, encBottom_360, 270, 360);
+  }
+
+  // Calibrates the angle of the top encoder so that it makes sense on 
+  // a scale of 0-360 counter-clockwise off of the +x-axis
+  // The calibration values differs from agent to agent on
+  if((trueAngleDataTop < encTop_180_first) && (trueAngleDataTop <= 0)) {
+    trueAngleDataTop = trueAngleDataTop + 360;
+  }
+  if ((trueAngleDataTop > encTop_90) && (trueAngleDataTop <= trueAngleDataBottom)) {
+    calibratedAngleDataTop = map(trueAngleDataTop, trueAngleDataBottom, encTop_90, 0, 90) + calibratedAngleDataBottom;
+  }
+  else if ((trueAngleDataTop > encTop_180_first) && (trueAngleDataTop <= encTop_90)) {
+    calibratedAngleDataTop = map(trueAngleDataTop, encTop_90, encTop_180_first, 90, 180) + calibratedAngleDataBottom;
+  }
+  else if ((trueAngleDataTop > encBottom_360) && (trueAngleDataTop <= encBottom_270)) {
+    calibratedAngleDataBottom = map(trueAngleDataTop, encBottom_270, encBottom_360, 270, 360);
+  }
+
+
+
 }

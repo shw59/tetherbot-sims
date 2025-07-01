@@ -126,7 +126,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
         success_list = []
 
         # Goes through each entry in each_runs_trial, where each entry
-        # is a list of the varius trials that correspond to a particula 
+        # is a list of the varius trials that correspond to a particular 
         # angle/offset pair
         for i in range(len(each_runs_trial)):
 
@@ -226,6 +226,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                     # 1.5 obstacles away, then we consider the test to have been unsuccessful because 
                     # the agents are moving very slowly and are not far from the obstacle
                     if (avg_velocity) <= 0.5 and ((avg_distance_from_obstacle/n) <= 1.5*obst_radius):
+                    # if ((avg_distance_from_obstacle/n) <= 2*obst_radius):
                         total = total + 1
                     else:
                         successful = successful + 1
@@ -530,7 +531,5 @@ def make_3D_plot(csv_files, n, title="Obstacle Avoidance", file_name="graph100.p
 
     # Display the plot
     plt.show()  
-
-    plt.savefig(file_name, format='png')
 
     # plt.close()
