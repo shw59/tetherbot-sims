@@ -1,7 +1,8 @@
-/*
-  Pi Pico 2 W WiFi Station Demo
+/* 
   pico2w_wifi_test.ino
-  Use WiFi library to connect Pico 2 W to WiFi in station mode
+
+  Raspberry Pi Pico 2 W WiFi Station Demo
+  Use WiFi library to connect Pico 2 W to wifi in station mode
 */
 
 // include the WiFi Library
@@ -11,15 +12,18 @@
 const char* ssid = "REPLACE_WITH_SSID";
 const char* password = "REPLACE_WITH_PASSWORD";
 
+// initialize WiFiClient object for the Pico to send messages over wifi
+WiFiClient client;
+
 void setup() {
 
-  // start the Serial Monitor
+  // start the serial monitor
   Serial.begin(115200);
 
-  // operate in WiFi Station mode
+  // operate in wifi station mode
   WiFi.mode(WIFI_STA);
 
-  // start WiFi with supplied parameters
+  // start wifi with supplied parameters
   WiFi.begin(ssid, password);
 
   // print periods on monitor while establishing connection
