@@ -7,10 +7,15 @@
 
 // include the WiFi Library
 #include <WiFi.h>
+#include "secrets.h" // include secrets.h for wifi credentials
 
 // replace with your network credentials
-const char* ssid = "REPLACE_WITH_SSID";
-const char* password = "REPLACE_WITH_PASSWORD";
+const char* ssid = LAB_SSID;
+const char* password = LAB_PW;
+
+// replace with IP address and port of your server to receive messages from the Pico 2 W
+const char* host = LAPTOP_IP_ADDRESS_LAB;
+const int port = 5000;
 
 // initialize WiFiClient object for the Pico to send messages over wifi
 WiFiClient client;
@@ -42,14 +47,22 @@ void setup() {
   Serial.print("Assigned IP Address: ");
   Serial.println(WiFi.localIP());
 
+  if (client.connect(host, port)) {
+    Serial.println("Connected to server");
+    client.println("Hello from Pico 2 W!");
+  }
 }
 
 void loop() {
-
   delay(2000);
 
-  // print IP Address
-  Serial.print("Assigned IP Address: ");
-  Serial.println(WiFi.localIP());
+  while (!client.connected()) {
+    client.connect(host, port);
+    Serial.println("Lost connection, connecting to server...");
+  }
 
+  // print IP Address
+  Serial.print("Sending data to ");
+  Serial.println(LAPTOP_IP_ADDRESS_LAB);
+  client.println("Pico IP Address:" + WiFi.localIP().toString());
 }

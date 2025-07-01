@@ -244,41 +244,29 @@ void SPIN(float theta0, float phiDes, float deltaD)
     Serial.print("PID_control_O: "); Serial.print(PID_control_O); Serial.println(); 
     Serial.print("ang_cant0: "); Serial.print(ang_cant0); Serial.print("  "); 
     Serial.print("ang_cant1: "); Serial.print(ang_cant1); Serial.println(); Serial.println();
-  /*
-    // Stop Robot if flex sensor angle is less than 60 or greater than 85 degrees
-    if (ang_cant0 < 50 || ang_cant1 < 60 || ang_cant0 > 85 || ang_cant1 > 85)  
-    {
-      Serial.println("STOPPED ROBOT: ");
-      analogWrite(A16, 0);
-      analogWrite(A15, 0);   
-      analogWrite(13, 0);
-      analogWrite(A14, 0);   
-      delay(1000);
-    };
-*/
     delay(250); 
   }  
 
   Serial.println("DONE:");     
-  analogWrite(A16, 0);
-  analogWrite(A15, 0);   
-  analogWrite(13, 0);
-  analogWrite(A14, 0);   
+  analogWrite(RIGHT_MOTOR_FORWARD, 0);
+  analogWrite(RIGHT_MOTOR_BACKWARD, 0);
+  analogWrite(LEFT_MOTOR_FORWARD, 0);
+  analogWrite(LEFT_MOTOR_BACKWARD, 0);
   delay(1000);
 }
 
 void DRIVE()
 { 
-  analogWrite(A16, Right);
-  analogWrite(A15, 0);   
-  analogWrite(13, Left);
-  analogWrite(A14, 0);  
-  delay(100); 
+  analogWrite(RIGHT_MOTOR_FORWARD, Right);
+  analogWrite(RIGHT_MOTOR_BACKWARD, 0);
+  analogWrite(LEFT_MOTOR_FORWARD, Left);
+  analogWrite(LEFT_MOTOR_BACKWARD, 0);
+  delay(100);
 
-  analogWrite(A16, 0);
-  analogWrite(A15, 0);   
-  analogWrite(13, 0);
-  analogWrite(A14, 0);  
+  analogWrite(RIGHT_MOTOR_FORWARD, 0);
+  analogWrite(RIGHT_MOTOR_BACKWARD, 0);
+  analogWrite(LEFT_MOTOR_FORWARD, 0);
+  analogWrite(LEFT_MOTOR_BACKWARD, 0);
   delay(1000); 
 }
 
@@ -288,31 +276,31 @@ void RIGHT_MOTOR(int lower) {
   // Pin A16 - Right, Forward
   if (PID_control_O > 0) {
     if (PID_control_O >= lower && PID_control_O <= 255) {
-      analogWrite(A16, PID_control_O);
-      analogWrite(A15, 0);
+      analogWrite(RIGHT_MOTOR_FORWARD, PID_control_O);
+      analogWrite(RIGHT_MOTOR_BACKWARD, 0);
     }
     else if (PID_control_O >= 0 && PID_control_O < lower) {
-      analogWrite(A16, lower);
-      analogWrite(A15, 0);
+      analogWrite(RIGHT_MOTOR_FORWARD, lower);
+      analogWrite(RIGHT_MOTOR_BACKWARD, 0);
     }
     else if (PID_control_O > 255) {
-      analogWrite(A16, 255);
-      analogWrite(A15, 0);
+      analogWrite(RIGHT_MOTOR_FORWARD, 255);
+      analogWrite(RIGHT_MOTOR_BACKWARD, 0);
     }
   }
   // Pin A15 - Right, Backward
   if (PID_control_O < 0) {
     if (abs(PID_control_O) >= lower && abs(PID_control_O) <= 255) {
-      analogWrite(A16, 0);
-      analogWrite(A15, PID_control_O);
+      analogWrite(RIGHT_MOTOR_FORWARD, 0);
+      analogWrite(RIGHT_MOTOR_BACKWARD, PID_control_O);
     }
     else if (abs(PID_control_O) >= 0 && abs(PID_control_O) < lower) {
-      analogWrite(A16, 0);
-      analogWrite(A15, lower);
+      analogWrite(RIGHT_MOTOR_FORWARD, 0);
+      analogWrite(RIGHT_MOTOR_BACKWARD, lower);
     }
     else if (abs(PID_control_O) > 255) {
-      analogWrite(A16, 0);
-      analogWrite(A15, 255);
+      analogWrite(RIGHT_MOTOR_FORWARD, 0);
+      analogWrite(RIGHT_MOTOR_BACKWARD, 255);
     }
   }
 }
@@ -323,31 +311,31 @@ void LEFT_MOTOR(int lower) {
   // Pin 13 - Left, Forward
   if (PID_control_O < 0) {
     if (abs(PID_control_O) >= lower && abs(PID_control_O) <= 255) {
-      analogWrite(13, abs(PID_control_O));
-      analogWrite(A14, 0);
+      analogWrite(LEFT_MOTOR_FORWARD, abs(PID_control_O));
+      analogWrite(LEFT_MOTOR_BACKWARD, 0);
     }
     else if (abs(PID_control_O) >= 0 && abs(PID_control_O) < lower) {
-      analogWrite(13, lower);
-      analogWrite(A14, 0);
+      analogWrite(LEFT_MOTOR_FORWARD, lower);
+      analogWrite(LEFT_MOTOR_BACKWARD, 0);
     }
     else if (abs(PID_control_O) > 255) {
-      analogWrite(13, 255);
-      analogWrite(A14, 0);
+      analogWrite(LEFT_MOTOR_FORWARD, 255);
+      analogWrite(LEFT_MOTOR_BACKWARD, 0);
     }
   }
   // Pin A14 - Left, Backward
   if (PID_control_O > 0) {
     if (abs(PID_control_O) >= lower && abs(PID_control_O) <= 255) {
-      analogWrite(13, 0);
-      analogWrite(A14, PID_control_O);
+      analogWrite(LEFT_MOTOR_FORWARD, 0);
+      analogWrite(LEFT_MOTOR_BACKWARD, PID_control_O);
     }
     else if (abs(PID_control_O) >= 0 && abs(PID_control_O) < lower) {
-      analogWrite(13, 0);
-      analogWrite(A14, lower);
+      analogWrite(LEFT_MOTOR_FORWARD, 0);
+      analogWrite(LEFT_MOTOR_BACKWARD, lower);
     }
     else if (abs(PID_control_O) > 255) {
-      analogWrite(13, 0);
-      analogWrite(A14, 255);
+      analogWrite(LEFT_MOTOR_FORWARD, 0);
+      analogWrite(LEFT_MOTOR_BACKWARD, 255);
     }
   }
 }
