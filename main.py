@@ -136,20 +136,22 @@ def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
     """
-    sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD)
+    # sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+    #             UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD)
     
-    graph_params = []
+    # graph_params = []
 
-    run_storm_drain((sim_args, True))
-    graph_params.append(run_tow_failed_agents_simulations((sim_args, False), 5, 10, [0, 1, 2, 3, 4]))
-    graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], False))
-    graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], True))
-    run_obstacle_simulations((sim_args, False), 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_storm_drain((sim_args, True))
+    # graph_params.append(run_tow_failed_agents_simulations((sim_args, False), 5, 10, [0, 1, 2, 3, 4]))
+    # graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], False))
+    # graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], True))
+    # run_obstacle_simulations((sim_args, False), 9, 300, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 10, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
-    for graph_param in graph_params:
-        csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename = graph_param
-        sims_utils.make_graph(csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename)
+    # for graph_param in graph_params:
+    #     csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename = graph_param
+    #     sims_utils.make_graph(csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename)
+
+    sims_utils.make_3D_plot(['data/trial1_degree0_offset18.csv'], n=9, title='degree0, offset18', file_name='3Dplot_degree0_offset18')
 
 if __name__ == "__main__":
     main()

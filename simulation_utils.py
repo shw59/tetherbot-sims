@@ -7,6 +7,7 @@ This file contains useful functions for generating and running simulations.
 import pybullet as p
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import math
 import random
 import csv
@@ -463,3 +464,73 @@ def screenshot_gui(ss_filename="pybullet_screenshot.png"):
 
     except Exception as e:
         print(f"An error occurred: {e}")
+
+def make_3D_plot(csv_files, n, title="Obstacle Avoidance", file_name="graph100.png"):
+    """
+    Plots the specified x, y, and z columns from one or more CSV files.
+
+    csv_files (list of str): Paths to the CSV files
+    x_column (str): Name of the column to use as the x-axis
+    y_column (str): Name of the column to use as the y-axis
+    labels (list of str, optional): Labels for each CSV file's plot
+    title (str, optional): Title of the plot
+    xlabel (str, optional): Label for the x-axis
+    ylabel (str, optional): Label for the y-axis
+    file_name (str, optional): If provided, saves the figure with this file name
+    """
+    # if y_labels is None:
+    #     y_labels = y_columns
+
+
+    # Create a figure and a 3D axes object
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x_vals = []
+    y_vals = []
+    z_vals = []
+
+
+    # fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    for file in csv_files:
+        with open(file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+
+            line = 0
+
+            for row in csv_reader:
+                if line != 0:
+                    # z_vals.append(float(row[0]))
+                    for i in range(n):
+                        x_vals.append(float(row[1+3*i]))
+                        y_vals.append(float(row[2+3*i]))
+                        z_vals.append(float(row[0]))
+                else:
+                    line = line + 1
+
+        # label = labels[i] if labels else f"File {i+1}"
+        # ax.plot(x_vals, y_vals, label=label)
+
+        # if len(y_columns) == 2:
+        #     if i == 0:
+        #         ax2 = ax1.twinx()
+        #     ax2.plot(x_vals, y2_vals, linestyle='--')
+
+    # Plot the 3D scatter plot
+    ax.scatter3D(x_vals, y_vals, z_vals, c='r', marker='o')
+
+    # Set labels for the axes
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    ax.set_zlabel('Z-axis')
+
+    # Set a title for the plot
+    ax.set_title(title)
+
+    # Display the plot
+    plt.show()  
+
+    plt.savefig(file_name, format='png')
+
+    # plt.close()
