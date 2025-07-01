@@ -84,7 +84,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
     where each entry corresponds with the success rate of a particular 
     angle/offset pair, averaged over all of the trials of each particular pair.
 
-    list_of_fils: a list of csv files, where each file corresponds with a specific
+    list_of_files: a list of csv files, where each file corresponds with a specific
                   trial number of a particular angle/offset pair
     number_of_trials: an integer value that is the number of trials ran for each pair, which
                       is the same for all the pairs

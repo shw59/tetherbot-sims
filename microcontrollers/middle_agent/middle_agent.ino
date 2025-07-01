@@ -12,11 +12,11 @@
 #include "math.h"
 using namespace BLA;
 
+// used for I2C communication with the AS5600 magnetic encoders
 AS5600 as5600_0(&Wire);
 AS5600 as5600_1(&Wire1);
 
-
-// replace with your network credentials
+// replace with your network credentials for connecting the Pico 2 W to wifi
 const char* ssid = "REPLACE_WITH_SSID";
 const char* password = "REPLACE_WITH_PASSWORD";
 
@@ -29,18 +29,19 @@ const char* password = "REPLACE_WITH_PASSWORD";
 # define BOTTOM_FLEX_SENSOR GP5
 
 # define TOP_ENCODER GP6
-# define BOTTOM_ENCODER GP6
+# define BOTTOM_ENCODER GP7
 
 
-// FLEX SENSOR PARAMTERS
-float trueFlexDataBottom; // Unchanged output for bottom flex sensor
-float trueFlexDataTop; // Unchanged output for top flex sensor
+// FLEX SENSOR PARAMETERS
+float rawFlexReadingBottom; // Unchanged output for bottom flex sensor
+float rawFlexReadingTop; // Unchanged output for top flex sensor
 
-float calibratedFlexDataBottom; // Manipulated flex sensor data for bottom
-float calibratedFlexDataTop; // Manipulated flex sensor data for top
+float calibratedFlexReadingBottom; // Manipulated flex sensor data for bottom
+float calibratedFlexReadingTop; // Manipulated flex sensor data for top
 
-float strainRepresentationBottom; // The representation of strain for the bottom tether
-float strainRepresentationTop; // The representation of strain for the top tether
+// technically not strain, but a calculated vector magnitude for each tether based on the flex sensor readings
+float strainBottom;
+float strainTop;
 
 float STRAIGHT = 0; // The angle, in degrees, that is used to calibrate the flex sensor
                    // for when it is not bent
@@ -53,42 +54,43 @@ const float BEND_BOTTOM = 300; // used for calibration and manipulation of raw d
 const float BEND_TOP = 300; // used for calibration and manipulation of raw data
 
 
-
 // ENCODER ANGLE PARAMETERS
-float trueAngleDataBottom; // Unchanged output for bottom encoder
-float trueAngleDataTop; // Unchanged output for top encoder
+float rawAngleReadingBottom; // raw angle reading for bottom encoder
+float rawAngleReadingTop; // raw angle reading for top encoder
 
-float calibratedAngleDataBottom; // Manipulated encoder data for bottom
-float calibratedAngleDataTop; // Manipulated encoder data for top
+float thetaBottom; // calibrated encoder angle for bottom tether
+float thetaTop; // calibrated encoder angle for top tether
 
 float deltaMeasured; // The difference between calibratedAngleDataBottom and calibratedAngleDataTop
 float deltaError; // The error value between the desired and measured deltas
 
-float encBottom_0 = 360; // value used for calibration for the bottom encored and desired angle of 0 degrees
-float encBottom_90 = 262; // value used for calibration for the bottom encored and desired angle of 90 degrees
-float encBottom_180 = 176; // value used for calibration for the bottom encored and desired angle of 180 degrees
-float encBottom_270 = 86; // value used for calibration for the bottom encored and desired angle of 270 degrees
-float encBottom_360 = 0; // value used for calibration for the bottom encored and desired angle of 360 degrees
+// values used for calibration of the encoders at each specified angles
+// DIFFERENT FOR EACH ROBOT, FIX LATER
+float encBottom_0 = 360; // value used for calibration for the bottom encoder and desired angle of 0 degrees
+float encBottom_90 = 262;
+float encBottom_180 = 176;
+float encBottom_270 = 86;
+float encBottom_360 = 0;
 
-float encTop_0 = 210; // value used for calibration for the bottom encored and desired angle of 0 degrees
-float encTop_90 = 122; // value used for calibration for the bottom encored and desired angle of 90 degrees
-float encTop_180_first = 30; // value used for calibration for the bottom encored and desired angle of 180 degrees
-float encTop_180_second = 390; // value used for calibration for the bottom encored and desired angle of 180 degrees
-float encTop_270 = 300; // value used for calibration for the bottom encored and desired angle of 270 degrees
-float encTop_360 = 210; // value used for calibration for the bottom encored and desired angle of 360 degrees
+float encTop_0 = 210;
+float encTop_90 = 122;
+float encTop_180_first = 30;
+float encTop_180_second = 390;
+float encTop_270 = 300;
+float encTop_360 = 210;
 
 
-// DIRECTION VECTORS
-float directionMagnitude; // magnitude of the direction vector
-float directionDirection; // direction of the direction vector
+// HEADING VECTORS
+float headingMagnitude; // magnitude of the robot's current heading vector
+float headingDirection; // direction of the robot's current heading vector
 
 
 // RESULTANT VECTORS
-float resultantMagnitude; // magnitude of the resultant vector
-float resultantDirection; // direction of the resultant vector
+float resultantMagnitude; // magnitude of the next-step resultant vector
+float resultantDirection; // direction of the next-step resultant vector
 
 
-// PID Initialization 
+// PID OVER HEADING PARAMETERS
 float dt; 
 float errorE; 
 float derivative; 
@@ -97,23 +99,17 @@ float previousError;
 
 
 // Goal Angle and Upper Stop Angle
-float deltaDesired = 90; // The desired difference between calibratedAngleDataBottom and calibratedAngleDataTop
-float lowerA = 45;
-float upperA = 80;
+float deltaDesired = 90; // desired tether angle difference between thetaBottom and thetaTop
+float lowerAngle = 45;
+float upperAngle = 80;
 
 
 // Flex Sensor Range Angles 
-float bottomSensorMin = 60; 
-float bottomSensorMax = 70;
-float topSensorMin = 60; 
-float topSensorMax = 70;
+float flexSensorBottomMin = 60; 
+float flexSensorBottomMax = 70;
+float flexSensorTopMin = 60; 
+float flexSensorTopMax = 70;
 
-// Bluetooth Variables
-float run_START_CASE;
-float deltaD = 130 * M_PI/180; 
-float angleInput = 0;
-float Right = 150; 
-float Left = 150;
 
 // Array Initialization, for storing the history of data
 const int maxnew = 5000; 
@@ -127,8 +123,6 @@ float deltaD_Array[maxnew]; // I DON'T KNOW WHAT DELTAD IS, MUST FIND OUT
 float resultantMagnitude_Array[maxnew]; 
 float resultantDirection_Array[maxnew]; 
 float directionDirection_Array[maxnew]; 
-
-
 
 
 void setup() {
@@ -148,24 +142,18 @@ void setup() {
   pinMode(TOP_FLEX_SENSOR, INPUT);
   pinMode(BOTTOM_FLEX_SENSOR, INPUT);
 
-  as5600_0.begin();  //  set direction pin.
+  as5600_0.begin();  //  set direction pin
   as5600_0.setDirection(AS5600_CLOCK_WISE);
   Serial.println(as5600_0.getAddress(),HEX);
-  Serial.print("Connect device 0: ");
-  Serial.println(as5600_0.isConnected() ? "true" : "false");
-  int b = as5600_0.isConnected();
-  Serial.print("Connect: ");
-  Serial.println(b);
+  Serial.print("Device 0: ");
+  Serial.println(as5600_0.isConnected() ? "connected" : "not connected");
   delay(1000);
 
-  as5600_1.begin();  //  set direction pin.
+  as5600_1.begin();  //  set direction pin
   as5600_1.setDirection(AS5600_CLOCK_WISE);
   Serial.println(as5600_1.getAddress(),HEX);
-  Serial.print("Connect device 1: ");
-  Serial.println(as5600_1.isConnected() ? "true" : "false");
-  int c = as5600_1.isConnected();
-  Serial.print("Connect: ");
-  Serial.println(c);
+  Serial.print("Device 1: ");
+  Serial.println(as5600_1.isConnected() ? "connected" : "not connected");
   delay(1000);
 
 //   // print periods on monitor while establishing connection
