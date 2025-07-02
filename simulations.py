@@ -424,7 +424,7 @@ class Simulation:
 
         my_world.display_axis_labels()
         
-        log_file = f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}.csv"
+        log_file = f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}_offset{offset}.csv"
         runs = 0
         agent_to_update_next = 0
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
