@@ -16,10 +16,6 @@ using namespace BLA;
 AS5600 as5600_0(&Wire);
 AS5600 as5600_1(&Wire1);
 
-// replace with your network credentials for connecting the Pico 2 W to wifi
-const char* ssid = "REPLACE_WITH_SSID";
-const char* password = "REPLACE_WITH_PASSWORD";
-
 # define RIGHT_MOTOR_FORWARD GP0
 # define RIGHT_MOTOR_BACKWARD GP1
 # define LEFT_MOTOR_FORWARD GP2
@@ -65,7 +61,7 @@ float deltaMeasured; // The difference between calibratedAngleDataBottom and cal
 float deltaError; // The error value between the desired and measured deltas
 
 // values used for calibration of the encoders at each specified angles
-// DIFFERENT FOR EACH ROBOT, FIX LATER
+// TODO: make these values robot-specific, make choosable based on name of robot
 float encBottom_0 = 360; // value used for calibration for the bottom encoder and desired angle of 0 degrees
 float encBottom_90 = 262;
 float encBottom_180 = 176;
@@ -128,7 +124,7 @@ float directionDirection_Array[maxnew];
 void setup() {
 
   Serial.begin(115200); // start the Serial Monitor
-  WiFi.mode(WIFI_STA); // operate in WiFi Station mode
+  WiFi.mode(WIFI_STA); // operate wifi in station mode
   WiFi.begin(ssid, password); // start WiFi with supplied parameters
 
   Wire.begin();
@@ -155,25 +151,53 @@ void setup() {
   Serial.print("Device 1: ");
   Serial.println(as5600_1.isConnected() ? "connected" : "not connected");
   delay(1000);
-
-//   // print periods on monitor while establishing connection
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.print(".");
-//     delay(500);
-//   }
-
-//   // connection established
-//   Serial.println("");
-//   Serial.print("Pico 2 W is connected to WiFi network ");
-//   Serial.println(WiFi.SSID());
-
-//   // print IP Address
-//   Serial.print("Assigned IP Address: ");
-//   Serial.println(WiFi.localIP());
-
 }
 
+void loop() {
+
+  delay(2000);
+
+
+  trueAngleDataBottom = as5600_0.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+  trueAngleDataTop = as5600_1.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+  Serial.print("The bottom's measured angle is: "); Serial.print(trueAngleDataBottom); Serial.print("  "); Serial.print("The tops's measured angle is: "); Serial.print(trueAngleDataTop); Serial.println();
+
+
+  // Calibrates the angle of the bottom encoder so that it makes sense on 
+  // a scale of 0-360 counter-clockwise off of the +x-axis
+  // The calibration values differs from agent to agent on
+  if((trueAngleDataBottom > encBottom_90) && (trueAngleDataBottom <= encBottom_0)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_0, encBottom_90, 0, 90);
+  }
+  else if ((trueAngleDataBottom > encBottom_180) && (trueAngleDataBottom <= encBottom_90)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_90, encBottom_180, 90, 180);
+  }
+  else if ((trueAngleDataBottom > encBottom_270) && (trueAngleDataBottom <= encBottom_180)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_180, encBottom_270, 180, 270);
+  }
+  else if ((trueAngleDataBottom > encBottom_360) && (trueAngleDataBottom <= encBottom_270)) {
+    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_270, encBottom_360, 270, 360);
+  }
+
+  // Calibrates the angle of the top encoder so that it makes sense on 
+  // a scale of 0-360 counter-clockwise off of the +x-axis
+  // The calibration values differs from agent to agent on
+  if((trueAngleDataTop < encTop_180_first) && (trueAngleDataTop <= 0)) {
+    trueAngleDataTop = trueAngleDataTop + 360;
+  }
+  if ((trueAngleDataTop > encTop_90) && (trueAngleDataTop <= trueAngleDataBottom)) {
+    calibratedAngleDataTop = map(trueAngleDataTop, trueAngleDataBottom, encTop_90, 0, 90) + calibratedAngleDataBottom;
+  }
+  else if ((trueAngleDataTop > encTop_180_first) && (trueAngleDataTop <= encTop_90)) {
+    calibratedAngleDataTop = map(trueAngleDataTop, encTop_90, encTop_180_first, 90, 180) + calibratedAngleDataBottom;
+  }
+  else if ((trueAngleDataTop > encBottom_360) && (trueAngleDataTop <= encBottom_270)) {
+    calibratedAngleDataBottom = map(trueAngleDataTop, encBottom_270, encBottom_360, 270, 360);
+  }
+
+
+
+}
 
 void SPIN(float theta0, float phiDes, float deltaD) 
 {
@@ -340,53 +364,3 @@ void LEFT_MOTOR(int lower) {
   }
 }
 
-
-void loop() {
-
-  delay(2000);
-
-  // print IP Address
-  Serial.print("Assigned IP Address: ");
-  Serial.println(WiFi.localIP());
-
-
-  trueAngleDataBottom = as5600_0.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
-  trueAngleDataTop = as5600_1.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
-  Serial.print("The bottom's measured angle is: "); Serial.print(trueAngleDataBottom); Serial.print("  "); Serial.print("The tops's measured angle is: "); Serial.print(trueAngleDataTop); Serial.println();
-
-
-  // Calibrates the angle of the bottom encoder so that it makes sense on 
-  // a scale of 0-360 counter-clockwise off of the +x-axis
-  // The calibration values differs from agent to agent on
-  if((trueAngleDataBottom > encBottom_90) && (trueAngleDataBottom <= encBottom_0)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_0, encBottom_90, 0, 90);
-  }
-  else if ((trueAngleDataBottom > encBottom_180) && (trueAngleDataBottom <= encBottom_90)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_90, encBottom_180, 90, 180);
-  }
-  else if ((trueAngleDataBottom > encBottom_270) && (trueAngleDataBottom <= encBottom_180)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_180, encBottom_270, 180, 270);
-  }
-  else if ((trueAngleDataBottom > encBottom_360) && (trueAngleDataBottom <= encBottom_270)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_270, encBottom_360, 270, 360);
-  }
-
-  // Calibrates the angle of the top encoder so that it makes sense on 
-  // a scale of 0-360 counter-clockwise off of the +x-axis
-  // The calibration values differs from agent to agent on
-  if((trueAngleDataTop < encTop_180_first) && (trueAngleDataTop <= 0)) {
-    trueAngleDataTop = trueAngleDataTop + 360;
-  }
-  if ((trueAngleDataTop > encTop_90) && (trueAngleDataTop <= trueAngleDataBottom)) {
-    calibratedAngleDataTop = map(trueAngleDataTop, trueAngleDataBottom, encTop_90, 0, 90) + calibratedAngleDataBottom;
-  }
-  else if ((trueAngleDataTop > encTop_180_first) && (trueAngleDataTop <= encTop_90)) {
-    calibratedAngleDataTop = map(trueAngleDataTop, encTop_90, encTop_180_first, 90, 180) + calibratedAngleDataBottom;
-  }
-  else if ((trueAngleDataTop > encBottom_360) && (trueAngleDataTop <= encBottom_270)) {
-    calibratedAngleDataBottom = map(trueAngleDataTop, encBottom_270, encBottom_360, 270, 360);
-  }
-
-
-
-}
