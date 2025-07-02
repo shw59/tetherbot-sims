@@ -12,6 +12,7 @@ import multiprocessing as mp
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
 TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
@@ -46,15 +47,13 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     sim = Simulation(*args, gui_on=gui_on)
     list_of_file_names = []
     for t in range(number_of_trials):
-        # for o in offsets:
-        #     for a in angles_to_try:
         for a in angles_to_try:
             for o in offsets:
                 list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position))
 
     data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, obst_radius = obst_radius, l_0 = UNSTRETCHED_TETHER_LENGTH)
 
-    sims_utils.make_heat_map(data=data, angles=angles_to_try, offsets=offsets, num_trials=number_of_trials, output_filename="data/figures/success_heat_map.png")
+    sims_utils.make_heat_map(data=data, angles=angles_to_try, offsets=offsets, num_trials=number_of_trials, output_filename=f"data/figures/success_heat_map_{datetime.datetime.now().date()}.png")
 
     end_time = time.perf_counter()
 
@@ -62,7 +61,7 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
 
-def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
+def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_to_fail):
     """
     Runs a series of towing failed agents simulations. 
 
@@ -79,8 +78,11 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
     for failed_agent_num in agents_to_fail:
         trial_list = []
         for trial in range(1, num_runs + 1):
-            trial_list.append(sim.tow_failed_agents_trial(n, trial, failed_agent_num))
+            trial_list.append(sim.tow_failed_agents_trial(n, trial, time_steps, failed_agent_num))
         csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/tow_failed_agents_trialavg_agent{failed_agent_num}_failed.csv"))
+
+    sims_utils.make_graph(csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
+                          "Failed Agent x-Position vs Time Step", "Time Step", ["Failed Agent x-Position"], f"data/figures/towing_agents_graph_{datetime.datetime.now().date()}.png")
 
     end_time = time.perf_counter()
 
@@ -88,15 +90,12 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, agents_to_fail):
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "towing failed agents", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
 
-    return (csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
-            "Failed Agent x-Position vs Time Step", "Time Step", ["Failed Agent x-Position"], "data/figures/towing_agents_graph.png")
-
-def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_line):
+def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_nums, offsets, maintain_line):
     """
     Runs a series of object-capture simulations.
 
     n: Number of agents
-    num_runs: Number of trials for each object amount
+    num_trials: Number of trials for each object amount
     object_nums: List of object numbers to run for
     maintain_line: True if we want the agents to maintain a straight line, False otherwise
     """
@@ -105,12 +104,16 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
 
     args, gui_on = sim_args
     sim = Simulation(*args, gui_on=gui_on)
-    csv_averages_list = []
-    for object_num in object_nums:
-        trial_list = []
-        for trial in range(1, num_runs + 1):
-            trial_list.append(sim.object_capture_trial(n, trial, object_num, maintain_line))
-        csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}.csv"))
+    for offset in offsets:
+        csv_averages_list = []
+        for object_num in object_nums:
+            trial_list = []
+            for trial in range(1, num_trials + 1):
+                trial_list.append(sim.object_capture_trial(n, trial, time_steps, object_num, offset, maintain_line))
+            csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}_offset{offset}.csv"))
+
+        sims_utils.make_graph(csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
+                              f"Collective Radius and # of Objects Collected vs Time Step, with Offset {offset}", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_offset{offset}_graph_{datetime.datetime.now().date()}.png")
 
     end_time = time.perf_counter()
 
@@ -119,7 +122,7 @@ def run_object_capture_simulations(sim_args, n, num_runs, object_nums, maintain_
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
 
     return (csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
-            "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/bject_capture_maintain_line_{maintain_line}_graph.png")
+            "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_graph_{datetime.datetime.now().date()}.png")
 
 def run_storm_drain(sim_args):
     start_time = time.perf_counter()
@@ -142,38 +145,32 @@ def main():
     """
     sim_args = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, SENSING_PERIOD, LOGGING_PERIOD)
-    
-    graph_params = []
 
     # run_storm_drain((sim_args, True))
-    # graph_params.append(run_tow_failed_agents_simulations((sim_args, False), 5, 10, [0, 1, 2, 3, 4]))
-    # graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], False))
-    # graph_params.append(run_object_capture_simulations((sim_args, False), 9, 10, [5, 10, 30, 50], True))
+    # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 5000, [0, 1, 2, 3, 4])
+    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
+    # run_object_capture_simulations((sim_args, False), 9, 10, 5000, [5, 10, 30, 50], [0], True)
     # run_obstacle_simulations((sim_args, False), 9, 500, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
-    # for graph_param in graph_params:
-    #     csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename = graph_param
-    #     sims_utils.make_graph(csv_averages_list, x_column, y_columns, labels, title, x_label, y_labels, output_filename)
+    # big_data = []
+    # data_to_graph = []
 
-    big_data = []
-    data_to_graph = []
+    # degree_list = [-15, -10, -5, 0, 5, 10, 15]
+    # offsets_list = [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH]
 
-    degree_list = [-15, -10, -5, 0, 5, 10, 15]
-    offsets_list = [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH]
-
-    for d in degree_list:
-        row = []
-        for o in offsets_list:
-            avg = 0
-            for i in range(1,11):
-                dataaa = sims_utils.obstacle_avoidance_success(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, LOGGING_PERIOD, 9, [10,0], 4*UNSTRETCHED_TETHER_LENGTH, UNSTRETCHED_TETHER_LENGTH)
-                avg = avg + dataaa[0]
-                # print(dataaa)
-                # sims_utils.make_3D_plot(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], n=9, title='trial'+str(1)+', degree'+str(d)+', offset'+str(o)+'', file_name='3Dplot_degree0_offset18')
-                # row.append(dataaa)
-            avg = avg/10
-            row.append(avg)
-        big_data.append(row)
+    # for d in degree_list:
+    #     row = []
+    #     for o in offsets_list:
+    #         avg = 0
+    #         for i in range(1,11):
+    #             dataaa = sims_utils.obstacle_avoidance_success(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, LOGGING_PERIOD, 9, [10,0], 4*UNSTRETCHED_TETHER_LENGTH, UNSTRETCHED_TETHER_LENGTH)
+    #             avg = avg + dataaa[0]
+    #             # print(dataaa)
+    #             # sims_utils.make_3D_plot(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], n=9, title='trial'+str(1)+', degree'+str(d)+', offset'+str(o)+'', file_name='3Dplot_degree0_offset18')
+    #             # row.append(dataaa)
+    #         avg = avg/10
+    #         row.append(avg)
+    #     big_data.append(row)
 
     # print(np.array(big_data).shape)
     # print(big_data)
@@ -181,14 +178,14 @@ def main():
 
     
 
-    plt.imshow(big_data, cmap='viridis', aspect='auto')
-    plt.colorbar(label='Success Rate')
-    plt.xticks(ticks=np.arange(len(offsets_list)), labels=offsets_list)
-    plt.yticks(ticks=np.arange(len(degree_list)), labels=degree_list)
-    plt.xlabel("Offset")
-    plt.ylabel("Angle")
-    plt.title("Rate of Success out of " + str((10)) + " trials")
-    plt.savefig("ahahahahahaha.png", format='png', dpi=300)  # dpi controls resolution
+    # plt.imshow(big_data, cmap='viridis', aspect='auto')
+    # plt.colorbar(label='Success Rate')
+    # plt.xticks(ticks=np.arange(len(offsets_list)), labels=offsets_list)
+    # plt.yticks(ticks=np.arange(len(degree_list)), labels=degree_list)
+    # plt.xlabel("Offset")
+    # plt.ylabel("Angle")
+    # plt.title("Rate of Success out of " + str((10)) + " trials")
+    # plt.savefig("ahahahahahaha.png", format='png', dpi=300)  # dpi controls resolution
 
 
         # deg = 0

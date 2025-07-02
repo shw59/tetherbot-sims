@@ -13,8 +13,8 @@
 using namespace BLA;
 
 // used for I2C communication with the AS5600 magnetic encoders
-AS5600 as5600_0(&Wire);
-AS5600 as5600_1(&Wire1);
+AS5600 bottomEncoder(&Wire);
+AS5600 topEncoder(&Wire1);
 
 # define RIGHT_MOTOR_FORWARD GP0
 # define RIGHT_MOTOR_BACKWARD GP1
@@ -62,23 +62,23 @@ float deltaError; // The error value between the desired and measured deltas
 
 // values used for calibration of the encoders at each specified angles
 // TODO: make these values robot-specific, make choosable based on name of robot
-float encBottom_0 = 360; // value used for calibration for the bottom encoder and desired angle of 0 degrees
-float encBottom_90 = 262;
-float encBottom_180 = 176;
-float encBottom_270 = 86;
-float encBottom_360 = 0;
+float encBottom0 = 360; // value used for calibration for the bottom encoder and desired angle of 0 degrees
+float encBottom90 = 262;
+float encBottom180 = 176;
+float encBottom270 = 86;
+float encBottom360 = 0;
 
-float encTop_0 = 210;
-float encTop_90 = 122;
-float encTop_180_first = 30;
-float encTop_180_second = 390;
-float encTop_270 = 300;
-float encTop_360 = 210;
+float encTop0 = 210;
+float encTop90 = 122;
+float encTop180_first = 30;
+float encTop180_second = 390;
+float encTop270 = 300;
+float encTop360 = 210;
 
 
 // HEADING VECTORS
-float headingMagnitude; // magnitude of the robot's current heading vector
-float headingDirection; // direction of the robot's current heading vector
+float desHeadingMagnitude; // magnitude of robot's desired heading vector
+float desHeadingDirection; // direction of the robot's desired heading vector
 
 
 // RESULTANT VECTORS
@@ -114,7 +114,7 @@ float calibratedFlexDataBottom_Array[maxnew];
 float calibratedFlexDataTop_Array[maxnew];     
 float calibratedAngleDataBottom_Array[maxnew]; 
 float calibratedAngleDataTop_Array[maxnew];     
-float deltaMeasured_Array[maxnew]; 
+float deltaMeasuredeasured_Array[maxnew]; 
 float deltaD_Array[maxnew]; // I DON'T KNOW WHAT DELTAD IS, MUST FIND OUT
 float resultantMagnitude_Array[maxnew]; 
 float resultantDirection_Array[maxnew]; 
@@ -122,10 +122,7 @@ float directionDirection_Array[maxnew];
 
 
 void setup() {
-
-  Serial.begin(115200); // start the Serial Monitor
-  WiFi.mode(WIFI_STA); // operate wifi in station mode
-  WiFi.begin(ssid, password); // start WiFi with supplied parameters
+  Serial.begin(115200);
 
   Wire.begin();
   Wire1.begin();
@@ -138,109 +135,110 @@ void setup() {
   pinMode(TOP_FLEX_SENSOR, INPUT);
   pinMode(BOTTOM_FLEX_SENSOR, INPUT);
 
-  as5600_0.begin();  //  set direction pin
-  as5600_0.setDirection(AS5600_CLOCK_WISE);
-  Serial.println(as5600_0.getAddress(),HEX);
+  bottomEncoder.begin();  // set direction pin
+  bottomEncoder.setDirection(AS5600_CLOCK_WISE);
+  Serial.println(bottomEncoder.getAddress(),HEX);
   Serial.print("Device 0: ");
-  Serial.println(as5600_0.isConnected() ? "connected" : "not connected");
+  Serial.println(bottomEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
 
-  as5600_1.begin();  //  set direction pin
-  as5600_1.setDirection(AS5600_CLOCK_WISE);
-  Serial.println(as5600_1.getAddress(),HEX);
+  topEncoder.begin();  // set direction pin
+  topEncoder.setDirection(AS5600_CLOCK_WISE);
+  Serial.println(topEncoder.getAddress(),HEX);
   Serial.print("Device 1: ");
-  Serial.println(as5600_1.isConnected() ? "connected" : "not connected");
+  Serial.println(topEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
 }
 
+
 void loop() {
+
+
+
 
   delay(2000);
 
-
-  trueAngleDataBottom = as5600_0.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
-  trueAngleDataTop = as5600_1.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+  trueAngleDataBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+  trueAngleDataTop = topEncoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
   Serial.print("The bottom's measured angle is: "); Serial.print(trueAngleDataBottom); Serial.print("  "); Serial.print("The tops's measured angle is: "); Serial.print(trueAngleDataTop); Serial.println();
 
 
   // Calibrates the angle of the bottom encoder so that it makes sense on 
   // a scale of 0-360 counter-clockwise off of the +x-axis
   // The calibration values differs from agent to agent on
-  if((trueAngleDataBottom > encBottom_90) && (trueAngleDataBottom <= encBottom_0)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_0, encBottom_90, 0, 90);
+  if((rawAngleReadingBottom > encBottom90) && (rawAngleReadingBottom <= encBottom0)) {
+    calibratedAngleDataBottom = map(rawAngleReadingBottom, encBottom0, encBottom90, 0, 90);
   }
-  else if ((trueAngleDataBottom > encBottom_180) && (trueAngleDataBottom <= encBottom_90)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_90, encBottom_180, 90, 180);
+  else if ((rawAngleReadingBottom > encBottom180) && (rawAngleReadingBottom <= encBottom90)) {
+    calibratedAngleDataBottom = map(rawAngleReadingBottom, encBottom90, encBottom180, 90, 180);
   }
-  else if ((trueAngleDataBottom > encBottom_270) && (trueAngleDataBottom <= encBottom_180)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_180, encBottom_270, 180, 270);
+  else if ((rawAngleReadingBottom > encBottom270) && (rawAngleReadingBottom <= encBottom180)) {
+    calibratedAngleDataBottom = map(rawAngleReadingBottom, encBottom180, encBottom270, 180, 270);
   }
-  else if ((trueAngleDataBottom > encBottom_360) && (trueAngleDataBottom <= encBottom_270)) {
-    calibratedAngleDataBottom = map(trueAngleDataBottom, encBottom_270, encBottom_360, 270, 360);
+  else if ((rawAngleReadingBottom > encBottom360) && (rawAngleReadingBottom <= encBottom270)) {
+    calibratedAngleDataBottom = map(rawAngleReadingBottom, encBottom270, encBottom360, 270, 360);
   }
 
   // Calibrates the angle of the top encoder so that it makes sense on 
   // a scale of 0-360 counter-clockwise off of the +x-axis
   // The calibration values differs from agent to agent on
-  if((trueAngleDataTop < encTop_180_first) && (trueAngleDataTop <= 0)) {
-    trueAngleDataTop = trueAngleDataTop + 360;
+  if((rawAngleReadingTop < encTop_180_first) && (rawAngleReadingTop <= 0)) {
+    rawAngleReadingTop = rawAngleReadingTop + 360;
   }
-  if ((trueAngleDataTop > encTop_90) && (trueAngleDataTop <= trueAngleDataBottom)) {
-    calibratedAngleDataTop = map(trueAngleDataTop, trueAngleDataBottom, encTop_90, 0, 90) + calibratedAngleDataBottom;
+  if ((rawAngleReadingTop > encTop_90) && (rawAngleReadingTop <= rawAngleReadingBottom)) {
+    calibratedAngleDataTop = map(rawAngleReadingTop, rawAngleReadingBottom, encTop_90, 0, 90) + calibratedAngleDataBottom;
   }
-  else if ((trueAngleDataTop > encTop_180_first) && (trueAngleDataTop <= encTop_90)) {
-    calibratedAngleDataTop = map(trueAngleDataTop, encTop_90, encTop_180_first, 90, 180) + calibratedAngleDataBottom;
+  else if ((rawAngleReadingTop > encTop_180_first) && (rawAngleReadingTop <= encTop_90)) {
+    calibratedAngleDataTop = map(rawAngleReadingTop, encTop_90, encTop_180_first, 90, 180) + calibratedAngleDataBottom;
   }
-  else if ((trueAngleDataTop > encBottom_360) && (trueAngleDataTop <= encBottom_270)) {
-    calibratedAngleDataBottom = map(trueAngleDataTop, encBottom_270, encBottom_360, 270, 360);
+  else if ((rawAngleReadingTop > encBottom_360) && (rawAngleReadingTop <= encBottom_270)) {
+    calibratedAngleDataBottom = map(rawAngleReadingTop, encBottom_270, encBottom_360, 270, 360);
   }
 
 
 
 }
 
-void SPIN(float theta0, float phiDes, float deltaD) 
-{
-  Serial.print("theta0: "); Serial.println(theta0 * 180/M_PI);
-  Serial.print("phiDes: "); Serial.println(phiDes * 180/M_PI);
+
+void SPIN(float thetaBottom, float desHeadingDirection, float deltaD) {
   float Kp = 1;//16; float Kd = 1; 
   float endTime = millis(); float previousTime = millis(); 
-  
-  while (theta0*180/M_PI > (phiDes*180/M_PI)+5 || theta0*180/M_PI < (phiDes*180/M_PI)-5)
+
+  while (thetaBottom*180/M_PI > (desHeadingDirection*180/M_PI)+5 || thetaBottom*180/M_PI < (desHeadingDirection*180/M_PI)-5)
   {
     Serial.println("START:");
     // Angle Formation //////////////////////////////////////////////////////////////////
-    ang_T0 = as5600_0.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
-    ang_T1 = as5600_1.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+    rawAngleReadingBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+    rawAngleReadingTop = topEncoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
 
   //// ROBOT 4 
     // Calibrating the magnetic encoder for tether angles
-    if(ang_T0 > T0_90 && ang_T0 <= T0_0) {theta0 = map(ang_T0, T0_0, T0_90, 0, 90);}
-    else if (ang_T0 > T0_180 && ang_T0 <= T0_90) {theta0 = map(ang_T0, T0_90, T0_180, 90, 180);}
-    else if (ang_T0 > T0_270 && ang_T0 <= T0_180) {theta0 = map(ang_T0, T0_180, T0_270, 180, 270);}
-    else if (ang_T0 > T0_360 && ang_T0 <= T0_270) {theta0 = map(ang_T0, T0_270, T0_360, 270, 360);}
+    if(rawAngleReadingBottom > encBottom90 && rawAngleReadingBottom <= encBottom0) {theta0 = map(rawAngleReadingBottom, encBottom0, encBottom90, 0, 90);}
+    else if (rawAngleReadingBottom > encBottom180 && rawAngleReadingBottom <= encBottom90) {theta0 = map(rawAngleReadingBottom, encBottom90, encBottom180, 90, 180);}
+    else if (rawAngleReadingBottom > encBottom270 && rawAngleReadingBottom <= encBottom180) {theta0 = map(rawAngleReadingBottom, encBottom180, encBottom270, 180, 270);}
+    else if (rawAngleReadingBottom > encBottom360 && rawAngleReadingBottom <= encBottom270) {theta0 = map(rawAngleReadingBottom, encBottom270, encBottom360, 270, 360);}
 
     //Serial.println(ang_T1);
-    if (ang_T1 < T1_180first && ang_T1 >= 0) {ang_T1 = ang_T1 + 360;}
-    if (ang_T1 > T1_90 && ang_T1 <= T1_0) {theta1 = map(ang_T1, T1_0, T1_90, 0, 90) + theta0;}
-    else if (ang_T1 > T1_180first && ang_T1 <= T1_90) {theta1 = map(ang_T1, T1_90, T1_180first, 90, 180) + theta0;}
-    else if (ang_T1 > T1_270 && ang_T1 <= T1_180second) {theta1 = map(ang_T1, T1_180second, T1_270, 180, 270) + theta0;}
-    else if (ang_T1 > T1_360 && ang_T1 <= T1_270) {theta1 = map(ang_T1, T1_270, T1_360, 270, 360) + theta0;}
-    if (theta1 > 360) {theta1 = theta1 - 360;}
+    if (rawAngleReadingTop < T1_180first && rawAngleReadingTop >= 0) {rawAngleReadingTop = rawAngleReadingTop + 360;}
+    if (rawAngleReadingTop > T1_90 && rawAngleReadingTop <= T1_0) {thetaTop = map(rawAngleReadingTop, T1_0, T1_90, 0, 90) + theta0;}
+    else if (rawAngleReadingTop > T1_180first && rawAngleReadingTop <= T1_90) {thetaTop = map(rawAngleReadingTop, T1_90, T1_180first, 90, 180) + theta0;}
+    else if (rawAngleReadingTop > T1_270 && rawAngleReadingTop <= T1_180second) {thetaTop = map(rawAngleReadingTop, T1_180second, T1_270, 180, 270) + theta0;}
+    else if (rawAngleReadingTop > T1_360 && rawAngleReadingTop <= T1_270) {thetaTop = map(rawAngleReadingTop, T1_270, T1_360, 270, 360) + theta0;}
+    if (thetaTop > 360) {thetaTop = thetaTop - 360;}
 
 
-    theta0 = theta0 * M_PI/180;
-    theta1 = theta1 * M_PI/180;
+    thetaBottom = theta0 * M_PI/180;
+    thetaTop = thetaTop * M_PI/180;
 
-    if (theta0 < theta1) {deltaM = theta1 - theta0;}
-    else if (theta0 > theta1 && theta0 >= (270 * M_PI/180) && theta0 <= (360 * M_PI/180) && theta1 >= 0 && theta1 <= (270 * M_PI/180))
-    {deltaM = (360*M_PI/180) - theta0 + theta1;}
-    else {deltaM = (360*M_PI/180) - abs(theta1 - theta0);}
+    if (thetaBottom < thetaTop) {deltaMeasured = thetaTop - thetaBottom;}
+    else if (thetaBottom > thetaTop && thetaBottom >= (270 * M_PI/180) && thetaBottom <= (360 * M_PI/180) && thetaTop >= 0 && thetaTop <= (270 * M_PI/180))
+    {deltaMeasured = (360*M_PI/180) - thetaBottom + thetaTop;}
+    else {deltaMeasured = (360*M_PI/180) - abs(thetaTop - thetaBottom);}
 
     // PID Control
     dt = (millis() - previousTime) / 1000;
 
-    errorE = -1*(phiDes - theta0);
+    errorE = -1*(desHeadingDirection - thetaBottom);
     if (errorE > M_PI) {errorE = -1*(2*M_PI - errorE);}
     if (errorE < -M_PI) {errorE = 1*(2*M_PI + errorE);}
 
@@ -279,8 +277,11 @@ void SPIN(float theta0, float phiDes, float deltaD)
   delay(1000);
 }
 
-void DRIVE()
-{ 
+
+void DRIVE() { 
+
+  // TODO: implement PID control for speed
+
   analogWrite(RIGHT_MOTOR_FORWARD, Right);
   analogWrite(RIGHT_MOTOR_BACKWARD, 0);
   analogWrite(LEFT_MOTOR_FORWARD, Left);

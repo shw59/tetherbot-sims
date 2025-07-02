@@ -288,7 +288,7 @@ class Simulation:
 
         return log_file
 
-    def tow_failed_agents_trial(self, n, trial_num, failed_agent_num):
+    def tow_failed_agents_trial(self, n, trial_num, time_steps, failed_agent_num):
         """
         This experiment takes a group of n agents in a W formation and causes one of them to fail at t = 100.
         The other agents attempt to tow the failed agent as the collective advances towards the gradient source goal.
@@ -338,7 +338,7 @@ class Simulation:
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
         # main simulation loop
-        while my_world.id.isConnected() and runs <= 5000:
+        while my_world.id.isConnected() and runs <= time_steps:
             my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:
@@ -383,12 +383,12 @@ class Simulation:
 
         return log_file
 
-    def object_capture_trial(self, n, trial_num, num_objects, maintain_line):
+    def object_capture_trial(self, n, trial_num, time_steps, num_objects, offset, maintain_line):
         """
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.
         """
-        my_world = World(150, 20, self.time_step, self.gui_on)
+        my_world = World(150, 150, self.time_step, self.gui_on)
 
         a_weight = 100 # angle vector weighting
         s_weight = 10 # strain vector weighting
@@ -403,7 +403,7 @@ class Simulation:
 
         start_angles = [None] + [180] * (n - 2) + [None]
         
-        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -(n - 1) * self.unstretched_tether_length / 2, 0], "+y")
+        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -(n - 1) * self.unstretched_tether_length / 2 + offset, 0], "+y")
 
         if maintain_line:
             goal_angles = start_angles[:]
@@ -432,7 +432,7 @@ class Simulation:
         obj_collected = 0
 
         # main simulation loop
-        while my_world.id.isConnected() and runs <= 5000:
+        while my_world.id.isConnected() and runs <= time_steps:
             my_world.id.getCameraImage(320,200)
 
             if runs % self.logging_period == 0:

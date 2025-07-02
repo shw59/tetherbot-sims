@@ -15,6 +15,7 @@ import pandas as pd
 import pywinctl as pwc
 import mss
 import time
+import pickle
 
 def basic_starting_positions(l_0, n, angles, starting_position, direction):
     """
@@ -436,6 +437,9 @@ def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plo
     plt.tight_layout()
 
     plt.savefig(file_name, format='png')
+
+    with open(f"{file_name}.pkl", 'wb') as f:
+        pickle.dump(fig, f)
 
     plt.close()
 
