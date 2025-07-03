@@ -1,3 +1,11 @@
+"""
+tcp_server.py
+
+A simple TCP server that listens for incoming connections over wifi and prints received data to the console.
+This is specifically designed to receive data from a microcontroller over wifi like the RPi Pico 2 W.
+"""
+
+
 import socket
 import keyboard
 import select
