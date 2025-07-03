@@ -14,7 +14,7 @@ using namespace BLA;
 
 
 // define pins for motors and sensors 
-// note: the encoder pins are already predefined in the AS5600 library based on the I2C address)=
+// note: the encoder pins are already predefined in the AS5600 library based on the I2C address)
 # define RIGHT_MOTOR_FORWARD GP0
 # define RIGHT_MOTOR_BACKWARD GP1
 # define LEFT_MOTOR_FORWARD GP2
@@ -51,10 +51,6 @@ struct Tether {
   // calibrated and calculation-usable angles from flex sensor and encoder
   float flexAngle;
   float theta;
-
-  // magnitude and direction of the next-step strain vector
-  float vectorStrainMag;
-  float vectorStrainDir;
 
   // initialize tether with flex sensor and encoder calibration values
   Tether(int pinFlexSensor, AS5600 encoder, int straight, int bent, float enc0, float enc90, float enc180, float enc270, float enc360) {
@@ -105,6 +101,8 @@ TetherBotState currState = IDLE;
 
 // TODO: make both tethers' calibration values specific to robot (make choosable)
 // also make option for either one or both tethers to be intialized/used
+
+// initialize tethers with their respective flex sensor pins, encoders, and calibration values
 Tether tetherBottom(
   BOTTOM_FLEX_SENSOR,
   bottomEncoder,
