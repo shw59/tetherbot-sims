@@ -1,13 +1,21 @@
 /*
-tether_bot.ino
+  tether_bot.ino
 
-This code is to be flashed onto the Raspberry Pi Pico 2 W onboard the tetherbot. Make sure to change the encoder and flex sensor
-calibration values, desired delta angle, as well as select which tether(s) the robot uses to match the specific tetherbot before uploading. 
+  This code is to be flashed onto the Raspberry Pi Pico 2 W onboard the tetherbot. Make sure to change the encoder and flex sensor
+  calibration values, desired delta angle, as well as select which tether(s) the robot uses to match the specific tetherbot before uploading. 
+
+  Notes:
+  - All angles are in degrees except inside the vector calculation functions unless specified otherwise
+  - Tether m specified in simulation is always the bottom tether
+  - If the tether bot is using both tethers, the bottom one (tether m) will always be the reference point for headings (both desired and current),
+    use whichever tether is active otherwise (for end robots)
 */
 
+#include "tether_bot_profiles.h"
 #include <WiFi.h>
 #include <Wire.h>
 #include "AS5600.h"
+#include <climits>
 #include <BasicLinearAlgebra.h>
 #include "math.h"
 using namespace BLA;
@@ -15,13 +23,16 @@ using namespace BLA;
 
 // define pins for motors and sensors 
 // note: the encoder pins are already predefined in the AS5600 library based on the I2C address)
-# define RIGHT_MOTOR_FORWARD GP0
-# define RIGHT_MOTOR_BACKWARD GP1
-# define LEFT_MOTOR_FORWARD GP2
-# define LEFT_MOTOR_BACKWARD GP3
+# define RIGHT_MOTOR_FORWARD 0
+# define RIGHT_MOTOR_BACKWARD 1
+# define LEFT_MOTOR_FORWARD 2
+# define LEFT_MOTOR_BACKWARD 3
 
-# define TOP_FLEX_SENSOR GP4
-# define BOTTOM_FLEX_SENSOR GP5
+# define TOP_FLEX_SENSOR 4
+# define BOTTOM_FLEX_SENSOR 5
+
+// 0 for not using that tether, 1 for using; index 0 is bottom tether (tether m) and index 1 is top tether (tether p)
+int tetherNums[2] = {TETHER_M, TETHER_P};
 
 // initialize the AS5600 encoder objects for I2C communication
 AS5600 bottomEncoder(&Wire);
@@ -53,17 +64,8 @@ struct Tether {
   float theta;
 
   // initialize tether with flex sensor and encoder calibration values
-  Tether(int pinFlexSensor, AS5600 encoder, int straight, int bent, float enc0, float enc90, float enc180, float enc270, float enc360) {
-    this->pinFlexSensor = pinFlexSensor;
-    this->encoder = encoder;
-    this->straight = straight;
-    this->bent = bent;
-    this->enc0 = enc0;
-    this->enc90 = enc90;
-    this->enc180 = enc180;
-    this->enc270 = enc270;
-    this->enc360 = enc360;
-  }
+  Tether(const int pinFlexSensorVal, AS5600 encoderObj, int straightCalib, int bentCalib, float enc0Calib, float enc90Calib, float enc180Calib, float enc270Calib, float enc360Calib) 
+  : pinFlexSensor(pinFlexSensorVal), encoder(encoderObj), straight(straightCalib), bent(bentCalib), enc0(enc0Calib), enc90(enc90Calib), enc180(enc180Calib), enc270(enc270Calib), enc360(enc360Calib) {}
 
   void readTetherSensors() {
     // read raw flex sensor values
@@ -85,8 +87,8 @@ struct Tether {
     if (rawEncAngle > enc90 && rawEncAngle <= enc0) {
       theta = map(rawEncAngle, enc0, enc90, 0, 90);
     }
-    else if (rawEncAngle > enc180 && rawEncAngle <= enc90second) {
-      theta = map(rawEncAngle, enc90second, enc180, 90, 180);
+    else if (rawEncAngle > enc180 && rawEncAngle <= enc90) {
+      theta = map(rawEncAngle, enc90, enc180, 90, 180);
     }
     else if (rawEncAngle > enc270 && rawEncAngle <= enc180) {
       theta = map(rawEncAngle, enc180, enc270, 180, 270);
@@ -102,7 +104,7 @@ struct Tether {
 TetherBotState currState = IDLE;
 
 // TODO: make both tethers' calibration values specific to robot (make choosable)
-// also make option for either one or both tethers to be intialized/used
+// also maybe recalibrate so that 0 degrees is heading of the robot to match simulation
 
 // initialize tethers with their respective flex sensor pins, encoders, and calibration values
 Tether tetherBottom(
@@ -136,9 +138,14 @@ unsigned long prevTimeHeading = ULONG_MAX;
 float prevErrorHeading;
 int pidHeadingOut;
 
+// PID over position parameters
+unsigned long prevTimePosition = ULONG_MAX;
+float prevErrorPosition;
+int pidPositionOut;
+
 float delta; // the current difference between the two tethers' angle thetas if both tethers are used
 
-float desiredHeading; // the next-step desired heading of the robot in degrees
+float desiredTheta; // the next-step desired heading of the robot in degrees (relative to theta of one of the tethers)
 float desiredMagnitude; // desired next-step speed/amount to travel
 
 // Goal Angle and Upper Stop Angle
@@ -161,17 +168,17 @@ void setup() {
   pinMode(TOP_FLEX_SENSOR, INPUT);
   pinMode(BOTTOM_FLEX_SENSOR, INPUT);
 
-  bottomEncoder.begin();  // set direction pin
-  bottomEncoder.setDirection(AS5600_CLOCK_WISE);
+  bottomEncoder.begin();
+  bottomEncoder.setDirection(AS5600_CLOCK_WISE); // set direction pin
   Serial.println(bottomEncoder.getAddress(),HEX);
-  Serial.print("Device 0: ");
+  Serial.print("Bottom Encoder: ");
   Serial.println(bottomEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
 
-  topEncoder.begin();  // set direction pin
-  topEncoder.setDirection(AS5600_CLOCK_WISE);
+  topEncoder.begin();
+  topEncoder.setDirection(AS5600_CLOCK_WISE); // set direction pin
   Serial.println(topEncoder.getAddress(),HEX);
-  Serial.print("Device 1: ");
+  Serial.print("Top Encoder: ");
   Serial.println(topEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
 }
@@ -181,31 +188,76 @@ void loop() {
 
   switch (currState) {
     case IDLE:
-      // TODO: compute next step vector + direction, then set current state to SPINNING or DRIVING depending on next step
+      Serial.println("IDLE");
+      delay(2000);
+      // TODO: compute and set the next step vector + direction, then set current state to SPINNING or DRIVING depending on next step
+      // compute and set resultant vector for next-step movement
+      computeNextStep();
+
+      // set robot to begin spinning to face desired heading
+      currState = SPINNING;
+
+      break;
     case SPINNING:
+      Serial.println("SPINNING");
+      delay(2000);
       // update PID-corrected PWM output
-      updateHeadingPID(desiredHeading, tetherBottom.theta);
+      updateHeadingPID();
 
       // spin robot accordingly
-      driveMotors(-pidHeadingOUt, pidHeadingOut);
+      driveMotors(-pidHeadingOut, pidHeadingOut);
 
       // robot is facing desired direction, move on to driving forward state
-      if (pidHeadingOut == 0.0) {
+      if (!pidHeadingOut) {
         currState = DRIVING;
       }
+
+      break;
     case DRIVING:
+      Serial.println("DRIVING");
+      delay(2000);
       // TODO: do PID control feedback on speed/position here and set next state to IDLE once robot has reached the desired goals in terms of tether angle/strain
-  }
+      // update PID-corrected PWM output
+      updatePositionPID();
+      
+      // drive robot forward accordingly
+      driveMotors(pidPositionOut, pidPositionOut);
+
+      // if robot has reached desired position, move on to idle state
+      if (!pidPositionOut) {
+        currState = IDLE;
+      }
+
+      break;
+    }
 
 }
 
 void readSensors() {
+  Serial.println("Reading sensors");
+  delay(2000);
   // read tether sensors including encoders and flex sensors and update data accordingly
   tetherBottom.readTetherSensors();
   tetherTop.readTetherSensors();
 
   // TODO: if we add close-range sensors or other sensors in the future, read them here as well
 
+}
+
+// TODO: implement the vector computation stuff
+void computeVectorStrain() {
+  return;
+}
+
+void computeVectorAngle() {
+  return;
+}
+
+void computeNextStep() {
+  Serial.println("Computing next step");
+  delay(2000);
+  // TODO: make it choosable whether we are computing with one or both tethers
+  return;
 }
 
 void computeDelta() {
@@ -216,31 +268,33 @@ void computeDelta() {
 }
 
 // all headings and angles are in degrees
-float updateHeadingPID(float desHeading, float currHeading) {
+void updateHeadingPID() {
+  Serial.println("Updating PID heading");
+  delay(2000);
   const float Kp = 1;
   const float Kd = 1;
-  const float errTolerance = 5;
+  const float errorTolerance = 5;
   unsigned long now = millis();
   float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
   // error calculation (angle wrap-around handling)
-  float errorHeading = desiredHeading - currentHeading;
+  float errorHeading = desiredTheta - tetherBottom.theta; 
   if (errorHeading > 180) errorHeading -= 360;
   if (errorHeading < -180) errorHeading += 360;
 
   // if the error is within tolerance, consider the desired heading to be reached and stop moving
-  if (fabs(errorHeading) <= errTolerance) {
+  if (fabs(errorHeading) <= errorTolerance) {
     prevTimeHeading = ULONG_MAX;
     prevErrorHeading = 0;
     pidHeadingOut = 0.0;
     return;
   }
 
-  if (prevTimeHeading == ULLONG_MAX) { // if this is the first PID update call in a sequence
+  float derivative = (errorHeading - prevErrorHeading) / dt;
+
+  if (prevTimeHeading == ULONG_MAX) { // if this is the first PID update call in a sequence, then no derivative term
     float derivative = 0;
-  } else {
-    float derivative = (errorHeading - prevErrorHeading) / dt;
   }
 
   // PID control output
@@ -253,19 +307,22 @@ float updateHeadingPID(float desHeading, float currHeading) {
   prevErrorHeading = errorHeading;
 }
 
-// TODO: implement PID feedback control on speed/position (no loops, just the feedback part) and call it from loop() under DRIVING state
-void updateSpeedPID() { 
-  analogWrite(RIGHT_MOTOR_FORWARD, Right);
-  analogWrite(RIGHT_MOTOR_BACKWARD, 0);
-  analogWrite(LEFT_MOTOR_FORWARD, Left);
-  analogWrite(LEFT_MOTOR_BACKWARD, 0);
-  delay(100);
+void updatePositionPID() { 
+  Serial.println("Updating PID position");
+  delay(2000);
+  const float Kp = 1;
+  const float Kd = 1;
+  const float errorTolerance = 0.1;
+  unsigned long now = millis();
+  float dt = (now - prevTimePosition) / 1000.0; // convert to seconds
+  if (dt <= 0) dt = 0.001; // prevent division by zero
 
-  analogWrite(RIGHT_MOTOR_FORWARD, 0);
-  analogWrite(RIGHT_MOTOR_BACKWARD, 0);
-  analogWrite(LEFT_MOTOR_FORWARD, 0);
-  analogWrite(LEFT_MOTOR_BACKWARD, 0);
-  delay(1000); 
+  // TODO: implement PID feedback control on speed/position maybe using wheel encoders? (no loops, just the feedback part) and call it from loop() under DRIVING state
+
+  clampOutputPID(pidPositionOut, MIN_PWM);
+
+
+
 }
 
 void clampOutputPID(int& pidOut, int minPwm) {
@@ -277,21 +334,29 @@ void clampOutputPID(int& pidOut, int minPwm) {
     // limit output to between -255 and 255
     int sign = (pidOut > 0) - (pidOut < 0);
     pidOut = sign * 255;
-}
+  }
 }
 
 void driveMotors(int pwmLeft, int pwmRight) {
   // if left motor pwm is negative, go backwards by that pwm value
   if (pwmLeft < 0) {
+    Serial.println("left motor backwards");
+    delay(2000);
     analogWrite(LEFT_MOTOR_BACKWARD, abs(pwmLeft));
   } else {
+    Serial.println("left motor forwards");
+    delay(2000);
     analogWrite(LEFT_MOTOR_FORWARD, pwmLeft);
   }
 
   // if right motor pwm is negative, go backwards by that pwm value
   if (pwmRight < 0) {
+    Serial.println("right motor backwards");
+    delay(2000);
     analogWrite(RIGHT_MOTOR_BACKWARD, abs(pwmRight));
   } else {
+    Serial.println("right motor forwards");
+    delay(2000);
     analogWrite(RIGHT_MOTOR_FORWARD, pwmRight);
   }
 }
