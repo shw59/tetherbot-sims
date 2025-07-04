@@ -2,7 +2,7 @@
 tether_bot.ino
 
 This code is to be flashed onto the Raspberry Pi Pico 2 W onboard the tetherbot. Make sure to change the encoder and flex sensor
-calibration values, as well as select which tether(s) the robot uses to match the specific tetherbot before uploading. 
+calibration values, desired delta angle, as well as select which tether(s) the robot uses to match the specific tetherbot before uploading. 
 */
 
 #include <WiFi.h>
@@ -72,14 +72,16 @@ struct Tether {
     // calibrate raw flex sensor values to angles suitable for strain calculations
     flexAngle = map(rawFlexAngle, straight, bent, 0, 90);
 
-    // read raw encoder angles
+    // read raw encoder angles (in degrees)
     int rawEncAngle = encoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
 
-    // calibrate raw encoder angles to angles suitable for tether angle calculations
     // TODO: maybe make the calibration values into an array and loop through it or something to check the ranges
+    // wrap raw encoder angles to ensure they are continuous over the 0/360 degree boundary for calculation purposes
     if (rawEncAngle < enc90 && rawEncAngle >= 0) {
       rawEncAngle = rawEncAngle + 360;
     }
+
+    // calibrate raw encoder angles to angles suitable for tether angle calculations
     if (rawEncAngle > enc90 && rawEncAngle <= enc0) {
       theta = map(rawEncAngle, enc0, enc90, 0, 90);
     }
@@ -127,11 +129,20 @@ Tether tetherTop(
   300  // enc270
 );
 
+// PID control parameters
+float pidControlOut; // motor PWM output from PID control
+
+// PID over heading parameters
+unsigned long prevTimeHeading = ULONG_MAX;
+float prevErrorHeading;
+
+float delta; // the current difference between the two tethers' angle thetas if both tethers are used
+
+float desiredHeading; // the next-step desired heading of the robot in degrees with respect to one of its tethers
+
+
 
 // TODO: most of the following variables could probably become local variables, but we can sort that out once we implement everything
-
-float deltaMeasured; // The difference between calibratedAngleDataBottom and calibratedAngleDataTop
-float deltaError; // The error value between the desired and measured deltas
 
 float vectorAngleMag; // magnitude of the calculated next-step angle vector
 float vectorAngleDir; // direction of the calculated next-step angle vector
@@ -145,14 +156,6 @@ float desHeadingDirection; // direction of the robot's next-step heading vector
 // RESULTANT VECTORS
 float resultantMagnitude; // magnitude of the next-step resultant vector
 float resultantDirection; // direction of the next-step resultant vector
-
-
-// PID OVER HEADING PARAMETERS
-float dt; 
-float errorE; 
-float derivative; 
-float PID_control_O; 
-float previousError; 
 
 
 // Goal Angle and Upper Stop Angle
@@ -197,7 +200,17 @@ void loop() {
     case IDLE:
       // TODO: compute next step vector + direction, then set current state to SPINNING or DRIVING depending on next step
     case SPINNING:
-      // TODO: do PID control feedback on heading here and set next state to DRIVING once robot is facing the desired direction
+      updateHeadingPID(desiredHeading, tetherBottom.theta);
+
+      // apply control
+      int lowerLimitPWM = 145;
+      driveMotors(RIGHT_MOTOR_FORWARD, RIGHT_MOTOR_BACKWARD, lowerLimitPWM);
+      driveMotors(LEFT_MOTOR_FORWARD, LEFT_MOTOR_BACKWARD, lowerLimitPWM);
+
+      // if robot is facing desired direction, stop spinning and start driving forward
+      if (!pidControlOut) {
+        currState = DRIVING;
+      }
     case DRIVING:
       // TODO: do PID control feedback on speed/position here and set next state to IDLE once robot has reached the desired goals in terms of tether angle/strain
   }
@@ -213,87 +226,56 @@ void readSensors() {
 
 }
 
-// TODO: get rid of the while loop and just have the if statement stuff for PID, then call it from loop() under SPINNING state
-// should probably rename it to PID feedback on heading or somethin like that
-void spin(float thetaBottom, float desHeadingDirection, float deltaD) {
-  float Kp = 1;//16; float Kd = 1; 
-  float endTime = millis(); float previousTime = millis(); 
-
-  while (thetaBottom*180/M_PI > (desHeadingDirection*180/M_PI)+5 || thetaBottom*180/M_PI < (desHeadingDirection*180/M_PI)-5)
-  {
-    Serial.println("START:");
-    // Angle Formation //////////////////////////////////////////////////////////////////
-    rawEncAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
-    rawEncAngleTop = topEncoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
-
-  //// ROBOT 4 
-    // Calibrating the magnetic encoder for tether angles
-    if(rawEncAngleBottom > encBottom90 && rawEncAngleBottom <= encBottom0) {theta0 = map(rawEncAngleBottom, encBottom0, encBottom90, 0, 90);}
-    else if (rawEncAngleBottom > encBottom180 && rawEncAngleBottom <= encBottom90) {theta0 = map(rawEncAngleBottom, encBottom90, encBottom180, 90, 180);}
-    else if (rawEncAngleBottom > encBottom270 && rawEncAngleBottom <= encBottom180) {theta0 = map(rawEncAngleBottom, encBottom180, encBottom270, 180, 270);}
-    else if (rawEncAngleBottom > encBottom360 && rawEncAngleBottom <= encBottom270) {theta0 = map(rawEncAngleBottom, encBottom270, encBottom360, 270, 360);}
-
-    //Serial.println(ang_T1);
-    if (rawEncAngleTop < T1_180first && rawEncAngleTop >= 0) {rawEncAngleTop = rawEncAngleTop + 360;}
-    if (rawEncAngleTop > T1_90 && rawEncAngleTop <= T1_0) {thetaTop = map(rawEncAngleTop, T1_0, T1_90, 0, 90) + theta0;}
-    else if (rawEncAngleTop > T1_180first && rawEncAngleTop <= T1_90) {thetaTop = map(rawEncAngleTop, T1_90, T1_180first, 90, 180) + theta0;}
-    else if (rawEncAngleTop > T1_270 && rawEncAngleTop <= T1_180second) {thetaTop = map(rawEncAngleTop, T1_180second, T1_270, 180, 270) + theta0;}
-    else if (rawEncAngleTop > T1_360 && rawEncAngleTop <= T1_270) {thetaTop = map(rawEncAngleTop, T1_270, T1_360, 270, 360) + theta0;}
-    if (thetaTop > 360) {thetaTop = thetaTop - 360;}
-
-
-    thetaBottom = theta0 * M_PI/180;
-    thetaTop = thetaTop * M_PI/180;
-
-    if (thetaBottom < thetaTop) {deltaMeasured = thetaTop - thetaBottom;}
-    else if (thetaBottom > thetaTop && thetaBottom >= (270 * M_PI/180) && thetaBottom <= (360 * M_PI/180) && thetaTop >= 0 && thetaTop <= (270 * M_PI/180))
-    {deltaMeasured = (360*M_PI/180) - thetaBottom + thetaTop;}
-    else {deltaMeasured = (360*M_PI/180) - abs(thetaTop - thetaBottom);}
-
-    // PID Control
-    dt = (millis() - previousTime) / 1000;
-
-    errorE = -1*(desHeadingDirection - thetaBottom);
-    if (errorE > M_PI) {errorE = -1*(2*M_PI - errorE);}
-    if (errorE < -M_PI) {errorE = 1*(2*M_PI + errorE);}
-
-    derivative = (errorE - previousError) / dt;
-    if (derivative > 10) {derivative = 10;}
-    else if (derivative < -10) {derivative = -10;}
+void computeDelta() {
+    // compute the difference between the two tethers' angles
+    delta = tetherTop.theta - tetherBottom.theta;
     
-    PID_control_O = Kp*errorE;// + Kd*derivative;  
-    if (PID_control_O > 50) {PID_control_O = 50;}
-    else if (PID_control_O < -50) {PID_control_O = -50;}
-    previousError = errorE;
-    previousTime = millis();
-    
-    // Motor Control
-    int lowerR = 145;
-    int lowerL = 145;
-    rightMotor(lowerR);                   
-    leftMotor(lowerL); 
+    // handle angle wrap-around
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+}
 
-    int flexADC_0 = analogRead(A2);
-    float ang_cant0 = map(flexADC_0, STRAIGHT_0, BEND_0, 40, 90);
-    int flexADC_1 = analogRead(A3);
-    float ang_cant1 = map(flexADC_1, STRAIGHT_1, BEND_1, 40, 90);
+// all headings and angles are in degrees
+void updateHeadingPID(float desHeading, float currHeading) {
+  const float Kp = 1;
+  const float Kd = 1;
+  const float errTolerance = 5;
+  unsigned long now = millis();
+  float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
+  if (dt <= 0) dt = 0.001; // prevent division by zero
 
-    Serial.print("PID_control_O: "); Serial.print(PID_control_O); Serial.println(); 
-    Serial.print("ang_cant0: "); Serial.print(ang_cant0); Serial.print("  "); 
-    Serial.print("ang_cant1: "); Serial.print(ang_cant1); Serial.println(); Serial.println();
-    delay(250); 
-  }  
+  // error calculation (angle wrap-around handling)
+  float errorHeading = desiredHeading - currentHeading;
+  if (errorHeading > 180) errorHeading -= 360;
+  if (errorHeading < -180) errorHeading += 360;
 
-  Serial.println("DONE:");     
-  analogWrite(RIGHT_MOTOR_FORWARD, 0);
-  analogWrite(RIGHT_MOTOR_BACKWARD, 0);
-  analogWrite(LEFT_MOTOR_FORWARD, 0);
-  analogWrite(LEFT_MOTOR_BACKWARD, 0);
-  delay(1000);
+  // if the error is within tolerance, consider the desired heading to be reached and stop moving
+  if (fabs(errorHeading) <= errTolerance) {
+    prevTimeHeading = ULONG_MAX;
+    prevErrorHeading = 0;
+    pidControlOut = 0; // stop the motors
+    return;
+  }
+
+  if (prevTimeHeading == ULLONG_MAX) { // if this is the first PID update call in a sequence
+    float derivative = 0;
+  } else {
+    float derivative = (errorHeading - prevErrorHeading) / dt;
+  }
+
+  // PID control output
+  pidControlOut = Kp * errorHeading + Kd * derivative;
+
+  // limit control output
+  if (pidControlOut > 255) pidControlOut = 255;
+  if (pidControlOut < -255) pidControlOut = -255;
+
+  prevTimeHeading = now;
+  prevErrorHeading = errorHeading;
 }
 
 // TODO: implement PID feedback control on speed/position (no loops, just the feedback part) and call it from loop() under DRIVING state
-void driveForward() { 
+void updateSpeedPID() { 
   analogWrite(RIGHT_MOTOR_FORWARD, Right);
   analogWrite(RIGHT_MOTOR_BACKWARD, 0);
   analogWrite(LEFT_MOTOR_FORWARD, Left);
@@ -307,17 +289,17 @@ void driveForward() {
   delay(1000); 
 }
 
-// TODO: generalize this so that it can drive both motors forward based on PID of speed/position that will be implemented in driveForward()
-void driveMotor(int pinForward, int pinBackward, int lowerLimitPwm) {
-  if (PID_control_O > 0) { // forward direction
-    int pwmValue = PID_control_O;
+// TODO: generalize/fix this so that it can drive both motors forward based on PID of speed/position that will be implemented in driveForward()
+void driveMotors(int pinForward, int pinBackward, int lowerLimitPwm) {
+  if (pidControlOut > 0) { // forward direction
+    int pwmValue = pidControlOut;
     if (pwmValue > 255) pwmValue = 255;
     if (pwmValue < lowerLimitPwm) pwmValue = lowerLimitPwm;
     analogWrite(pinForward, pwmValue);
     analogWrite(pinBackward, 0);
   }
-  else if (PID_control_O < 0) { // backward direction
-    int pwmValue = abs(PID_control_O);
+  else if (pidControlOut < 0) { // backward direction
+    int pwmValue = abs(pidControlOut);
     if (pwmValue > 255) pwmValue = 255;
     if (pwmValue < lowerLimitPwm) pwmValue = lowerLimitPwm;
     analogWrite(pinForward, 0);
