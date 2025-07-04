@@ -129,38 +129,21 @@ Tether tetherTop(
   300  // enc270
 );
 
-// PID control parameters
-float pidControlOut; // motor PWM output from PID control
+const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
 
 // PID over heading parameters
 unsigned long prevTimeHeading = ULONG_MAX;
 float prevErrorHeading;
+int pidHeadingOut;
 
 float delta; // the current difference between the two tethers' angle thetas if both tethers are used
 
-float desiredHeading; // the next-step desired heading of the robot in degrees with respect to one of its tethers
-
-
-
-// TODO: most of the following variables could probably become local variables, but we can sort that out once we implement everything
-
-float vectorAngleMag; // magnitude of the calculated next-step angle vector
-float vectorAngleDir; // direction of the calculated next-step angle vector
-
-
-// HEADING VECTORS (PID corrected)
-float desHeadingMagnitude; // magnitude of robot's next-step heading vector
-float desHeadingDirection; // direction of the robot's next-step heading vector
-
-
-// RESULTANT VECTORS
-float resultantMagnitude; // magnitude of the next-step resultant vector
-float resultantDirection; // direction of the next-step resultant vector
-
+float desiredHeading; // the next-step desired heading of the robot in degrees
+float desiredMagnitude; // desired next-step speed/amount to travel
 
 // Goal Angle and Upper Stop Angle
 float goalFlexAngle = 90; // the desired angle of the flex sensor to maintan desired tether strain
-float lowerAngle = 45;
+float lowerAngle = 45; // should we still keep these
 float upperAngle = 80;
 
 
@@ -200,15 +183,14 @@ void loop() {
     case IDLE:
       // TODO: compute next step vector + direction, then set current state to SPINNING or DRIVING depending on next step
     case SPINNING:
+      // update PID-corrected PWM output
       updateHeadingPID(desiredHeading, tetherBottom.theta);
 
-      // apply control
-      int lowerLimitPWM = 145;
-      driveMotors(RIGHT_MOTOR_FORWARD, RIGHT_MOTOR_BACKWARD, lowerLimitPWM);
-      driveMotors(LEFT_MOTOR_FORWARD, LEFT_MOTOR_BACKWARD, lowerLimitPWM);
+      // spin robot accordingly
+      driveMotors(-pidHeadingOUt, pidHeadingOut);
 
-      // if robot is facing desired direction, stop spinning and start driving forward
-      if (!pidControlOut) {
+      // robot is facing desired direction, move on to driving forward state
+      if (pidHeadingOut == 0.0) {
         currState = DRIVING;
       }
     case DRIVING:
@@ -227,16 +209,14 @@ void readSensors() {
 }
 
 void computeDelta() {
-    // compute the difference between the two tethers' angles
-    delta = tetherTop.theta - tetherBottom.theta;
-    
-    // handle angle wrap-around
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
+  float delta = tetherBottom.theta - tetherTop.theta;
+
+  if (delta < 0)
+    delta = 360 + delta;
 }
 
 // all headings and angles are in degrees
-void updateHeadingPID(float desHeading, float currHeading) {
+float updateHeadingPID(float desHeading, float currHeading) {
   const float Kp = 1;
   const float Kd = 1;
   const float errTolerance = 5;
@@ -253,7 +233,7 @@ void updateHeadingPID(float desHeading, float currHeading) {
   if (fabs(errorHeading) <= errTolerance) {
     prevTimeHeading = ULONG_MAX;
     prevErrorHeading = 0;
-    pidControlOut = 0; // stop the motors
+    pidHeadingOut = 0.0;
     return;
   }
 
@@ -264,11 +244,10 @@ void updateHeadingPID(float desHeading, float currHeading) {
   }
 
   // PID control output
-  pidControlOut = Kp * errorHeading + Kd * derivative;
+  pidHeadingOut = Kp * errorHeading + Kd * derivative;
 
-  // limit control output
-  if (pidControlOut > 255) pidControlOut = 255;
-  if (pidControlOut < -255) pidControlOut = -255;
+  // ensure output is within valid PWM value limits
+  clampOutputPID(pidHeadingOut, MIN_PWM);
 
   prevTimeHeading = now;
   prevErrorHeading = errorHeading;
@@ -289,25 +268,31 @@ void updateSpeedPID() {
   delay(1000); 
 }
 
-// TODO: generalize/fix this so that it can drive both motors forward based on PID of speed/position that will be implemented in driveForward()
-void driveMotors(int pinForward, int pinBackward, int lowerLimitPwm) {
-  if (pidControlOut > 0) { // forward direction
-    int pwmValue = pidControlOut;
-    if (pwmValue > 255) pwmValue = 255;
-    if (pwmValue < lowerLimitPwm) pwmValue = lowerLimitPwm;
-    analogWrite(pinForward, pwmValue);
-    analogWrite(pinBackward, 0);
+void clampOutputPID(int& pidOut, int minPwm) {
+  // note: changing pidOut will directly change the original variable entered in (pass by reference)
+  if (abs(pidOut) < minPwm) {
+    // set to minimum output if pid output is lower than minimum
+    pidOut = minPwm;
+  } else if (abs(pidOut) > 255) {
+    // limit output to between -255 and 255
+    int sign = (pidOut > 0) - (pidOut < 0);
+    pidOut = sign * 255;
+}
+}
+
+void driveMotors(int pwmLeft, int pwmRight) {
+  // if left motor pwm is negative, go backwards by that pwm value
+  if (pwmLeft < 0) {
+    analogWrite(LEFT_MOTOR_BACKWARD, abs(pwmLeft));
+  } else {
+    analogWrite(LEFT_MOTOR_FORWARD, pwmLeft);
   }
-  else if (pidControlOut < 0) { // backward direction
-    int pwmValue = abs(pidControlOut);
-    if (pwmValue > 255) pwmValue = 255;
-    if (pwmValue < lowerLimitPwm) pwmValue = lowerLimitPwm;
-    analogWrite(pinForward, 0);
-    analogWrite(pinBackward, pwmValue);
-  }
-  else { // stop motor if 0
-    analogWrite(pinForward, 0);
-    analogWrite(pinBackward, 0);
+
+  // if right motor pwm is negative, go backwards by that pwm value
+  if (pwmRight < 0) {
+    analogWrite(RIGHT_MOTOR_BACKWARD, abs(pwmRight));
+  } else {
+    analogWrite(RIGHT_MOTOR_FORWARD, pwmRight);
   }
 }
 
