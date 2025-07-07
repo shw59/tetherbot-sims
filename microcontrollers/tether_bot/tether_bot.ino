@@ -6,7 +6,7 @@
 
   Notes:
   - All angles are in degrees except inside the vector calculation functions unless specified otherwise
-  - Tether m specified in simulation is always the bottom tether
+  - Tether m specified in simulation is always represented by the bottom tether on the hardware robot
   - If the tether bot is using both tethers, the bottom one (tether m) will always be the reference point for headings (both desired and current),
     use whichever tether is active otherwise (for end robots)
 */
@@ -21,8 +21,8 @@
 using namespace BLA;
 
 
-// define pins for motors and sensors 
-// note: the encoder pins are already predefined in the AS5600 library based on the I2C address)
+// define pins for motors and sensors
+// note: the encoder pins are already predefined in the Wire library based on the I2C address
 # define RIGHT_MOTOR_FORWARD 0
 # define RIGHT_MOTOR_BACKWARD 1
 # define LEFT_MOTOR_FORWARD 2
@@ -31,10 +31,7 @@ using namespace BLA;
 # define TOP_FLEX_SENSOR 4
 # define BOTTOM_FLEX_SENSOR 5
 
-// 0 for not using that tether, 1 for using; index 0 is bottom tether (tether m) and index 1 is top tether (tether p)
-int tetherNums[2] = {TETHER_M, TETHER_P};
-
-// initialize the AS5600 encoder objects for I2C communication
+// initialize objects for the tether encoders
 AS5600 bottomEncoder(&Wire);
 AS5600 topEncoder(&Wire1);
 
@@ -52,20 +49,13 @@ struct Tether {
   int straight;
   int bent;
 
-  // encoder calibration raw values at specific angles
-  float enc0;
-  float enc90;
-  float enc180;
-  float enc270;
-  float enc360;
-
   // calibrated and calculation-usable angles from flex sensor and encoder
   float flexAngle;
   float theta;
 
   // initialize tether with flex sensor and encoder calibration values
-  Tether(const int pinFlexSensorVal, AS5600 encoderObj, int straightCalib, int bentCalib, float enc0Calib, float enc90Calib, float enc180Calib, float enc270Calib, float enc360Calib) 
-  : pinFlexSensor(pinFlexSensorVal), encoder(encoderObj), straight(straightCalib), bent(bentCalib), enc0(enc0Calib), enc90(enc90Calib), enc180(enc180Calib), enc270(enc270Calib), enc360(enc360Calib) {}
+  Tether(const int pinFlexSensorVal, AS5600 encoderObj, int straightCalib, int bentCalib) 
+  : pinFlexSensor(pinFlexSensorVal), encoder(encoderObj), straight(straightCalib), bent(bentCalib) {}
 
   void readTetherSensors() {
     // read raw flex sensor values
@@ -74,27 +64,20 @@ struct Tether {
     // calibrate raw flex sensor values to angles suitable for strain calculations
     flexAngle = map(rawFlexAngle, straight, bent, 0, 90);
 
-    // read raw encoder angles (in degrees)
-    int rawEncAngle = encoder.readAngle() * AS5600_RAW_TO_RADIANS * 180/M_PI;
+    // read encoders and offset the top encoder to be independent of the bottom encoder's position
+    float encAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
+    float encAngleTop = topEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
 
-    // TODO: maybe make the calibration values into an array and loop through it or something to check the ranges
-    // wrap raw encoder angles to ensure they are continuous over the 0/360 degree boundary for calculation purposes
-    if (rawEncAngle < enc90 && rawEncAngle >= 0) {
-      rawEncAngle = rawEncAngle + 360;
-    }
+    // check which encoder this specific tether is using and calibrate accordingly
+    if (&encoder == &bottomEncoder) {
+      theta = encAngleBottom;
+    } else {
+      // offset top encoder such that it is not dependent on the bottom encoder's position anymore
+      theta = fmod(encAngleTop + encAngleBottom, 360);
 
-    // calibrate raw encoder angles to angles suitable for tether angle calculations
-    if (rawEncAngle > enc90 && rawEncAngle <= enc0) {
-      theta = map(rawEncAngle, enc0, enc90, 0, 90);
-    }
-    else if (rawEncAngle > enc180 && rawEncAngle <= enc90) {
-      theta = map(rawEncAngle, enc90, enc180, 90, 180);
-    }
-    else if (rawEncAngle > enc270 && rawEncAngle <= enc180) {
-      theta = map(rawEncAngle, enc180, enc270, 180, 270);
-    }
-    else if (rawEncAngle > enc360 && rawEncAngle <= enc270) {
-      theta = map(rawEncAngle, enc270, enc360, 270, 360);
+      if (abs(theta) < 0.01) {
+        theta = 360;
+      }
     }
   }
 
@@ -111,24 +94,14 @@ Tether tetherBottom(
   BOTTOM_FLEX_SENSOR,
   bottomEncoder,
   420, // straight
-  300, // bent
-  360, // enc0
-  262, // enc90
-  176, // enc180
-  86,  // enc270
-  0    // enc360
+  300 // bent
 );
 
 Tether tetherTop(
   TOP_FLEX_SENSOR,
   topEncoder,
   410, // straight
-  300, // bent
-  210, // enc0
-  122, // enc90
-  30,  // enc180_first
-  390, // enc180_second
-  300  // enc270
+  300 // bent
 );
 
 const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
@@ -169,15 +142,15 @@ void setup() {
   pinMode(BOTTOM_FLEX_SENSOR, INPUT);
 
   bottomEncoder.begin();
-  bottomEncoder.setDirection(AS5600_CLOCK_WISE); // set direction pin
-  Serial.println(bottomEncoder.getAddress(),HEX);
+  bottomEncoder.setDirection(AS5600_COUNTERCLOCK_WISE); // set direction pin
+  bottomEncoder.setOffset(TETHER_M_ENC_OFFSET); // set encoder calibration offset
   Serial.print("Bottom Encoder: ");
   Serial.println(bottomEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
 
   topEncoder.begin();
-  topEncoder.setDirection(AS5600_CLOCK_WISE); // set direction pin
-  Serial.println(topEncoder.getAddress(),HEX);
+  topEncoder.setDirection(AS5600_COUNTERCLOCK_WISE); // set direction pin
+  topEncoder.setOffset(TETHER_P_ENC_OFFSET); // set encoder calibration offset
   Serial.print("Top Encoder: ");
   Serial.println(topEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
@@ -236,7 +209,7 @@ void loop() {
 void readSensors() {
   Serial.println("Reading sensors");
   delay(2000);
-  // read tether sensors including encoders and flex sensors and update data accordingly
+  // read flex sensors and use encoder sensor info to update data accordingly
   tetherBottom.readTetherSensors();
   tetherTop.readTetherSensors();
 
@@ -261,10 +234,11 @@ void computeNextStep() {
 }
 
 void computeDelta() {
-  float delta = tetherBottom.theta - tetherTop.theta;
+  delta = tetherBottom.theta - tetherTop.theta;
 
-  if (delta < 0)
-    delta = 360 + delta;
+  if (delta < 0) {
+    delta += 360;
+  }
 }
 
 // all headings and angles are in degrees

@@ -21,6 +21,8 @@ on which tether bot you are flashing code to.
 #ifdef ROBOT_2
   #define TETHER_M 1
   #define TETHER_P 1
+  #define TETHER_M_ENC_OFFSET 100
+  #define TETHER_P_ENC_OFFSET 150
 #endif
 
 #ifdef ROBOT_3
