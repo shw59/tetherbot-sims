@@ -464,7 +464,7 @@ class Simulation:
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
-                agent.sense_close_range(my_world.obj_list, sensing_mode=1)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
             if runs % self.sensing_period == 0:
                 for i in range(len(shuffled_list)):
