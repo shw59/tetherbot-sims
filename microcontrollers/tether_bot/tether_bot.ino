@@ -15,21 +15,22 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include "AS5600.h"
+#include "utils.h"
 #include <climits>
 #include <BasicLinearAlgebra.h>
 #include "math.h"
 using namespace BLA;
 
-
+// TODO: hook the pins up to the pico eventually instead of the artemis
 // define pins for motors and sensors
 // note: the encoder pins are already predefined in the Wire library based on the I2C address
-# define RIGHT_MOTOR_FORWARD 0
-# define RIGHT_MOTOR_BACKWARD 1
-# define LEFT_MOTOR_FORWARD 2
-# define LEFT_MOTOR_BACKWARD 3
+# define RIGHT_MOTOR_FORWARD A16
+# define RIGHT_MOTOR_BACKWARD A15
+# define LEFT_MOTOR_FORWARD 13
+# define LEFT_MOTOR_BACKWARD A14
 
-# define TOP_FLEX_SENSOR 4
-# define BOTTOM_FLEX_SENSOR 5
+# define TOP_FLEX_SENSOR A3
+# define BOTTOM_FLEX_SENSOR A2
 
 // initialize objects for the tether encoders
 AS5600 bottomEncoder(&Wire);
@@ -46,8 +47,8 @@ struct Tether {
   AS5600 encoder; // AS5600 magnetic encoder object
 
   // flex sensor calibration values
-  int straight;
-  int bent;
+  int flexStraight; // raw flex sensor value when flex sensor is straight at 0 degrees
+  int flexBent; // raw flex sensor value when flex sensor is bent at 90 degrees
 
   // calibrated and calculation-usable angles from flex sensor and encoder
   float flexAngle;
@@ -55,14 +56,14 @@ struct Tether {
 
   // initialize tether with flex sensor and encoder calibration values
   Tether(const int pinFlexSensorVal, AS5600 encoderObj, int straightCalib, int bentCalib) 
-  : pinFlexSensor(pinFlexSensorVal), encoder(encoderObj), straight(straightCalib), bent(bentCalib) {}
+  : pinFlexSensor(pinFlexSensorVal), encoder(encoderObj), flexStraight(straightCalib), flexBent(bentCalib) {}
 
   void readTetherSensors() {
     // read raw flex sensor values
     int rawFlexAngle = analogRead(pinFlexSensor);
 
     // calibrate raw flex sensor values to angles suitable for strain calculations
-    flexAngle = map(rawFlexAngle, straight, bent, 0, 90);
+    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 0, 90);
 
     // read encoders and offset the top encoder to be independent of the bottom encoder's position
     float encAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
@@ -93,15 +94,15 @@ TetherBotState currState = IDLE;
 Tether tetherBottom(
   BOTTOM_FLEX_SENSOR,
   bottomEncoder,
-  420, // straight
-  300 // bent
+  TETHER_M_FLEX_STRAIGHT,
+  TETHER_M_FLEX_BENT
 );
 
 Tether tetherTop(
   TOP_FLEX_SENSOR,
   topEncoder,
-  410, // straight
-  300 // bent
+  TETHER_P_FLEX_STRAIGHT,
+  TETHER_P_FLEX_BENT
 );
 
 const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
@@ -237,12 +238,6 @@ void computeDelta() {
   delta = mod(tetherBottom.theta - tetherTop.theta, 360.0);
 }
 
-void mod(float x, float y) {
-  // handle negative numbers in mod the same way python does
-  float r = x % n;
-  return (r < 0) ? r + n : r;
-}
-
 void updateHeadingPID() {
   Serial.println("Updating PID heading");
   delay(2000);
@@ -254,7 +249,7 @@ void updateHeadingPID() {
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
   // uses bottom tether as reference theta by default unless bottom tether is not being used
-  tetherTheta = tetherBottom.theta;
+  float tetherTheta = tetherBottom.theta;
   if (!TETHER_M) {
     tetherTheta = tetherTop.theta;
   }
@@ -279,7 +274,7 @@ void updateHeadingPID() {
   float derivative = (errorHeading - prevErrorHeading) / dt;
 
   if (prevTimeHeading == ULONG_MAX) { // if this is the first PID update call in a sequence, then no derivative term
-    float derivative = 0;
+    derivative = 0;
   }
 
   // PID control output

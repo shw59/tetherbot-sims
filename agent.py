@@ -50,7 +50,7 @@ class Agent:
         self.max_velocity_angular = max_velocity_angular
         self.max_force = drive_power / max_velocity
         self.radius = radius # sets the radius of the agent
-        self.sensing_radius = radius * 2 # sets the sensing radius of the agent
+        self.sensing_radius = radius * 4 # sets the sensing radius of the agent
         self.desired_tether_angle = None # initializes the desired tether angle to be None
         self.tethers = [None, None] # initializes no attached tethers to the agent
         self.cr_sensor_data = [] # initializes an empty list of sensor data
