@@ -10,6 +10,9 @@
 #include "math.h"
 using namespace BLA;
 
+#define ENC_OFFSET_BOTTOM 100
+#define ENC_OFFSET_TOP 150
+
 AS5600 bottomEncoder(&Wire);
 AS5600 topEncoder(&Wire1);
 
@@ -29,7 +32,7 @@ void setup() {
 
   bottomEncoder.begin();
   bottomEncoder.setDirection(AS5600_COUNTERCLOCK_WISE); // set direction pin
-  bottomEncoder.setOffset(100); // set calibration offset
+  bottomEncoder.setOffset(ENC_OFFSET_BOTTOM); // set calibration offset
   Serial.println(bottomEncoder.getAddress(),HEX);
   Serial.print("Bottom Encoder: ");
   Serial.println(bottomEncoder.isConnected() ? "connected" : "not connected");
@@ -37,7 +40,7 @@ void setup() {
 
   topEncoder.begin();
   topEncoder.setDirection(AS5600_COUNTERCLOCK_WISE); // set direction pin
-  topEncoder.setOffset(150); // set calibration offset
+  topEncoder.setOffset(ENC_OFFSET_TOP); // set calibration offset
   Serial.println(topEncoder.getAddress(),HEX);
   Serial.print("Top Encoder: ");
   Serial.println(topEncoder.isConnected() ? "connected" : "not connected");
