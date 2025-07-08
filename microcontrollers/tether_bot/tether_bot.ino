@@ -73,7 +73,7 @@ struct Tether {
       theta = encAngleBottom;
     } else {
       // offset top encoder such that it is not dependent on the bottom encoder's position anymore
-      theta = fmod(encAngleTop + encAngleBottom, 360);
+      theta = mod(encAngleTop + encAngleBottom, 360);
 
       if (abs(theta) < 0.01) {
         theta = 360;
@@ -118,8 +118,8 @@ int pidPositionOut;
 
 float delta; // the current difference between the two tethers' angle thetas if both tethers are used
 
-float desiredTheta; // the next-step desired heading of the robot in degrees (relative to theta of one of the tethers)
-float desiredMagnitude; // desired next-step speed/amount to travel
+float desiredHeading; // the next-step desired heading of the robot in degrees (relative to theta of one of the tethers)
+float desiredMagnitude; // desired next-step amount to travel
 
 // Goal Angle and Upper Stop Angle
 float goalFlexAngle = 90; // the desired angle of the flex sensor to maintan desired tether strain
@@ -178,7 +178,7 @@ void loop() {
       updateHeadingPID();
 
       // spin robot accordingly
-      driveMotors(-pidHeadingOut, pidHeadingOut);
+      driveMotors(-pidHeadingOut, pidHeadingOut); // positive pwm means CCW, negative means CW
 
       // robot is facing desired direction, move on to driving forward state
       if (!pidHeadingOut) {
@@ -234,14 +234,15 @@ void computeNextStep() {
 }
 
 void computeDelta() {
-  delta = tetherBottom.theta - tetherTop.theta;
-
-  if (delta < 0) {
-    delta += 360;
-  }
+  delta = mod(tetherBottom.theta - tetherTop.theta, 360.0);
 }
 
-// all headings and angles are in degrees
+void mod(float x, float y) {
+  // handle negative numbers in mod the same way python does
+  float r = x % n;
+  return (r < 0) ? r + n : r;
+}
+
 void updateHeadingPID() {
   Serial.println("Updating PID heading");
   delay(2000);
@@ -252,10 +253,20 @@ void updateHeadingPID() {
   float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
-  // error calculation (angle wrap-around handling)
-  float errorHeading = desiredTheta - tetherBottom.theta; 
-  if (errorHeading > 180) errorHeading -= 360;
-  if (errorHeading < -180) errorHeading += 360;
+  // uses bottom tether as reference theta by default unless bottom tether is not being used
+  tetherTheta = tetherBottom.theta;
+  if (!TETHER_M) {
+    tetherTheta = tetherTop.theta;
+  }
+
+  // convert the desired heading to a desired theta value relative to either the bottom or top tether
+  float desiredTheta = tetherTheta - desiredHeading;
+  if (desiredTheta < 0) {
+    desiredTheta += 360;
+  }
+
+  // heading error calculation using smallest signed-angle difference
+  float errorHeading = mod(tetherTheta - desiredTheta + 180, 360.0) - 180;
 
   // if the error is within tolerance, consider the desired heading to be reached and stop moving
   if (fabs(errorHeading) <= errorTolerance) {
