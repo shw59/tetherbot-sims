@@ -79,7 +79,7 @@ def basic_starting_positions(l_0, n, angles, starting_position, direction):
 
     return the_list
 
-def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, obst_radius, l_0):
+def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, obst_radius):
     """
     This function returns a list that is number_of_angles*number_of_offsets long, 
     where each entry corresponds with the success rate of a particular 
@@ -323,39 +323,33 @@ def log_to_csv(filename, data_row, header=None):
 
         writer.writerow(data_row)
 
-def make_heat_map(data, angles, offsets, num_trials, output_filename):
-    """
-    Saves an image of the succes rates for the obstacle avoidance simulation.
+def heat_map(number_of_trials, angles, offsets, logging_period, obstacle_radius):
+    
+    big_data = []
 
-    data: a list of the success rates
-    angles: a list where each entry in the list is an angle that was tested
-    offsets: a list where each entry in the list is one of the offsets that was tested
-    num_trials: an integer number of trials ran per angle/offset pair
-    """
+    for d in angles:
+        row = []
+        for o in offsets:
+            avg = 0
+            for i in range(1,(number_of_trials+1)):
 
-    # Need to make the list data into a list of list, where the rows correspond
-    # to angles and the columns correspond to offsets, and the entries of the matrix
-    # represent the success rates of a given angle/offset pair averaged over all trials
-    organized_data = []
+                # makes sure that the location of the data form the obstacle simulation below is the same
+                # as where it is actually stored
+                dataaa = obstacle_avoidance_success(['data/run_1/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, logging_period, 9, [10,0], obstacle_radius)
+                avg = avg + dataaa[0]
 
-    for i in range(len(angles)):
-        new = []
-        for k in range(len(offsets)):
-            new.append(data[i * len(offsets) + k])
-        organized_data.append(new)
+            avg = avg/number_of_trials
+            row.append(avg)
+        big_data.append(row)
 
-    # Plots this new list as a heat map with angles on the y-axis and offsets on the x-axis,
-    # and the color of the heat map corresponds to the rate of success of the particul pair
-    plt.imshow(organized_data, cmap='viridis', aspect='auto')
+    plt.imshow(big_data, cmap='viridis', aspect='auto')
     plt.colorbar(label='Success Rate')
     plt.xticks(ticks=np.arange(len(offsets)), labels=offsets)
     plt.yticks(ticks=np.arange(len(angles)), labels=angles)
     plt.xlabel("Offset")
     plt.ylabel("Angle")
-    plt.title("Rate of Success out of " + str((num_trials)) + " trials")
-    plt.savefig(output_filename, format='png', dpi=300)  # dpi controls resolution
-    plt.close()  # Closes the figure to free memory
-    return 0
+    plt.title("Rate of Success out of " + str((10)) + " trials")
+    plt.savefig("obstacle_avoidance_heatmap.png", format='png', dpi=300)  # dpi controls resolution
 
 def average_csv_trials(csv_files, output_filename, select_columns=None):
     """
