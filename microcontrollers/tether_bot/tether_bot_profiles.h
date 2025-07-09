@@ -43,6 +43,8 @@ on which tether bot you are flashing code to.
 
   #define TETHER_P_FLEX_STRAIGHT 440
   #define TETHER_P_FLEX_BENT 270
+
+  #define DESIRED_DELTA 90
 #endif
 
 #ifdef ROBOT_5
