@@ -109,7 +109,7 @@ const float STRAIN_WEIGHT = 1;
 const float GRADIENT_WEIGHT = 1;
 const float REPULSION_WEIGHT = 1;
 
-const int GOAL_FLEX_ANGLE = toRadians(90); // goal angle of the flex sensor to maintain strain
+const int GOAL_FLEX_ANGLE = toRadians(100); // goal angle of the flex sensor to maintain strain
 const int GOAL_DELTA = toRadians(DESIRED_DELTA);
 
 const float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
@@ -121,11 +121,13 @@ const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
 unsigned long prevTimeHeading = ULONG_MAX;
 float prevErrorHeading;
 int pidHeadingOut;
+int pidHeadingPwm; // final pwm value based on the PID heading value
 
 // PID over position parameters
 unsigned long prevTimePosition = ULONG_MAX;
 float prevErrorPosition;
 int pidPositionOut;
+int pidPositionPwm; // final pwm value based on the PID position value
 
 float delta; // the current difference between the two tethers' angle thetas if both tethers are used (radians)
 
@@ -134,8 +136,11 @@ Matrix<2,1> vectorStrainBottom;
 Matrix<2,1> vectorStrainTop;
 Matrix<2,1> vectorAngle;
 
+// initialize the reference theta variable for the heading
+float thetaTetherRef;
+
 // resultant next-step vector robot will travel 
-float desiredHeading; // the next-step desired heading of the robot in radians
+float desiredTheta; // the next-step desired theta value for one of the tethers (determined by desired heading)
 float desiredMagnitude;
 
 
@@ -188,8 +193,11 @@ void loop() {
       // update PID-corrected PWM output
       updateHeadingPID();
 
+      // ensure output is within valid PWM value limits
+      clampOutputPID(pidHeadingOut, MIN_PWM);
+
       // spin robot accordingly
-      driveMotors(-pidHeadingOut, pidHeadingOut); // positive pwm means CCW, negative means CW
+      driveMotors(-pidHeadingPwm, pidHeadingPwm); // positive pwm means CCW, negative means CW
 
       // robot is facing desired direction, move on to driving forward state
       if (!pidHeadingOut) {
@@ -202,15 +210,19 @@ void loop() {
       delay(2000);
       // TODO: do PID control feedback on speed/position here and set next state to IDLE once robot has reached the desired goals in terms of tether angle/strain
       // update PID-corrected PWM output
-      updatePositionPID();
+      // updatePositionPID();
       
       // drive robot forward accordingly
-      driveMotors(pidPositionOut, pidPositionOut);
+      // driveMotors(pidPositionOut, pidPositionOut);
+      driveMotors(150, 150);
+      delay(500);
+      driveMotors(0, 0);
 
       // if robot has reached desired position, move on to idle state
-      if (!pidPositionOut) {
-        currState = IDLE;
-      }
+      currState = IDLE;
+      // if (!pidPositionOut) {
+      //   currState = IDLE;
+      // }
 
       break;
     }
@@ -218,14 +230,18 @@ void loop() {
 }
 
 void readSensors() {
-  Serial.println("Reading sensors");
-  delay(2000);
   // read flex sensors and encoders and update sensor data variables
   tetherBottom.readTetherSensors();
   tetherTop.readTetherSensors();
 
   // update delta
   delta = mod(tetherBottom.theta - tetherTop.theta, 2 * M_PI);
+
+  // set the bottom tether theta as reference theta for heading by default unless bottom tether is not being used
+  thetaTetherRef = tetherBottom.theta;
+  if (!TETHER_M) {
+    thetaTetherRef = tetherTop.theta;
+  }
 
   // TODO: if we add close-range sensors or other sensors in the future, read them here as well
 
@@ -292,8 +308,6 @@ void computeVectorAngle() {
 }
 
 void computeNextStep() {
-  Serial.println("Computing next step");
-  delay(2000);
   // calculate strain and angle vectors
   if (TETHER_M && TETHER_P) {
     computeVectorAngle();
@@ -307,42 +321,37 @@ void computeNextStep() {
 
   Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle;
 
-  desiredHeading = vectorDirection(resultant);
+  float desiredHeading = vectorDirection(resultant);
   desiredMagnitude = vectorMagnitude(resultant);
+
+  // convert the desired heading to a desired theta value relative to either the bottom or top tether
+  desiredTheta = thetaTetherRef - desiredHeading;
+  if (desiredTheta < 0) {
+    desiredTheta += 2 * M_PI;
+  }
 
   // TODO: might need to limit the magnitude based on how big it gets
 
 }
 
 void updateHeadingPID() {
-  Serial.println("Updating PID heading");
-  delay(2000);
-  const float Kp = 1;
+  const float Kp = 0.2;
   const float Kd = 1;
   unsigned long now = millis();
   float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
-  // uses bottom tether as reference theta by default unless bottom tether is not being used
-  float tetherTheta = tetherBottom.theta;
-  if (!TETHER_M) {
-    tetherTheta = tetherTop.theta;
-  }
+  // heading error calculation using smallest signed-angle difference (in degrees for more reasonable pwm values)
+  float errorHeading = toDegrees(mod(thetaTetherRef - desiredTheta + M_PI, 2 * M_PI) - M_PI);
 
-  // convert the desired heading to a desired theta value relative to either the bottom or top tether
-  float desiredTheta = tetherTheta - desiredHeading;
-  if (desiredTheta < 0) {
-    desiredTheta += 2 * M_PI;
-  }
-
-  // heading error calculation using smallest signed-angle difference
-  float errorHeading = mod(tetherTheta - desiredTheta + M_PI, 2 * M_PI) - M_PI;
+  Serial.print("Heading Error: ");
+  Serial.println(errorHeading);
 
   // if the error is within tolerance, consider the desired heading to be reached and stop moving
-  if (fabs(toDegrees(errorHeading)) <= ERR_ANGLE_HEADING) {
+  if (fabs(errorHeading) <= ERR_ANGLE_HEADING) {
     prevTimeHeading = ULONG_MAX;
     prevErrorHeading = 0;
-    pidHeadingOut = 0.0;
+    pidHeadingOut = 0;
     return;
   }
 
@@ -353,66 +362,54 @@ void updateHeadingPID() {
   }
 
   // PID control output
-  pidHeadingOut = Kp * errorHeading + Kd * derivative;
+  // pidHeadingOut = Kp * errorHeading + Kd * derivative;
+  pidHeadingOut = Kp * errorHeading;
 
-  // ensure output is within valid PWM value limits
-  clampOutputPID(pidHeadingOut, MIN_PWM);
+  Serial.print("Raw PID output: ");
+  Serial.println(pidHeadingOut);
 
   prevTimeHeading = now;
   prevErrorHeading = errorHeading;
 }
 
 void updatePositionPID() { 
-  Serial.println("Updating PID position");
-  delay(2000);
-  const float Kp = 1;
-  const float Kd = 1;
-  const float errorTolerance = 0.1;
-  unsigned long now = millis();
-  float dt = (now - prevTimePosition) / 1000.0; // convert to seconds
-  if (dt <= 0) dt = 0.001; // prevent division by zero
-
+  return;
   // TODO: implement PID feedback control on speed/position maybe using wheel encoders and call it from loop() under DRIVING state
-
-  clampOutputPID(pidPositionOut, MIN_PWM);
-
-
 
 }
 
-void clampOutputPID(int& pidOut, int minPwm) {
+void clampOutputPID(int pidOut, int minPwm) {
   // note: changing pidOut will directly change the original variable entered in (pass by reference)
-  if (abs(pidOut) < minPwm) {
+  if (pidOut == 0) {
+    pidHeadingPwm = 0;
+  } else if (abs(pidOut) < minPwm) {
     // set to minimum output if pid output is lower than minimum
-    pidOut = minPwm;
+    pidHeadingPwm = minPwm;
   } else if (abs(pidOut) > 255) {
     // limit output to between -255 and 255
-    int sign = (pidOut > 0) - (pidOut < 0);
-    pidOut = sign * 255;
+    pidHeadingPwm = sign(pidOut) * 255;
+  } else {
+    pidHeadingPwm = pidOut;
   }
 }
 
 void driveMotors(int pwmLeft, int pwmRight) {
   // if left motor pwm is negative, go backwards by that pwm value
   if (pwmLeft < 0) {
-    Serial.println("left motor backwards");
-    delay(2000);
     analogWrite(LEFT_MOTOR_BACKWARD, abs(pwmLeft));
+    analogWrite(LEFT_MOTOR_FORWARD, 0);
   } else {
-    Serial.println("left motor forwards");
-    delay(2000);
     analogWrite(LEFT_MOTOR_FORWARD, pwmLeft);
+    analogWrite(LEFT_MOTOR_BACKWARD, 0);
   }
 
   // if right motor pwm is negative, go backwards by that pwm value
   if (pwmRight < 0) {
-    Serial.println("right motor backwards");
-    delay(2000);
     analogWrite(RIGHT_MOTOR_BACKWARD, abs(pwmRight));
+    analogWrite(RIGHT_MOTOR_FORWARD, 0);
   } else {
-    Serial.println("right motor forwards");
-    delay(2000);
     analogWrite(RIGHT_MOTOR_FORWARD, pwmRight);
+    analogWrite(RIGHT_MOTOR_BACKWARD, 0);
   }
 }
 
