@@ -5,14 +5,13 @@
   calibration values, desired delta angle, as well as select which tether(s) the robot uses to match the specific tetherbot before uploading. 
 
   Notes:
-  - All angles are in degrees except inside the vector calculation functions unless specified otherwise
+  - All angles are in radians unless otherwise specified
   - Tether m specified in simulation is always represented by the bottom tether on the hardware robot
   - If the tether bot is using both tethers, the bottom one (tether m) will always be the reference point for headings (both desired and current),
     use whichever tether is active otherwise (for end robots)
 */
 
 #include "tether_bot_profiles.h"
-#include <WiFi.h>
 #include <Wire.h>
 #include "AS5600.h"
 #include "utils.h"
@@ -62,22 +61,22 @@ struct Tether {
     // read raw flex sensor values
     int rawFlexAngle = analogRead(pinFlexSensor);
 
-    // calibrate raw flex sensor values to angles suitable for strain calculations
-    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 0, 90);
+    // calibrate raw flex sensor values to angles suitable for strain calculations (radians)
+    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 0, M_PI / 2);
 
     // read encoders and offset the top encoder to be independent of the bottom encoder's position
-    float encAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
-    float encAngleTop = topEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
+    float encAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_RADIANS;
+    float encAngleTop = topEncoder.readAngle() * AS5600_RAW_TO_RADIANS;
 
     // check which encoder this specific tether is using and calibrate accordingly
     if (&encoder == &bottomEncoder) {
       theta = encAngleBottom;
     } else {
       // offset top encoder such that it is not dependent on the bottom encoder's position anymore
-      theta = mod(encAngleTop + encAngleBottom, 360);
+      theta = mod(encAngleTop + encAngleBottom, 2 * M_PI);
 
-      if (abs(theta) < 0.01) {
-        theta = 360;
+      if (abs(toDegrees(theta)) < 0.01) {
+        theta = 2 * M_PI;
       }
     }
   }
@@ -105,6 +104,17 @@ Tether tetherTop(
   TETHER_P_FLEX_BENT
 );
 
+const float ANGLE_WEIGHT = 1;
+const float STRAIN_WEIGHT = 1;
+const float GRADIENT_WEIGHT = 1;
+const float REPULSION_WEIGHT = 1;
+
+const int GOAL_FLEX_ANGLE = toRadians(90); // goal angle of the flex sensor to maintain strain
+const int GOAL_DELTA = toRadians(DESIRED_DELTA);
+
+const float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
+const float ERR_ANGLE_STRAIN = 15; // error tolerance for angle of the flex sensors
+
 const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
 
 // PID over heading parameters
@@ -117,15 +127,16 @@ unsigned long prevTimePosition = ULONG_MAX;
 float prevErrorPosition;
 int pidPositionOut;
 
-float delta; // the current difference between the two tethers' angle thetas if both tethers are used
+float delta; // the current difference between the two tethers' angle thetas if both tethers are used (radians)
 
-float desiredHeading; // the next-step desired heading of the robot in degrees (relative to theta of one of the tethers)
-float desiredMagnitude; // desired next-step amount to travel
+// intialize next-step vectors used for calculations
+Matrix<2,1> vectorStrainBottom;
+Matrix<2,1> vectorStrainTop;
+Matrix<2,1> vectorAngle;
 
-// Goal Angle and Upper Stop Angle
-float goalFlexAngle = 90; // the desired angle of the flex sensor to maintan desired tether strain
-float lowerAngle = 45; // should we still keep these
-float upperAngle = 80;
+// resultant next-step vector robot will travel 
+float desiredHeading; // the next-step desired heading of the robot in radians
+float desiredMagnitude;
 
 
 void setup() {
@@ -164,7 +175,6 @@ void loop() {
     case IDLE:
       Serial.println("IDLE");
       delay(2000);
-      // TODO: compute and set the next step vector + direction, then set current state to SPINNING or DRIVING depending on next step
       // compute and set resultant vector for next-step movement
       computeNextStep();
 
@@ -210,32 +220,98 @@ void loop() {
 void readSensors() {
   Serial.println("Reading sensors");
   delay(2000);
-  // read flex sensors and use encoder sensor info to update data accordingly
+  // read flex sensors and encoders and update sensor data variables
   tetherBottom.readTetherSensors();
   tetherTop.readTetherSensors();
+
+  // update delta
+  delta = mod(tetherBottom.theta - tetherTop.theta, 2 * M_PI);
 
   // TODO: if we add close-range sensors or other sensors in the future, read them here as well
 
 }
 
-// TODO: implement the vector computation stuff
-void computeVectorStrain() {
-  return;
+void computeVectorStrain(Tether tether) {
+  // initialize next-step strain-correction vector
+  Matrix<2,1> vectorStrain;
+
+  // calculate flex angle error (representing strain error)
+  float strainError = tether.flexAngle - GOAL_FLEX_ANGLE;
+
+  // set to 0 if error is small enough
+  if (fabs(toDegrees(strainError)) > ERR_ANGLE_STRAIN) {
+    float strainMagnitude = sign(strainError) * (strainError * strainError);
+
+    // assemble the strain vector
+    vectorStrain = {strainMagnitude * cos(tether.theta), strainMagnitude * sin(tether.theta)};
+  } else {
+    vectorStrain = {0, 0};
+  }
+
+  // assign to the corresponding global variable
+  if (&tether == &tetherBottom) {
+    vectorStrainBottom = vectorStrain;
+  } else {
+    vectorStrainTop = vectorStrain;
+  } 
 }
 
 void computeVectorAngle() {
-  return;
+  // calculate error in delta
+  float deltaError = GOAL_DELTA - delta;
+
+  // keep angle vector at 0 if error it is close enough to the goal angle
+  if (fabs(toDegrees(deltaError)) > ERR_ANGLE_HEADING) {
+    float angleMagnitude = sign(deltaError) * sqrt(fabs(deltaError) / (2 * M_PI));
+
+    // get unit vectors for the tether headings
+    Matrix<2,1> tetherVectorBottom = {cos(tetherBottom.theta), sin(tetherBottom.theta)};
+    Matrix<2,1> tetherVectorTop = {cos(tetherTop.theta), sin(tetherTop.theta)};
+
+    // add tether unit vectors
+    Matrix<2,1> angleHeadingUnitVector = normalizeVector(tetherVectorBottom + tetherVectorTop);
+
+    // if delta is roughly 180 degrees, make the next vector heading the perpendicular vector between them following the direction the robot is currently facing
+    if (delta <= (180 + ERR_ANGLE_HEADING) && delta >= (180 - ERR_ANGLE_HEADING)) {
+      // take the larger theta and rotate it counter clockwise by 90 degrees to get the new vector direction
+      float perpHeading;
+      if (tetherTop.theta > tetherBottom.theta) {
+        perpHeading = mod(tetherTop.theta + (M_PI / 2), 2 * M_PI);
+      } else {
+        perpHeading = mod(tetherBottom.theta + (M_PI / 2), 2 * M_PI);
+      }
+
+      angleHeadingUnitVector = {cos(perpHeading), sin(perpHeading)};
+    }
+
+    // assemble the angle vector
+    vectorAngle = angleMagnitude * angleHeadingUnitVector;
+  } else {
+    vectorAngle = {0, 0};
+  }
 }
 
 void computeNextStep() {
   Serial.println("Computing next step");
   delay(2000);
-  // TODO: make it choosable whether we are computing with one or both tethers
-  return;
-}
+  // calculate strain and angle vectors
+  if (TETHER_M && TETHER_P) {
+    computeVectorAngle();
+    computeVectorStrain(tetherBottom);
+    computeVectorStrain(tetherTop);
+  } else if (TETHER_M) {
+    computeVectorStrain(tetherBottom);
+  } else {
+    computeVectorStrain(tetherTop);
+  }
 
-void computeDelta() {
-  delta = mod(tetherBottom.theta - tetherTop.theta, 360.0);
+  Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle;
+
+  desiredHeading = vectorDirection(resultant);
+  desiredMagnitude = vectorMagnitude(resultant);
+
+  // TODO: might need to limit the magnitude based on how big it gets
+
 }
 
 void updateHeadingPID() {
@@ -243,7 +319,6 @@ void updateHeadingPID() {
   delay(2000);
   const float Kp = 1;
   const float Kd = 1;
-  const float errorTolerance = 5;
   unsigned long now = millis();
   float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
@@ -257,14 +332,14 @@ void updateHeadingPID() {
   // convert the desired heading to a desired theta value relative to either the bottom or top tether
   float desiredTheta = tetherTheta - desiredHeading;
   if (desiredTheta < 0) {
-    desiredTheta += 360;
+    desiredTheta += 2 * M_PI;
   }
 
   // heading error calculation using smallest signed-angle difference
-  float errorHeading = mod(tetherTheta - desiredTheta + 180, 360.0) - 180;
+  float errorHeading = mod(tetherTheta - desiredTheta + M_PI, 2 * M_PI) - M_PI;
 
   // if the error is within tolerance, consider the desired heading to be reached and stop moving
-  if (fabs(errorHeading) <= errorTolerance) {
+  if (fabs(toDegrees(errorHeading)) <= ERR_ANGLE_HEADING) {
     prevTimeHeading = ULONG_MAX;
     prevErrorHeading = 0;
     pidHeadingOut = 0.0;
@@ -297,7 +372,7 @@ void updatePositionPID() {
   float dt = (now - prevTimePosition) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
-  // TODO: implement PID feedback control on speed/position maybe using wheel encoders? (no loops, just the feedback part) and call it from loop() under DRIVING state
+  // TODO: implement PID feedback control on speed/position maybe using wheel encoders and call it from loop() under DRIVING state
 
   clampOutputPID(pidPositionOut, MIN_PWM);
 
