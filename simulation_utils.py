@@ -335,7 +335,7 @@ def heat_map(number_of_trials, angles, offsets, logging_period, obstacle_radius)
 
                 # makes sure that the location of the data form the obstacle simulation below is the same
                 # as where it is actually stored
-                dataaa = obstacle_avoidance_success(['data/run_1/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, logging_period, 9, [10,0], obstacle_radius)
+                dataaa = obstacle_avoidance_success(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, logging_period, 9, [10,0], obstacle_radius)
                 avg = avg + dataaa[0]
 
             avg = avg/number_of_trials
