@@ -112,7 +112,7 @@ const float REPULSION_WEIGHT = 1;
 const int GOAL_FLEX_ANGLE = toRadians(100); // goal angle of the flex sensor to maintain strain
 const int GOAL_DELTA = toRadians(DESIRED_DELTA);
 
-const float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
+const float ERR_ANGLE_HEADING = 20; // error tolerance for tether angles and headings
 const float ERR_ANGLE_STRAIN = 15; // error tolerance for angle of the flex sensors
 
 const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
@@ -120,7 +120,7 @@ const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
 // PID over heading parameters
 unsigned long prevTimeHeading = ULONG_MAX;
 float prevErrorHeading;
-int pidHeadingOut;
+float pidHeadingOut;
 int pidHeadingPwm; // final pwm value based on the PID heading value
 
 // PID over position parameters
@@ -179,7 +179,6 @@ void loop() {
   switch (currState) {
     case IDLE:
       Serial.println("IDLE");
-      delay(2000);
       // compute and set resultant vector for next-step movement
       computeNextStep();
 
@@ -189,7 +188,6 @@ void loop() {
       break;
     case SPINNING:
       Serial.println("SPINNING");
-      delay(2000);
       // update PID-corrected PWM output
       updateHeadingPID();
 
@@ -207,7 +205,6 @@ void loop() {
       break;
     case DRIVING:
       Serial.println("DRIVING");
-      delay(2000);
       // TODO: do PID control feedback on speed/position here and set next state to IDLE once robot has reached the desired goals in terms of tether angle/strain
       // update PID-corrected PWM output
       // updatePositionPID();
@@ -335,8 +332,8 @@ void computeNextStep() {
 }
 
 void updateHeadingPID() {
-  const float Kp = 0.2;
-  const float Kd = 1;
+  const float Kp = 0.5;
+  const float Kd = 2;
   unsigned long now = millis();
   float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
@@ -362,8 +359,7 @@ void updateHeadingPID() {
   }
 
   // PID control output
-  // pidHeadingOut = Kp * errorHeading + Kd * derivative;
-  pidHeadingOut = Kp * errorHeading;
+  pidHeadingOut = Kp * errorHeading + Kd * derivative;
 
   Serial.print("Raw PID output: ");
   Serial.println(pidHeadingOut);
