@@ -60,10 +60,6 @@ void loop() {
 
   delta = thetaBottom - thetaTop;
 
-  if (delta < 0) {
-    delta += 360;
-  }
-
   Serial.print("Top Encoder Angle: ");
   Serial.println(encAngleTop);
 
