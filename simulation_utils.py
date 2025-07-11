@@ -349,7 +349,7 @@ def heat_map(number_of_trials, angles, offsets, logging_period, obstacle_radius)
     plt.xlabel("Offset")
     plt.ylabel("Angle")
     plt.title("Rate of Success out of " + str((10)) + " trials")
-    plt.savefig("obstacle_avoidance_heatmap.png", format='png', dpi=300)  # dpi controls resolution
+    plt.savefig("data/figures/obstacle_avoidance_heatmap.png", format='png', dpi=300)  # dpi controls resolution
 
 def average_csv_trials(csv_files, output_filename, select_columns=None):
     """
