@@ -5,7 +5,7 @@
   calibration values, desired delta angle, as well as select which tether(s) the robot uses to match the specific tetherbot before uploading. 
 
   Notes:
-  - All angles are in radians unless otherwise specified
+  - All angles are in degrees unless otherwise specified
   - Tether m specified in simulation is always represented by the bottom tether on the hardware robot
   - If the tether bot is using both tethers, the bottom one (tether m) will always be the reference point for headings (both desired and current),
     use whichever tether is active otherwise (for end robots)
@@ -120,11 +120,12 @@ constexpr float STRAIN_WEIGHT = 1;
 constexpr float GRADIENT_WEIGHT = 1;
 constexpr float REPULSION_WEIGHT = 1;
 
-const float GOAL_FLEX_ANGLE = 80; // goal angle of the flex sensor to maintain strain
+const float GOAL_FLEX_ANGLE = 60; // goal angle of the flex sensor to maintain strain
 
 constexpr float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
 constexpr float ERR_ANGLE_STRAIN = 5; // error tolerance for angle of the flex sensors
 constexpr float ERR_PID = 20; // PWM error threshold
+constexpr float ERR_OVERALL = 2; // error tolerance for overall correction vector magnitude
  
 constexpr int MIN_PWM = 145; // minimum PWM value that can be written to the motors
 
@@ -219,6 +220,9 @@ void loop() {
 
   readSensors(); // read all sensors and update sensor data variables
 
+  Serial.print("Delta: ");
+  Serial.println(delta);
+
   switch (currState) {
     case IDLE:
       Serial.println("IDLE");
@@ -234,8 +238,8 @@ void loop() {
       Serial.print("Strain Vector m: ");
       Serial.println(vectorStrainBottom);
 
-      // set robot to begin spinning to face desired heading
-      if (desiredHeading > 0.0) {
+      // set robot to begin spinning to face desired heading, stop if reached all goals
+      if (desiredHeading > ERR_OVERALL) {
         currState = SPINNING;
       }
 
@@ -293,7 +297,7 @@ void readSensors() {
   tetherTop.readTetherSensors();
 
   // update delta
-  delta = mod(tetherBottom.theta - tetherTop.theta, 360);
+  delta = smallestSignedAngleDiff(tetherTop.theta, tetherBottom.theta);
 
   // set the bottom tether theta as reference theta for heading by default unless bottom tether is not being used
   thetaTetherRef = tetherBottom.theta;
@@ -343,6 +347,9 @@ void computeVectorAngle() {
   // calculate error in delta
   float deltaError = GOAL_DELTA - delta;
 
+  Serial.print("Delta Error: ");
+  Serial.println(deltaError);
+
   // keep angle vector at 0 if error it is close enough to the goal angle
   if (fabs(deltaError) > ERR_ANGLE_HEADING) {
     float angleMagnitude = sign(deltaError) * sqrt(fabs(deltaError) / 360);
@@ -352,10 +359,10 @@ void computeVectorAngle() {
     Matrix<2,1> tetherVectorTop = {cos(toRadians(tetherTop.theta)), sin(toRadians(tetherTop.theta))};
 
     // add tether unit vectors
-    Matrix<2,1> angleHeadingUnitVector = normalizeVector(tetherVectorBottom + tetherVectorTop);
+    Matrix<2,1> angleHeadingUnitVector = normalizeVector(tetherVectorBottom) + normalizeVector(tetherVectorTop);
 
     // if delta is roughly 180 degrees, make the next vector heading the perpendicular vector between them following the direction the robot is currently facing
-    if (delta <= (180 + ERR_ANGLE_HEADING) && delta >= (180 - ERR_ANGLE_HEADING)) {
+    if (round(fabs(delta)) == 180.0) {
       // take the larger theta and rotate it counter clockwise by 90 degrees to get the new vector direction
       float perpHeading;
       if (tetherTop.theta > tetherBottom.theta) {
@@ -364,8 +371,11 @@ void computeVectorAngle() {
         perpHeading = mod(tetherBottom.theta + 90, 360);
       }
 
-      angleHeadingUnitVector = {cos(toRadians(perpHeading)), sin(toRadians(perpHeading))};
+      // angleHeadingUnitVector = {cos(toRadians(perpHeading)), sin(toRadians(perpHeading))};
     }
+
+    Serial.print("Tether Direction Unit Vector: ");
+    Serial.println(angleHeadingUnitVector);
 
     // assemble the angle vector
     vectorAngle = 1000.0f * angleMagnitude * angleHeadingUnitVector;
@@ -388,6 +398,9 @@ void computeNextStep() {
 
   Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle;
 
+  Serial.print("Resultant Vector:" );
+  Serial.println(resultant);
+
   desiredHeading = vectorDirection(resultant);
   desiredMagnitude = vectorMagnitude(resultant);
 
@@ -396,6 +409,11 @@ void computeNextStep() {
   if (desiredTheta < 0) {
     desiredTheta += 360;
   }
+
+  Serial.print("Desired Theta: ");
+  Serial.println(desiredTheta);
+  Serial.print("Desired Heading: ");
+  Serial.println(desiredHeading);
 
   // TODO: might need to limit the magnitude based on how big it gets
 
@@ -409,15 +427,11 @@ void updateHeadingPID() {
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
   // heading error calculation using smallest signed-angle difference (in degrees for more reasonable pwm values)
-  float errorHeading = mod(thetaTetherRef - desiredTheta + 180, 360) - 180;
+  float errorHeading = smallestSignedAngleDiff(desiredTheta, thetaTetherRef);
   int pwmScaledErrHeading = sign(errorHeading) * map(fabs(errorHeading), 0, 180, 0, 255);
 
   Serial.print("Theta of Ref Tether: ");
   Serial.println(thetaTetherRef);
-  Serial.print("Desired Theta: ");
-  Serial.println(desiredTheta);
-  Serial.print("Desired Heading: ");
-  Serial.println(desiredHeading);
   Serial.print("Heading Error: ");
   Serial.println(errorHeading);
 
