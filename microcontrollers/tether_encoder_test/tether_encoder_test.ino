@@ -10,8 +10,8 @@
 #include "math.h"
 using namespace BLA;
 
-#define ENC_OFFSET_BOTTOM 0
-#define ENC_OFFSET_TOP 0
+#define ENC_OFFSET_BOTTOM 190
+#define ENC_OFFSET_TOP 192
 
 AS5600 bottomEncoder(&Wire);
 AS5600 topEncoder(&Wire1);

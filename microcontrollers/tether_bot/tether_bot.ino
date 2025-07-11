@@ -43,7 +43,7 @@ enum TetherBotState {
 
 struct Tether {
   const int pinFlexSensor; // pin for the flex sensor
-  AS5600 encoder; // AS5600 magnetic encoder object
+  AS5600& encoder; // AS5600 magnetic encoder object
 
   // flex sensor calibration values
   int flexStraight; // raw flex sensor value when flex sensor is straight at 0 degrees
@@ -54,29 +54,40 @@ struct Tether {
   float theta;
 
   // initialize tether with flex sensor and encoder calibration values
-  Tether(const int pinFlexSensorVal, AS5600 encoderObj, int straightCalib, int bentCalib) 
+  Tether(const int pinFlexSensorVal, AS5600& encoderObj, int straightCalib, int bentCalib) 
   : pinFlexSensor(pinFlexSensorVal), encoder(encoderObj), flexStraight(straightCalib), flexBent(bentCalib) {}
 
   void readTetherSensors() {
     // read raw flex sensor values
-    int rawFlexAngle = analogRead(pinFlexSensor);
+    int rawFlexAngle;
+    if (&encoder == &bottomEncoder) {
+      rawFlexAngle = analogRead(BOTTOM_FLEX_SENSOR);
+    } else {
+      rawFlexAngle = analogRead(TOP_FLEX_SENSOR);
+    }
+    
+    Serial.print("Raw Flex Reading: ");
+    Serial.println(rawFlexAngle);
 
-    // calibrate raw flex sensor values to angles suitable for strain calculations (radians)
-    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 0, M_PI / 2);
+    // calibrate raw flex sensor values to angles suitable for strain calculations (degrees)
+    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 0, 90);
+
+    Serial.print("Flex Angle: ");
+    Serial.println(flexAngle);
 
     // read encoders and offset the top encoder to be independent of the bottom encoder's position
-    float encAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_RADIANS;
-    float encAngleTop = topEncoder.readAngle() * AS5600_RAW_TO_RADIANS;
+    float encAngleBottom = bottomEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
+    float encAngleTop = topEncoder.readAngle() * AS5600_RAW_TO_DEGREES;
 
     // check which encoder this specific tether is using and calibrate accordingly
     if (&encoder == &bottomEncoder) {
       theta = encAngleBottom;
     } else {
       // offset top encoder such that it is not dependent on the bottom encoder's position anymore
-      theta = mod(encAngleTop + encAngleBottom, 2 * M_PI);
+      theta = mod(encAngleTop + encAngleBottom, 360);
 
-      if (abs(toDegrees(theta)) < 0.01) {
-        theta = 2 * M_PI;
+      if (abs(theta) < 0.01) {
+        theta = 360;
       }
     }
   }
@@ -104,18 +115,18 @@ Tether tetherTop(
   TETHER_P_FLEX_BENT
 );
 
-const float ANGLE_WEIGHT = 1;
-const float STRAIN_WEIGHT = 1;
-const float GRADIENT_WEIGHT = 1;
-const float REPULSION_WEIGHT = 1;
+constexpr float ANGLE_WEIGHT = 10;
+constexpr float STRAIN_WEIGHT = 1;
+constexpr float GRADIENT_WEIGHT = 1;
+constexpr float REPULSION_WEIGHT = 1;
 
-const int GOAL_FLEX_ANGLE = toRadians(100); // goal angle of the flex sensor to maintain strain
-const int GOAL_DELTA = toRadians(DESIRED_DELTA);
+const float GOAL_FLEX_ANGLE = 80; // goal angle of the flex sensor to maintain strain
 
-const float ERR_ANGLE_HEADING = 20; // error tolerance for tether angles and headings
-const float ERR_ANGLE_STRAIN = 15; // error tolerance for angle of the flex sensors
-
-const int MIN_PWM = 145; // minimum PWM value that can be written to the motors
+constexpr float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
+constexpr float ERR_ANGLE_STRAIN = 5; // error tolerance for angle of the flex sensors
+constexpr float ERR_PID = 20; // PWM error threshold
+ 
+constexpr int MIN_PWM = 145; // minimum PWM value that can be written to the motors
 
 // PID over heading parameters
 unsigned long prevTimeHeading = ULONG_MAX;
@@ -140,8 +151,12 @@ Matrix<2,1> vectorAngle;
 float thetaTetherRef;
 
 // resultant next-step vector robot will travel 
+float desiredHeading;
 float desiredTheta; // the next-step desired theta value for one of the tethers (determined by desired heading)
 float desiredMagnitude;
+
+// kill switch (serial message)
+bool isKilled = false;
 
 
 void setup() {
@@ -171,9 +186,37 @@ void setup() {
   Serial.print("Top Encoder: ");
   Serial.println(topEncoder.isConnected() ? "connected" : "not connected");
   delay(1000);
+
+  vectorStrainBottom = {0, 0};
+  vectorStrainTop = {0, 0};
+  vectorAngle = {0, 0};
 }
 
 void loop() {
+  // serial message control ('p' for pause, 's' for start, 'r' for reset)
+  if (Serial.available() > 0) {
+    char cmd = Serial.read();
+
+    switch (cmd) {
+      case 'p':
+        Serial.println("PAUSED");
+        isKilled = true;
+        break;
+      case 's':
+        Serial.println("RESUMED");
+        isKilled = false;
+        break;
+      case 'r':
+        Serial.println("RESET");
+        NVIC_SystemReset();
+    }
+  }
+
+  if (isKilled) {
+    driveMotors(0, 0);
+    return;
+  }
+
   readSensors(); // read all sensors and update sensor data variables
 
   switch (currState) {
@@ -182,8 +225,19 @@ void loop() {
       // compute and set resultant vector for next-step movement
       computeNextStep();
 
+      Serial.print("Angle Vector: ");
+      Serial.println(vectorAngle);
+
+      Serial.print("Strain Vector P: ");
+      Serial.println(vectorStrainTop);
+
+      Serial.print("Strain Vector m: ");
+      Serial.println(vectorStrainBottom);
+
       // set robot to begin spinning to face desired heading
-      currState = SPINNING;
+      if (desiredHeading > 0.0) {
+        currState = SPINNING;
+      }
 
       break;
     case SPINNING:
@@ -191,15 +245,22 @@ void loop() {
       // update PID-corrected PWM output
       updateHeadingPID();
 
+      Serial.print("PID Heading PWM Raw: ");
+      Serial.println(pidHeadingOut);
+
       // ensure output is within valid PWM value limits
       clampOutputPID(pidHeadingOut, MIN_PWM);
 
       // spin robot accordingly
       driveMotors(-pidHeadingPwm, pidHeadingPwm); // positive pwm means CCW, negative means CW
 
-      // robot is facing desired direction, move on to driving forward state
+      // robot is facing desired direction, move on to driving forward state if there is a magnitude
       if (!pidHeadingOut) {
-        currState = DRIVING;
+        if (desiredMagnitude > 0.0) {
+          currState = DRIVING;
+        } else {
+          currState = IDLE;
+        }
       }
 
       break;
@@ -210,7 +271,7 @@ void loop() {
       // updatePositionPID();
       
       // drive robot forward accordingly
-      // driveMotors(pidPositionOut, pidPositionOut);
+      // driveMotors(pidPositionOut, pidPositionOut);=
       driveMotors(150, 150);
       delay(500);
       driveMotors(0, 0);
@@ -232,7 +293,7 @@ void readSensors() {
   tetherTop.readTetherSensors();
 
   // update delta
-  delta = mod(tetherBottom.theta - tetherTop.theta, 2 * M_PI);
+  delta = mod(tetherBottom.theta - tetherTop.theta, 360);
 
   // set the bottom tether theta as reference theta for heading by default unless bottom tether is not being used
   thetaTetherRef = tetherBottom.theta;
@@ -244,28 +305,37 @@ void readSensors() {
 
 }
 
-void computeVectorStrain(Tether tether) {
+void computeVectorStrain(Tether& tether) {
   // initialize next-step strain-correction vector
   Matrix<2,1> vectorStrain;
 
   // calculate flex angle error (representing strain error)
-  float strainError = tether.flexAngle - GOAL_FLEX_ANGLE;
+  float strainError = GOAL_FLEX_ANGLE - tether.flexAngle;
+
+  Serial.print("Current Flex Angle: ");
+  Serial.println(tether.flexAngle);
+
+  Serial.print("Goal Flex Angle: ");
+  Serial.println(GOAL_FLEX_ANGLE);
+
+  Serial.print("Strain Error: ");
+  Serial.println(strainError);
 
   // set to 0 if error is small enough
-  if (fabs(toDegrees(strainError)) > ERR_ANGLE_STRAIN) {
+  if (fabs(strainError) > ERR_ANGLE_STRAIN) {
     float strainMagnitude = sign(strainError) * (strainError * strainError);
 
     // assemble the strain vector
-    vectorStrain = {strainMagnitude * cos(tether.theta), strainMagnitude * sin(tether.theta)};
+    vectorStrain = {strainMagnitude * cos(toRadians(tether.theta)), strainMagnitude * sin(toRadians(tether.theta))};
   } else {
     vectorStrain = {0, 0};
   }
 
   // assign to the corresponding global variable
   if (&tether == &tetherBottom) {
-    vectorStrainBottom = vectorStrain;
+    vectorStrainBottom = 0.01f * vectorStrain;
   } else {
-    vectorStrainTop = vectorStrain;
+    vectorStrainTop = 0.01f * vectorStrain;
   } 
 }
 
@@ -274,12 +344,12 @@ void computeVectorAngle() {
   float deltaError = GOAL_DELTA - delta;
 
   // keep angle vector at 0 if error it is close enough to the goal angle
-  if (fabs(toDegrees(deltaError)) > ERR_ANGLE_HEADING) {
-    float angleMagnitude = sign(deltaError) * sqrt(fabs(deltaError) / (2 * M_PI));
+  if (fabs(deltaError) > ERR_ANGLE_HEADING) {
+    float angleMagnitude = sign(deltaError) * sqrt(fabs(deltaError) / 360);
 
     // get unit vectors for the tether headings
-    Matrix<2,1> tetherVectorBottom = {cos(tetherBottom.theta), sin(tetherBottom.theta)};
-    Matrix<2,1> tetherVectorTop = {cos(tetherTop.theta), sin(tetherTop.theta)};
+    Matrix<2,1> tetherVectorBottom = {cos(toRadians(tetherBottom.theta)), sin(toRadians(tetherBottom.theta))};
+    Matrix<2,1> tetherVectorTop = {cos(toRadians(tetherTop.theta)), sin(toRadians(tetherTop.theta))};
 
     // add tether unit vectors
     Matrix<2,1> angleHeadingUnitVector = normalizeVector(tetherVectorBottom + tetherVectorTop);
@@ -289,16 +359,16 @@ void computeVectorAngle() {
       // take the larger theta and rotate it counter clockwise by 90 degrees to get the new vector direction
       float perpHeading;
       if (tetherTop.theta > tetherBottom.theta) {
-        perpHeading = mod(tetherTop.theta + (M_PI / 2), 2 * M_PI);
+        perpHeading = mod(tetherTop.theta + 90, 360);
       } else {
-        perpHeading = mod(tetherBottom.theta + (M_PI / 2), 2 * M_PI);
+        perpHeading = mod(tetherBottom.theta + 90, 360);
       }
 
-      angleHeadingUnitVector = {cos(perpHeading), sin(perpHeading)};
+      angleHeadingUnitVector = {cos(toRadians(perpHeading)), sin(toRadians(perpHeading))};
     }
 
     // assemble the angle vector
-    vectorAngle = angleMagnitude * angleHeadingUnitVector;
+    vectorAngle = 1000.0f * angleMagnitude * angleHeadingUnitVector;
   } else {
     vectorAngle = {0, 0};
   }
@@ -318,13 +388,13 @@ void computeNextStep() {
 
   Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle;
 
-  float desiredHeading = vectorDirection(resultant);
+  desiredHeading = vectorDirection(resultant);
   desiredMagnitude = vectorMagnitude(resultant);
 
   // convert the desired heading to a desired theta value relative to either the bottom or top tether
   desiredTheta = thetaTetherRef - desiredHeading;
   if (desiredTheta < 0) {
-    desiredTheta += 2 * M_PI;
+    desiredTheta += 360;
   }
 
   // TODO: might need to limit the magnitude based on how big it gets
@@ -333,24 +403,23 @@ void computeNextStep() {
 
 void updateHeadingPID() {
   const float Kp = 0.5;
-  const float Kd = 2;
+  const float Kd = 0.1;
   unsigned long now = millis();
   float dt = (now - prevTimeHeading) / 1000.0; // convert to seconds
   if (dt <= 0) dt = 0.001; // prevent division by zero
 
   // heading error calculation using smallest signed-angle difference (in degrees for more reasonable pwm values)
-  float errorHeading = toDegrees(mod(thetaTetherRef - desiredTheta + M_PI, 2 * M_PI) - M_PI);
+  float errorHeading = mod(thetaTetherRef - desiredTheta + 180, 360) - 180;
+  int pwmScaledErrHeading = sign(errorHeading) * map(fabs(errorHeading), 0, 180, 0, 255);
 
+  Serial.print("Theta of Ref Tether: ");
+  Serial.println(thetaTetherRef);
+  Serial.print("Desired Theta: ");
+  Serial.println(desiredTheta);
+  Serial.print("Desired Heading: ");
+  Serial.println(desiredHeading);
   Serial.print("Heading Error: ");
   Serial.println(errorHeading);
-
-  // if the error is within tolerance, consider the desired heading to be reached and stop moving
-  if (fabs(errorHeading) <= ERR_ANGLE_HEADING) {
-    prevTimeHeading = ULONG_MAX;
-    prevErrorHeading = 0;
-    pidHeadingOut = 0;
-    return;
-  }
 
   float derivative = (errorHeading - prevErrorHeading) / dt;
 
@@ -359,7 +428,15 @@ void updateHeadingPID() {
   }
 
   // PID control output
-  pidHeadingOut = Kp * errorHeading + Kd * derivative;
+  pidHeadingOut = Kp * pwmScaledErrHeading + Kd * derivative;
+
+  // if the error is within tolerance or the PID raw value is small, consider the desired heading to be reached and stop moving
+  if (fabs(errorHeading) <= ERR_ANGLE_HEADING || fabs(pidHeadingOut) < ERR_PID) {
+    prevTimeHeading = ULONG_MAX;
+    prevErrorHeading = 0;
+    pidHeadingOut = 0;
+    return;
+  }
 
   Serial.print("Raw PID output: ");
   Serial.println(pidHeadingOut);

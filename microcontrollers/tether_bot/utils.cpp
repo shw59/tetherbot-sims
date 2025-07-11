@@ -24,7 +24,7 @@ float mod(float x, float y) {
   return (r < 0) ? r + y : r;
 }
 
-int sign(float x) {
+float sign(float x) {
   // return -1 if negative, 0 if 0, and +1 is positive
   return (x > 0) - (x < 0);
 }
@@ -40,6 +40,6 @@ Matrix<2,1> normalizeVector(Matrix<2,1> vector) {
 }
 
 float vectorDirection(Matrix<2,1> vector) {
-  // calculate and return the angle direction in radians (0-360 scale) of a vector
-  return mod(atan2(vector(1), vector(0)), 2 * M_PI);
+  // calculate and return the angle direction in degrees (0-360 scale) of a vector
+  return mod(toDegrees(atan2(vector(1), vector(0))), 360);
 }
