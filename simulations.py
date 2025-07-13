@@ -432,7 +432,7 @@ class Simulation:
 
         obj_collected = 0
 
-        collective_radius_avgs = np.array([])
+        collective_radius_avgs = []
 
         # main simulation loop
         while my_world.id.isConnected() and runs <= time_steps:
@@ -458,7 +458,11 @@ class Simulation:
                 agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
 
                 # sliding window average
-                np.append(collective_radius_avgs, utils.get_collective_radius(agent_pos))
+                collective_radius_avgs.append(utils.get_collective_radius(agent_pos))
+                
+                if len(collective_radius_avgs) > 5:
+                    collective_radius_avgs.pop(0)
+
                 collective_radius = np.mean(collective_radius_avgs)
 
                 agent_pos_flattened = []

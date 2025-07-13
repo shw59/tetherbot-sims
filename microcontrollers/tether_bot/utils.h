@@ -16,6 +16,8 @@ float toDegrees(float radAngle);
 
 float mod(float x, float y);
 
+float smallestSignedAngleDiff(float startAng, float goalAng);
+
 float sign(float x);
 
 float vectorMagnitude(Matrix<2,1> vector);

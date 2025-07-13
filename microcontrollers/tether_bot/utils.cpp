@@ -24,6 +24,11 @@ float mod(float x, float y) {
   return (r < 0) ? r + y : r;
 }
 
+float smallestSignedAngleDiff(float startAng, float goalAng) {
+  // return the smallest signed angle difference in degrees where + is CCW and - is CW
+  return mod((goalAng - startAng) + 180, 360) - 180;
+}
+
 float sign(float x) {
   // return -1 if negative, 0 if 0, and +1 is positive
   return (x > 0) - (x < 0);
