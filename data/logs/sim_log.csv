@@ -8,3 +8,4 @@ start time,simulation type,elapsed time (s)
 2025-07-01 15:48:28.129997,obstacle avoidance,1195.2096112909999
 2025-07-02 17:36:43.412948,"object capture, maintain line False",101243.88537799567
 2025-07-10 10:59:01.781540,obstacle avoidance,28686.441114746034
+2025-07-13 14:39:40.250036,"object capture, maintain line True",65040.217250816524
