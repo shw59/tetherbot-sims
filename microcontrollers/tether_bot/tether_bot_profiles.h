@@ -11,9 +11,9 @@ on which tether bot you are flashing code to.
 // uncomment the tether bot being used
 // #define ROBOT_0
 // #define ROBOT_1
-// #define ROBOT_2
+#define ROBOT_2
 // #define ROBOT_3
-#define ROBOT_4
+// #define ROBOT_4
 // #define ROBOT_5
 
 #ifdef ROBOT_0
