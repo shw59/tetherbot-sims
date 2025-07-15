@@ -120,7 +120,7 @@ constexpr float STRAIN_WEIGHT = 1;
 constexpr float GRADIENT_WEIGHT = 1;
 constexpr float REPULSION_WEIGHT = 1;
 
-const float GOAL_FLEX_ANGLE = 60; // goal angle of the flex sensor to maintain strain
+const float GOAL_FLEX_ANGLE = 57; // goal angle of the flex sensor to maintain strain
 
 constexpr float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
 constexpr float ERR_ANGLE_STRAIN = 5; // error tolerance for angle of the flex sensors
@@ -371,7 +371,7 @@ void computeVectorAngle() {
         perpHeading = mod(tetherBottom.theta + 90, 360);
       }
 
-      // angleHeadingUnitVector = {cos(toRadians(perpHeading)), sin(toRadians(perpHeading))};
+      angleHeadingUnitVector = {cos(toRadians(perpHeading)), sin(toRadians(perpHeading))};
     }
 
     Serial.print("Tether Direction Unit Vector: ");
