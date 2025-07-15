@@ -11,8 +11,8 @@ on which tether bot you are flashing code to.
 // uncomment the tether bot being used
 // #define ROBOT_0
 // #define ROBOT_1
-// #define ROBOT_2
-#define ROBOT_3
+#define ROBOT_2
+// #define ROBOT_3
 // #define ROBOT_4
 // #define ROBOT_5
 
@@ -33,7 +33,7 @@ on which tether bot you are flashing code to.
 #endif
 
 #ifdef ROBOT_1
-  #define TETHER_M 0
+  #define TETHER_M 1
   #define TETHER_P 1
 
   #define TETHER_M_ENC_OFFSET 5
@@ -45,10 +45,10 @@ on which tether bot you are flashing code to.
   #define TETHER_P_FLEX_STRAIGHT 415
   #define TETHER_P_FLEX_BENT 195
 
-  #define GOAL_DELTA 0
+  #define GOAL_DELTA 90
 #endif
 
-#ifdef ROBOT_2 // flex sensors don't work
+#ifdef ROBOT_2
   #define TETHER_M 1
   #define TETHER_P 1
 
@@ -66,7 +66,7 @@ on which tether bot you are flashing code to.
 
 #ifdef ROBOT_3 // right wheel doesn't rotate
   #define TETHER_M 1
-  #define TETHER_P 0
+  #define TETHER_P 1
 
   #define TETHER_M_ENC_OFFSET 70
   #define TETHER_P_ENC_OFFSET 230
@@ -77,7 +77,7 @@ on which tether bot you are flashing code to.
   #define TETHER_P_FLEX_STRAIGHT 456
   #define TETHER_P_FLEX_BENT 280
 
-  #define GOAL_DELTA 0
+  #define GOAL_DELTA 90
 #endif
 
 #ifdef ROBOT_4
