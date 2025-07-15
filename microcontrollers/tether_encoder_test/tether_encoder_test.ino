@@ -10,8 +10,8 @@
 #include "math.h"
 using namespace BLA;
 
-#define ENC_OFFSET_BOTTOM 190
-#define ENC_OFFSET_TOP 192
+#define ENC_OFFSET_BOTTOM 70
+#define ENC_OFFSET_TOP 230
 
 AS5600 bottomEncoder(&Wire);
 AS5600 topEncoder(&Wire1);
@@ -58,7 +58,7 @@ void loop() {
     thetaTop = 360;
   }
 
-  delta = thetaBottom - thetaTop;
+  delta = mod(thetaBottom - thetaTop + 180, 360) - 180;
 
   Serial.print("Top Encoder Angle: ");
   Serial.println(encAngleTop);
@@ -78,4 +78,10 @@ void loop() {
   Serial.println();
 
   delay(2000);
+}
+
+float mod(float x, float y) {
+  // handle negative numbers in mod the same way python does
+  float r = fmod(x, y);
+  return (r < 0) ? r + y : r;
 }
