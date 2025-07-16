@@ -96,9 +96,4 @@ on which tether bot you are flashing code to.
   #define GOAL_DELTA 0
 #endif
 
-#ifdef ROBOT_5
-  #define TETHER_M 0
-  #define TETHER_P 1
-#endif
-
 #endif // TETHER_BOT_PROFILES_H

@@ -115,8 +115,8 @@ Tether tetherTop(
   TETHER_P_FLEX_BENT
 );
 
-constexpr float ANGLE_WEIGHT = 10;
-constexpr float STRAIN_WEIGHT = 1;
+constexpr float ANGLE_WEIGHT = 12;
+constexpr float STRAIN_WEIGHT = 15;
 constexpr float GRADIENT_WEIGHT = 1;
 constexpr float REPULSION_WEIGHT = 1;
 
@@ -191,6 +191,8 @@ void setup() {
   vectorStrainBottom = {0, 0};
   vectorStrainTop = {0, 0};
   vectorAngle = {0, 0};
+
+  delay(60000);
 }
 
 void loop() {
