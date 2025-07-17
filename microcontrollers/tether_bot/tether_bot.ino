@@ -115,15 +115,15 @@ Tether tetherTop(
   TETHER_P_FLEX_BENT
 );
 
-constexpr float ANGLE_WEIGHT = 12;
-constexpr float STRAIN_WEIGHT = 15;
+constexpr float ANGLE_WEIGHT = 10;
+constexpr float STRAIN_WEIGHT = 7;
 constexpr float GRADIENT_WEIGHT = 1;
 constexpr float REPULSION_WEIGHT = 1;
 
 const float GOAL_FLEX_ANGLE = 57; // goal angle of the flex sensor to maintain strain
 
 constexpr float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
-constexpr float ERR_ANGLE_STRAIN = 5; // error tolerance for angle of the flex sensors
+constexpr float ERR_ANGLE_STRAIN = 10; // error tolerance for angle of the flex sensors
 constexpr float ERR_PID = 20; // PWM error threshold
 constexpr float ERR_OVERALL = 2; // error tolerance for overall correction vector magnitude
  
@@ -192,7 +192,7 @@ void setup() {
   vectorStrainTop = {0, 0};
   vectorAngle = {0, 0};
 
-  delay(60000);
+  delay(30000);
 }
 
 void loop() {
