@@ -51,10 +51,8 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
             for o in offsets:
                 list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position))
 
-    data = sims_utils.obstacle_avoidance_success(list_of_files=list_of_file_names, number_of_trials=number_of_trials, number_of_runs_per_trial = len(offsets) * len(angles_to_try), number_of_while_runs=length_of_simulation*LOGGING_PERIOD, logging_period = LOGGING_PERIOD, n=n, obst_position = obst_position, obst_radius = obst_radius, l_0 = UNSTRETCHED_TETHER_LENGTH)
-
-    sims_utils.make_heat_map(data=data, angles=angles_to_try, offsets=offsets, num_trials=number_of_trials, output_filename=f"data/figures/success_heat_map_{datetime.datetime.now().date()}.png")
-
+    sims_utils.heat_map(number_of_trials, angles_to_try, offsets, LOGGING_PERIOD, obst_radius)
+   
     end_time = time.perf_counter()
 
     elapsed_time = end_time - start_time
@@ -148,55 +146,9 @@ def main():
 
     # run_storm_drain((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 5000, [0, 1, 2, 3, 4])
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
-    # run_object_capture_simulations((sim_args, False), 9, 10, 5000, [5, 10, 30, 50], [0], True)
-    # run_obstacle_simulations((sim_args, False), 9, 500, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-15, -10, -5, 0, 5, 10, 15], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
-
-    # big_data = []
-    # data_to_graph = []
-
-    # degree_list = [-15, -10, -5, 0, 5, 10, 15]
-    # offsets_list = [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH]
-
-    # for d in degree_list:
-    #     row = []
-    #     for o in offsets_list:
-    #         avg = 0
-    #         for i in range(1,11):
-    #             dataaa = sims_utils.obstacle_avoidance_success(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, LOGGING_PERIOD, 9, [10,0], 4*UNSTRETCHED_TETHER_LENGTH, UNSTRETCHED_TETHER_LENGTH)
-    #             avg = avg + dataaa[0]
-    #             # print(dataaa)
-    #             # sims_utils.make_3D_plot(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], n=9, title='trial'+str(1)+', degree'+str(d)+', offset'+str(o)+'', file_name='3Dplot_degree0_offset18')
-    #             # row.append(dataaa)
-    #         avg = avg/10
-    #         row.append(avg)
-    #     big_data.append(row)
-
-    # print(np.array(big_data).shape)
-    # print(big_data)
-
-
-    
-
-    # plt.imshow(big_data, cmap='viridis', aspect='auto')
-    # plt.colorbar(label='Success Rate')
-    # plt.xticks(ticks=np.arange(len(offsets_list)), labels=offsets_list)
-    # plt.yticks(ticks=np.arange(len(degree_list)), labels=degree_list)
-    # plt.xlabel("Offset")
-    # plt.ylabel("Angle")
-    # plt.title("Rate of Success out of " + str((10)) + " trials")
-    # plt.savefig("ahahahahahaha.png", format='png', dpi=300)  # dpi controls resolution
-
-
-        # deg = 0
-        # if i != 0:
-        #     off = float(-i*3)   
-        # else:
-        #     off = -i*3  
-        # sims_utils.make_3D_plot(['data/boootrial'+str(1)+'_degree'+str(deg)+'_offset'+str(off)+'.csv'], n=9, title='trial'+str(1)+', degree'+str(deg)+', offset'+str(off)+'', file_name='3Dplot_degree0_offset18')
-        # print(sims_utils.obstacle_avoidance_success(['data/boootrial'+str(1)+'_degree'+str(deg)+'_offset'+str(off)+'.csv'], 1, 1, 6000, LOGGING_PERIOD, 9, [10,0], 4*UNSTRETCHED_TETHER_LENGTH, UNSTRETCHED_TETHER_LENGTH))
-
-    # sims_utils.make_3D_plot(['data/trial3_degree10_offset0.csv'], n=9, title='degree0, offset18', file_name='3Dplot_degree0_offset18')
+    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
+    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
+    # run_obstacle_simulations((sim_args, False), 9, 500, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-40, -30, -20, -10, 0, 10, 20, 30, 40], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
 if __name__ == "__main__":
     main()

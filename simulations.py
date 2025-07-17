@@ -10,6 +10,7 @@ from agent import Agent
 import utils
 import simulation_utils as sims_utils
 import math
+import numpy as np
 import random
 
 class Simulation:
@@ -431,6 +432,8 @@ class Simulation:
 
         obj_collected = 0
 
+        collective_radius_avgs = []
+
         # main simulation loop
         while my_world.id.isConnected() and runs <= time_steps:
             my_world.id.getCameraImage(320,200)
@@ -453,7 +456,14 @@ class Simulation:
                                     obj.collected = False
                 
                 agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
-                collective_radius = utils.get_collective_radius(agent_pos)
+
+                # sliding window average
+                collective_radius_avgs.append(utils.get_collective_radius(agent_pos))
+                
+                if len(collective_radius_avgs) > 5:
+                    collective_radius_avgs.pop(0)
+
+                collective_radius = np.mean(collective_radius_avgs)
 
                 agent_pos_flattened = []
                 for pos in agent_pos:
@@ -464,7 +474,7 @@ class Simulation:
 
             for agent in shuffled_list:
                 agent.sense_gradient(my_world.gradient_source)
-                agent.sense_close_range(my_world.obj_list, sensing_mode=1)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
             if runs % self.sensing_period == 0:
                 for i in range(len(shuffled_list)):

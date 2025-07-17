@@ -50,7 +50,7 @@ class Agent:
         self.max_velocity_angular = max_velocity_angular
         self.max_force = drive_power / max_velocity
         self.radius = radius # sets the radius of the agent
-        self.sensing_radius = radius * 2 # sets the sensing radius of the agent
+        self.sensing_radius = radius * 1.5 # sets the sensing radius of the agent
         self.desired_tether_angle = None # initializes the desired tether angle to be None
         self.tethers = [None, None] # initializes no attached tethers to the agent
         self.cr_sensor_data = [] # initializes an empty list of sensor data
@@ -256,10 +256,7 @@ class Agent:
         """
         hx, hy = self.get_pose()[1]
         tx, ty = self.get_tether_heading(tether_num)
-        theta = math.degrees(math.atan2(hx*ty - hy*tx, hx*tx + hy*ty))
-
-        if theta < 0:
-            theta = 360 + theta
+        theta = (math.degrees(math.atan2(hx*ty - hy*tx, hx*tx + hy*ty))) % 360
 
         if (tether_num == 1) and (round(theta, 2) == 0):
             theta = 360
@@ -275,10 +272,7 @@ class Agent:
             return None
         theta_m = self.get_theta(0)
         theta_p = self.get_theta(1)
-        delta = theta_m - theta_p
-
-        if delta < 0:
-            delta = 360 + delta
+        delta = (theta_m - theta_p) % 360
 
         return delta
     
