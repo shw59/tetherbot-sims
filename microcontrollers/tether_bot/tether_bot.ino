@@ -117,10 +117,10 @@ Tether tetherTop(
 
 constexpr float ANGLE_WEIGHT = 5;
 constexpr float STRAIN_WEIGHT = 15;
-constexpr float GRADIENT_WEIGHT = 1;
+constexpr float GRADIENT_WEIGHT = 10;
 constexpr float REPULSION_WEIGHT = 1;
 
-const float GOAL_FLEX_ANGLE = 57; // goal angle of the flex sensor to maintain strain
+const float GOAL_FLEX_ANGLE = 60; // goal angle of the flex sensor to maintain strain
 
 constexpr float ERR_ANGLE_HEADING = 10; // error tolerance for tether angles and headings
 constexpr float ERR_ANGLE_STRAIN = 10; // error tolerance for angle of the flex sensors
@@ -147,6 +147,7 @@ float delta; // the current difference between the two tethers' angle thetas if 
 Matrix<2,1> vectorStrainBottom;
 Matrix<2,1> vectorStrainTop;
 Matrix<2,1> vectorAngle;
+Matrix<2,1> vectorGradient;
 
 // initialize the reference theta variable for the heading
 float thetaTetherRef;
@@ -179,18 +180,17 @@ void setup() {
   bottomEncoder.setOffset(TETHER_M_ENC_OFFSET); // set encoder calibration offset
   Serial.print("Bottom Encoder: ");
   Serial.println(bottomEncoder.isConnected() ? "connected" : "not connected");
-  delay(1000);
 
   topEncoder.begin();
   topEncoder.setDirection(AS5600_COUNTERCLOCK_WISE); // set direction pin
   topEncoder.setOffset(TETHER_P_ENC_OFFSET); // set encoder calibration offset
   Serial.print("Top Encoder: ");
   Serial.println(topEncoder.isConnected() ? "connected" : "not connected");
-  delay(1000);
 
   vectorStrainBottom = {0, 0};
   vectorStrainTop = {0, 0};
   vectorAngle = {0, 0};
+  vectorGradient = {0, 0};
 
   delay(30000);
 }
@@ -241,8 +241,10 @@ void loop() {
       Serial.println(vectorStrainBottom);
 
       // set robot to begin spinning to face desired heading, stop if reached all goals
-      if (desiredHeading > ERR_OVERALL) {
+      if (desiredHeading > ERR_OVERALL && desiredMagnitude > 0) {
         currState = SPINNING;
+      } else if (desiredMagnitude > 0) {
+        currState = DRIVING;
       }
 
       break;
@@ -291,6 +293,7 @@ void loop() {
       break;
     }
 
+    delay(500);
 }
 
 void readSensors() {
@@ -364,7 +367,7 @@ void computeVectorAngle() {
     Matrix<2,1> angleHeadingUnitVector = normalizeVector(tetherVectorBottom) + normalizeVector(tetherVectorTop);
 
     // if delta is roughly 180 degrees, make the next vector heading the perpendicular vector between them following the direction the robot is currently facing
-    if (round(fabs(delta)) == 180.0) {
+    if (fabs(delta) == 180.0) {
       // take the larger theta and rotate it counter clockwise by 90 degrees to get the new vector direction
       float perpHeading;
       if (tetherTop.theta > tetherBottom.theta) {
@@ -386,6 +389,11 @@ void computeVectorAngle() {
   }
 }
 
+void computeVectorGradient() {
+  // since there is no gradient for physical demos right now, we will just use the robot's current unit vector heading as gradient vector
+  vectorGradient = {1, 0};
+}
+
 void computeNextStep() {
   // calculate strain and angle vectors
   if (TETHER_M && TETHER_P) {
@@ -394,11 +402,13 @@ void computeNextStep() {
     computeVectorStrain(tetherTop);
   } else if (TETHER_M) {
     computeVectorStrain(tetherBottom);
-  } else {
+  } else if (TETHER_P) {
     computeVectorStrain(tetherTop);
+  } else {
+    computeVectorGradient();
   }
 
-  Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle;
+  Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle + GRADIENT_WEIGHT * vectorGradient;
 
   Serial.print("Resultant Vector:" );
   Serial.println(resultant);
