@@ -115,8 +115,8 @@ Tether tetherTop(
   TETHER_P_FLEX_BENT
 );
 
-constexpr float ANGLE_WEIGHT = 10;
-constexpr float STRAIN_WEIGHT = 7;
+constexpr float ANGLE_WEIGHT = 7;
+constexpr float STRAIN_WEIGHT = 14;
 constexpr float GRADIENT_WEIGHT = 1;
 constexpr float REPULSION_WEIGHT = 1;
 
