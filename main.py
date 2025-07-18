@@ -147,8 +147,10 @@ def main():
     # run_storm_drain((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 5000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
-    # run_obstacle_simulations((sim_args, False), 9, 500, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-40, -30, -20, -10, 0, 10, 20, 30, 40], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
+    run_obstacle_simulations((sim_args, True), 3, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [0], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # sims_utils.make_3D_plot(["data/trial3_degree50_offset0.csv"], 9)
+
 
 if __name__ == "__main__":
     main()

@@ -202,7 +202,7 @@ class Simulation:
 
         return None
 
-    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [30,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [0,-9], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
@@ -225,7 +225,7 @@ class Simulation:
         # populates the list of robot objects with agent objects
         for i in range(n):
             my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goals[i], 
-                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -251,7 +251,6 @@ class Simulation:
             log_header.append('agent_' + str(i) + '_x')
             log_header.append('agent_' + str(i) + '_y')
             log_header.append('agent_' + str(i) + '_velocity')
-
         
         # main simulation loop
         while (runs <= stop) and (my_world.id.isConnected()):
