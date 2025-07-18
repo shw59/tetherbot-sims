@@ -27,6 +27,8 @@ DRIVE_POWER = 500 # watts
 MU_STATIC = 1.25
 MU_DYNAMIC = 0.9
 
+# Hello
+
 # paracord 550 parameters
 UNSTRETCHED_TETHER_LENGTH = 1.5
 YOUNGS_MODULUS = 900e6
