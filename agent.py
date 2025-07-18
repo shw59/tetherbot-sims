@@ -276,6 +276,17 @@ class Agent:
 
         return delta
     
+    def is_tether_slack(self):
+        """
+        Checks whether any one of the agent's tethers are slack and returns true if it is.
+        """
+        for tether in self.tethers:
+            if tether is not None and tether.get_strain() < 0:
+                self.tether_slack = True
+                return True
+            
+        return False
+    
     def sense_close_range(self, obj_list, sensing_mode=0):
         """
         Updates the instance variable sensor_data list with 

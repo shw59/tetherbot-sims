@@ -33,6 +33,7 @@ class Simulation:
         self.sensing_period = sensing_period
         self.logging_period = logging_period
         self.gui_on = gui_on
+        self.sim_failed = False
 
     def storm_drain(self):
         """
@@ -178,6 +179,9 @@ class Simulation:
             my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
+                if agent.is_tether_slack():
+                    self.sim_failed = True
+                    break
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
@@ -193,6 +197,9 @@ class Simulation:
 
             if runs % 1000 == 0:
                 sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_storm_drain_screenshot.png")
+
+            if self.sim_failed:
+                break
 
             runs = runs + 1
             
@@ -251,6 +258,8 @@ class Simulation:
             log_header.append('agent_' + str(i) + '_x')
             log_header.append('agent_' + str(i) + '_y')
             log_header.append('agent_' + str(i) + '_velocity')
+
+        log_header.append("slack failure")
         
         # main simulation loop
         while (runs <= stop) and (my_world.id.isConnected()):
@@ -258,6 +267,9 @@ class Simulation:
                 my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
+                if agent.is_tether_slack():
+                    self.sim_failed = True
+                    break
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
@@ -277,8 +289,12 @@ class Simulation:
                     data.append(round(agent.get_pose()[0][0], 5))
                     data.append(round(agent.get_pose()[0][1], 5))
                     data.append(agent.get_velocity())
+                data.append(True)
             
                 sims_utils.log_to_csv(log_file, data, header=log_header)
+
+            if self.sim_failed:
+                break
 
             runs = runs + 1
             
@@ -320,9 +336,9 @@ class Simulation:
 
         # populates the list of robot objects with agent objects
         for i in range(n):
-                    my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
-                                  mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
+            my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                            mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                            mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
         for i in range(n-1):
@@ -362,8 +378,14 @@ class Simulation:
                 my_world.agent_list[failed_agent_num].failed = True
 
             for agent in shuffled_list:
+                if agent.is_tether_slack():
+                    self.sim_failed = True
+                    break
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if self.sim_failed:
+                break
 
             if runs % self.sensing_period == 0:
                 for i in range(len(shuffled_list)):
@@ -472,8 +494,14 @@ class Simulation:
                 sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n * 2 - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects * 2 - 1)])
 
             for agent in shuffled_list:
+                if agent.is_tether_slack():
+                    self.sim_failed = True
+                    break
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if self.sim_failed:
+                break
 
             if runs % self.sensing_period == 0:
                 for i in range(len(shuffled_list)):

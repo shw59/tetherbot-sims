@@ -57,7 +57,7 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_to_fail):
     """
@@ -86,7 +86,7 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "towing failed agents", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "towing failed agents", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
 def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_nums, offsets, maintain_line):
     """
@@ -117,7 +117,7 @@ def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_n
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
     return (csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
             "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_graph_{datetime.datetime.now().date()}.png")
@@ -135,7 +135,7 @@ def run_storm_drain(sim_args):
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
 def main():
     """
