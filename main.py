@@ -27,6 +27,8 @@ DRIVE_POWER = 500 # watts
 MU_STATIC = 1.25
 MU_DYNAMIC = 0.9
 
+# Hello
+
 # paracord 550 parameters
 UNSTRETCHED_TETHER_LENGTH = 1.5
 YOUNGS_MODULUS = 900e6
@@ -57,7 +59,7 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_to_fail):
     """
@@ -86,7 +88,7 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "towing failed agents", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "towing failed agents", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
 def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_nums, offsets, maintain_line):
     """
@@ -117,7 +119,7 @@ def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_n
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
     return (csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
             "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_graph_{datetime.datetime.now().date()}.png")
@@ -135,7 +137,7 @@ def run_storm_drain(sim_args):
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", elapsed_time], ["start time", "simulation type", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
 def main():
     """
@@ -147,8 +149,10 @@ def main():
     # run_storm_drain((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 5000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
-    # run_obstacle_simulations((sim_args, False), 9, 500, [-4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH], [-40, -30, -20, -10, 0, 10, 20, 30, 40], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
+    run_obstacle_simulations((sim_args, True), 3, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [0], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # sims_utils.make_3D_plot(["data/trial3_degree50_offset0.csv"], 9)
+
 
 if __name__ == "__main__":
     main()
