@@ -13,7 +13,7 @@ import os
 class Agent:
     label = "agent" # used for the identification of an agent object when sensing
     joint_indices = [1, 0, 2] # [x-direction, y-direction, rotation/heading]
-    desired_strain = 0.15 # how much strain the agents will attempt to maintain in their tethers, if they have any
+    desired_strain = 0.3 # how much strain the agents will attempt to maintain in their tethers, if they have any
     err_pos = 0.5
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
     err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
@@ -281,8 +281,9 @@ class Agent:
         Checks whether any one of the agent's tethers are slack and returns true if it is.
         """
         for tether in self.tethers:
-            if tether is not None and tether.get_strain() < 0:
-                self.tether_slack = True
+            if tether is not None and tether.get_strain() < -self.err_strain:
+                print("SLACK:")
+                print(tether.get_strain())
                 return True
             
         return False

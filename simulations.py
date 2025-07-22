@@ -15,7 +15,7 @@ import random
 
 class Simulation:
     def __init__(self, time_step, agent_mass, agent_radius, agent_height, agent_max_speed, agent_drive_power, agent_static_mu, agent_dynamic_mu, 
-                 unstretched_tether_length, tether_youngs_modulus, tether_diameter, sensing_period, logging_period, gui_on):
+                 unstretched_tether_length, tether_youngs_modulus, tether_diameter, weight_a, weight_s, weight_g, weight_r, sensing_period, logging_period, gui_on):
         """
         Initializes a simulation object with the given attributes that apply to all simulations run from that instance.
         """
@@ -30,6 +30,10 @@ class Simulation:
         self.unstretched_tether_length = unstretched_tether_length
         self.tether_youngs_modulus = tether_youngs_modulus
         self.tether_diameter = tether_diameter
+        self.weight_angle = weight_a
+        self.weight_strain = weight_s
+        self.weight_gradient = weight_g
+        self.weight_repulsion = weight_r
         self.sensing_period = sensing_period
         self.logging_period = logging_period
         self.gui_on = gui_on
@@ -258,8 +262,6 @@ class Simulation:
             log_header.append('agent_' + str(i) + '_x')
             log_header.append('agent_' + str(i) + '_y')
             log_header.append('agent_' + str(i) + '_velocity')
-
-        log_header.append("slack failure")
         
         # main simulation loop
         while (runs <= stop) and (my_world.id.isConnected()):
@@ -311,16 +313,11 @@ class Simulation:
         """
         my_world = World(150, 20, self.time_step, self.gui_on)
 
-        a_weight = 8 # angle vector weighting
-        s_weight = 5 # strain vector weighting
-        g_weight = 10 # gradient vector weighting
-        r_weight = 4 # repulsion vector weighting
-
         gradient_source = [100, 0]
 
         my_world.set_gradient_source(gradient_source)
 
-        Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
         start_angles = [225]
         for i in range(1, n - 1):
@@ -403,7 +400,7 @@ class Simulation:
         
         my_world.id.disconnect()
 
-        return log_file
+        return log_file, self.sim_failed
 
     def object_capture_trial(self, n, trial_num, time_steps, num_objects, offset, maintain_line):
         """
@@ -412,16 +409,11 @@ class Simulation:
         """
         my_world = World(150, 150, self.time_step, self.gui_on)
 
-        a_weight = 100 # angle vector weighting
-        s_weight = 10 # strain vector weighting
-        g_weight = 4 # gradient vector weighting
-        r_weight = 3 # repulsion vector weighting
-
         gradient_source = [100, 0]
 
         my_world.set_gradient_source(gradient_source)
 
-        Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
         start_angles = [None] + [180] * (n - 2) + [None]
         
@@ -519,4 +511,4 @@ class Simulation:
         
         my_world.id.disconnect()
 
-        return log_file
+        return log_file, self.sim_failed
