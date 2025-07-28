@@ -15,7 +15,7 @@ const char* password = LAB_PW;
 
 // replace with IP address and port of your server to receive messages from the Pico 2 W
 const char* host = LAPTOP_IP_ADDRESS_LAB;
-const int port = 5000;
+const int port = 5001;
 
 // initialize WiFiClient object for the Pico to send messages over wifi
 WiFiClient client;

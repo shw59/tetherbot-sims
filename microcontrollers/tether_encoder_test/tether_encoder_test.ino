@@ -10,8 +10,9 @@
 #include "math.h"
 using namespace BLA;
 
-#define ENC_OFFSET_BOTTOM 170
-#define ENC_OFFSET_TOP 155
+#define ENC_OFFSET_BOTTOM 221.3
+#define ENC_OFFSET_TOP 65.5
+
 
 AS5600 bottomEncoder(&Wire);
 AS5600 topEncoder(&Wire1);
@@ -58,7 +59,15 @@ void loop() {
     thetaTop = 360;
   }
 
-  delta = mod(thetaBottom - thetaTop + 180, 360) - 180;
+  // delta = mod(thetaBottom - thetaTop + 180, 360) - 180;
+
+  // I added the following
+  delta = thetaBottom - thetaTop;
+
+  if (delta < 0){
+    delta = delta + 360;
+  }
+  // I added the above
 
   Serial.print("Top Encoder Angle: ");
   Serial.println(encAngleTop);

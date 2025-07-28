@@ -11,6 +11,8 @@
     use whichever tether is active otherwise (for end robots)
 */
 
+// CHANGED THE FLEX SENSOR CALLIBRATION RANGE FROM 0-->90 TO 45-->90
+
 #include "tether_bot_profiles.h"
 #include <Wire.h>
 #include "AS5600.h"
@@ -70,7 +72,7 @@ struct Tether {
     Serial.println(rawFlexAngle);
 
     // calibrate raw flex sensor values to angles suitable for strain calculations (degrees)
-    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 0, 90);
+    flexAngle = map(rawFlexAngle, flexStraight, flexBent, 45, 90);
 
     Serial.print("Flex Angle: ");
     Serial.println(flexAngle);
@@ -115,8 +117,8 @@ Tether tetherTop(
   TETHER_P_FLEX_BENT
 );
 
-constexpr float ANGLE_WEIGHT = 5;
-constexpr float STRAIN_WEIGHT = 15;
+constexpr float ANGLE_WEIGHT = 67;
+constexpr float STRAIN_WEIGHT = 100;
 constexpr float GRADIENT_WEIGHT = 10;
 constexpr float REPULSION_WEIGHT = 1;
 
@@ -127,7 +129,7 @@ constexpr float ERR_ANGLE_STRAIN = 10; // error tolerance for angle of the flex 
 constexpr float ERR_PID = 20; // PWM error threshold
 constexpr float ERR_OVERALL = 2; // error tolerance for overall correction vector magnitude
  
-constexpr int MIN_PWM = 145; // minimum PWM value that can be written to the motors
+constexpr int MIN_PWM = 180; // minimum PWM value that can be written to the motors
 
 // PID over heading parameters
 unsigned long prevTimeHeading = ULONG_MAX;
@@ -170,7 +172,7 @@ void setup() {
   pinMode(RIGHT_MOTOR_FORWARD, OUTPUT);
   pinMode(RIGHT_MOTOR_BACKWARD, OUTPUT);
   pinMode(LEFT_MOTOR_FORWARD, OUTPUT);
-  pinMode(RIGHT_MOTOR_BACKWARD, OUTPUT);
+  pinMode(LEFT_MOTOR_BACKWARD, OUTPUT);
 
   pinMode(TOP_FLEX_SENSOR, INPUT);
   pinMode(BOTTOM_FLEX_SENSOR, INPUT);
@@ -192,7 +194,7 @@ void setup() {
   vectorAngle = {0, 0};
   vectorGradient = {0, 0};
 
-  delay(30000);
+  delay(45000);
 }
 
 void loop() {
@@ -247,11 +249,23 @@ void loop() {
         currState = DRIVING;
       }
 
+      Serial.println(" ");
+      Serial.println(" ");
+
       break;
     case SPINNING:
       Serial.println("SPINNING");
       // update PID-corrected PWM output
       updateHeadingPID();
+
+      Serial.print("Angle Vector: ");
+      Serial.println(vectorAngle);
+
+      Serial.print("Strain Vector P: ");
+      Serial.println(vectorStrainTop);
+
+      Serial.print("Strain Vector m: ");
+      Serial.println(vectorStrainBottom);
 
       Serial.print("PID Heading PWM Raw: ");
       Serial.println(pidHeadingOut);
@@ -271,18 +285,40 @@ void loop() {
         }
       }
 
+      // delay(500);
+
+      Serial.println(" ");
+      Serial.println(" ");
+
       break;
     case DRIVING:
       Serial.println("DRIVING");
       // TODO: do PID control feedback on speed/position here and set next state to IDLE once robot has reached the desired goals in terms of tether angle/strain
       // update PID-corrected PWM output
       // updatePositionPID();
+
+      Serial.print("Angle Vector: ");
+      Serial.println(vectorAngle);
+
+      Serial.print("Strain Vector P: ");
+      Serial.println(vectorStrainTop);
+
+      Serial.print("Strain Vector m: ");
+      Serial.println(vectorStrainBottom);
       
       // drive robot forward accordingly
       // driveMotors(pidPositionOut, pidPositionOut);=
-      driveMotors(150, 150);
-      delay(500);
-      driveMotors(0, 0);
+      if (!FOLLOWS_GRADIENT) {
+        driveMotors(150, 150);
+        delay(200);
+        driveMotors(0, 0);
+        delay(500);
+      } else {
+        driveMotors(150, 150);
+        delay(200);
+        driveMotors(0, 0);
+        delay(1000);
+      }
 
       // if robot has reached desired position, move on to idle state
       currState = IDLE;
@@ -290,10 +326,13 @@ void loop() {
       //   currState = IDLE;
       // }
 
+      Serial.println(" ");
+      Serial.println(" ");
+
       break;
     }
 
-    delay(500);
+    // delay(100);
 }
 
 void readSensors() {
@@ -302,7 +341,16 @@ void readSensors() {
   tetherTop.readTetherSensors();
 
   // update delta
-  delta = smallestSignedAngleDiff(tetherTop.theta, tetherBottom.theta);
+  // delta = smallestSignedAngleDiff(tetherTop.theta, tetherBottom.theta);
+
+
+  // I added the following
+  delta = tetherBottom.theta - tetherTop.theta;
+
+  if (delta < 0){
+    delta = delta + 360;
+  }
+  // I added the above
 
   // set the bottom tether theta as reference theta for heading by default unless bottom tether is not being used
   thetaTetherRef = tetherBottom.theta;
@@ -342,9 +390,9 @@ void computeVectorStrain(Tether& tether) {
 
   // assign to the corresponding global variable
   if (&tether == &tetherBottom) {
-    vectorStrainBottom = 0.01f * vectorStrain;
+    vectorStrainBottom = 0.1f * vectorStrain;
   } else {
-    vectorStrainTop = 0.01f * vectorStrain;
+    vectorStrainTop = 0.1f * vectorStrain;
   } 
 }
 
@@ -357,7 +405,19 @@ void computeVectorAngle() {
 
   // keep angle vector at 0 if error it is close enough to the goal angle
   if (fabs(deltaError) > ERR_ANGLE_HEADING) {
-    float angleMagnitude = sign(deltaError) * sqrt(fabs(deltaError) / 360);
+    float sign;
+
+    if (delta < 180 && delta > GOAL_DELTA) {
+      sign = -1.0;
+    } else if (delta < 180 && delta < GOAL_DELTA) {
+      sign = 1.0;
+    } else if (delta > 180 && delta < GOAL_DELTA) {
+      sign = -1.0;
+    } else {
+      sign = 1.0;
+    }
+
+    float angleMagnitude = sign * sqrt(fabs(deltaError) / 360);
 
     // get unit vectors for the tether headings
     Matrix<2,1> tetherVectorBottom = {cos(toRadians(tetherBottom.theta)), sin(toRadians(tetherBottom.theta))};
@@ -367,7 +427,7 @@ void computeVectorAngle() {
     Matrix<2,1> angleHeadingUnitVector = normalizeVector(tetherVectorBottom) + normalizeVector(tetherVectorTop);
 
     // if delta is roughly 180 degrees, make the next vector heading the perpendicular vector between them following the direction the robot is currently facing
-    if (fabs(delta) == 180.0) {
+    if (fabs(delta) > 160.0 && fabs(delta) < 200.0 && fabs(deltaError) >= ERR_ANGLE_HEADING) {
       // take the larger theta and rotate it counter clockwise by 90 degrees to get the new vector direction
       float perpHeading;
       if (tetherTop.theta > tetherBottom.theta) {
@@ -377,13 +437,14 @@ void computeVectorAngle() {
       }
 
       angleHeadingUnitVector = {cos(toRadians(perpHeading)), sin(toRadians(perpHeading))};
+      angleMagnitude = 20;
     }
 
     Serial.print("Tether Direction Unit Vector: ");
     Serial.println(angleHeadingUnitVector);
 
     // assemble the angle vector
-    vectorAngle = 1000.0f * angleMagnitude * angleHeadingUnitVector;
+    vectorAngle = 100.0f * angleMagnitude * angleHeadingUnitVector;
   } else {
     vectorAngle = {0, 0};
   }
@@ -391,22 +452,33 @@ void computeVectorAngle() {
 
 void computeVectorGradient() {
   // since there is no gradient for physical demos right now, we will just use the robot's current unit vector heading as gradient vector
-  vectorGradient = {1, 0};
+  // vectorGradient = {1, 0};
+  if (TETHER_M) {
+    vectorGradient = {cos(toRadians(tetherBottom.theta)), sin(toRadians(tetherBottom.theta))};
+  } else if (TETHER_P){
+    vectorGradient = {cos(toRadians(tetherTop.theta)), sin(toRadians(tetherTop.theta))};
+  }
 }
 
 void computeNextStep() {
   // calculate strain and angle vectors
-  if (TETHER_M && TETHER_P) {
-    computeVectorAngle();
-    computeVectorStrain(tetherBottom);
-    computeVectorStrain(tetherTop);
-  } else if (TETHER_M) {
-    computeVectorStrain(tetherBottom);
-  } else if (TETHER_P) {
-    computeVectorStrain(tetherTop);
+  if (!FOLLOWS_GRADIENT){
+    if (TETHER_M && TETHER_P) {
+        computeVectorAngle();
+        computeVectorStrain(tetherBottom);
+        computeVectorStrain(tetherTop);
+      } else if (TETHER_M) {
+        computeVectorStrain(tetherBottom);
+      } else if (TETHER_P) {
+        computeVectorStrain(tetherTop);
+      }
   } else {
+    vectorStrainBottom = {0,0};
+    vectorStrainTop = {0,0};
+    vectorAngle = {0,0};
     computeVectorGradient();
   }
+
 
   Matrix<2,1> resultant = STRAIN_WEIGHT * (vectorStrainBottom + vectorStrainTop) + ANGLE_WEIGHT * vectorAngle + GRADIENT_WEIGHT * vectorGradient;
 
@@ -483,7 +555,7 @@ void clampOutputPID(int pidOut, int minPwm) {
     pidHeadingPwm = 0;
   } else if (abs(pidOut) < minPwm) {
     // set to minimum output if pid output is lower than minimum
-    pidHeadingPwm = minPwm;
+    pidHeadingPwm = sign(pidOut) * minPwm; // CHANGED THIS LINE FROM: pidHeadingPwm = minPwm;
   } else if (abs(pidOut) > 255) {
     // limit output to between -255 and 255
     pidHeadingPwm = sign(pidOut) * 255;
