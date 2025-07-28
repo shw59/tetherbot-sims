@@ -12,11 +12,11 @@ using namespace BLA;
 #define BOTTOM_FLEX_SENSOR A2
 #define TOP_FLEX_SENSOR A3
 
-#define FLEX_VALUE_BOTTOM_STRAIGHT 420
-#define FLEX_VALUE_BOTTOM_BENT 270
+#define FLEX_VALUE_BOTTOM_STRAIGHT 323
+#define FLEX_VALUE_BOTTOM_BENT 265
 
-#define FLEX_VALUE_TOP_STRAIGHT 301
-#define FLEX_VALUE_TOP_BENT 102
+#define FLEX_VALUE_TOP_STRAIGHT 376
+#define FLEX_VALUE_TOP_BENT 315
 
 int flexAngleBottom;
 int flexAngleTop;
@@ -32,8 +32,11 @@ void loop() {
   int rawFlexValueBottom = analogRead(BOTTOM_FLEX_SENSOR);
   int rawFlexValueTop = analogRead(TOP_FLEX_SENSOR);
 
-  flexAngleBottom = map(rawFlexValueBottom, FLEX_VALUE_BOTTOM_STRAIGHT, FLEX_VALUE_BOTTOM_BENT, 0, 90);
-  flexAngleTop = map(rawFlexValueTop, FLEX_VALUE_TOP_STRAIGHT, FLEX_VALUE_TOP_BENT, 0, 90);
+  flexAngleBottom = map(rawFlexValueBottom, FLEX_VALUE_BOTTOM_STRAIGHT, FLEX_VALUE_BOTTOM_BENT, 45, 90);
+  flexAngleTop = map(rawFlexValueTop, FLEX_VALUE_TOP_STRAIGHT, FLEX_VALUE_TOP_BENT, 45, 90);
+
+  // flexAngleBottom = map(rawFlexValueBottom, FLEX_VALUE_BOTTOM_STRAIGHT, FLEX_VALUE_BOTTOM_BENT, 45, 90);
+  // flexAngleTop = map(rawFlexValueTop, FLEX_VALUE_TOP_STRAIGHT, FLEX_VALUE_TOP_BENT, 45, 90);
 
   Serial.print("Raw Flex Value Top: ");
   Serial.println(rawFlexValueTop);

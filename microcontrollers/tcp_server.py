@@ -12,7 +12,7 @@ import select
 import sys
 
 HOST = '0.0.0.0' # listens for all connections on all interfaces, replace with a specific IP if needed
-PORT = 5000 # 5000 is a good default choice, change if needed
+PORT = 5001 # 5000 is a good default choice, change if needed
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setblocking(False)  # Non-blocking accept
