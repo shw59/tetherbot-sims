@@ -317,7 +317,7 @@ void loop() {
         driveMotors(150, 150);
         delay(200);
         driveMotors(0, 0);
-        delay(1000);
+        delay(3000);
       }
 
       // if robot has reached desired position, move on to idle state
