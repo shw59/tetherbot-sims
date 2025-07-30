@@ -14,8 +14,8 @@ This repository holds the PyBullet simulation framework for realistically simula
 
 - PyBullet measures global heading of an object starting with 0 on the positive x-axis and grow more positive in the counter-clockwise direction and more negative in the clockwise direction. It is unbounded, meaning that the angle measurement accumulates on every rotation and can grow far beyond 360 or -360 degrees. 
 
-- In the visualizer GUI, old Ctrl or Alt and drag the screen with the left mouse button to rotate the camera view. Drag the screen with the middle mouse button to translate camera view.
+- In the visualizer GUI, hold Ctrl or Alt and drag the screen with the left mouse button to rotate the camera view. Drag the screen with the middle mouse button to translate camera view.
 
 ## Agent Class
 
-The Agent class implemented in agent.py represents a tetherbot object. The agent class represent a tetherbot in the sense that it shoudl be.
+The Agent class implemented in agent.py represents a tetherbot object. The agent class represents a tetherbot in the sense that it should be, as in what it would do and have knowledge of in the real world.
