@@ -17,6 +17,7 @@ class Agent:
     err_pos = 0.5
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
     err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to maintain
+    err_slackness = 5e-16 # allowable error in the accuracy of the slackness of the tether
     err_heading = 10
     err_velocity = .1
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
@@ -281,7 +282,7 @@ class Agent:
         Checks whether any one of the agent's tethers are slack and returns true if it is.
         """
         for tether in self.tethers:
-            if tether is not None and tether.get_strain() < -self.err_strain:
+            if tether is not None and tether.get_strain() < -self.err_slackness:
                 print("SLACK:")
                 print(tether.get_strain())
                 return True
