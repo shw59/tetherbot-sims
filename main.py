@@ -19,10 +19,10 @@ SENSING_PERIOD = 5 # number of while loop iterations that run before an agent po
 LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is written to a csv file
 
 # vector weightings
-ANGLE_WEIGHT = 15
-STRAIN_WEIGHT = 300
-GRADIENT_WEIGHT = 50
-REPULSION_WEIGHT = 10
+ANGLE_WEIGHT = 8
+STRAIN_WEIGHT = 5
+GRADIENT_WEIGHT = 10
+REPULSION_WEIGHT = 4
 
 # jackal robot parameters
 MASS = 17 # kg
@@ -164,7 +164,7 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
-    # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 10000, [0, 1, 2, 3, 4])
+    run_tow_failed_agents_simulations((sim_args, False), 5, 10, 10000, [0, 1, 2, 3, 4])
     run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
     # run_obstacle_simulations((sim_args, True), 3, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [0], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
