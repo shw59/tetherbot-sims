@@ -244,6 +244,8 @@ class Simulation:
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -272,8 +274,8 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        
+        self.reset_simulation()
+
         my_world.id.disconnect()
 
         return None
@@ -336,6 +338,8 @@ class Simulation:
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -371,8 +375,7 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        self.debounce_count = 0
+        self.reset_simulation()
 
         my_world.id.disconnect()
 
@@ -454,6 +457,8 @@ class Simulation:
 
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -479,8 +484,7 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        self.debounce_count = 0
+        self.reset_simulation()
         
         my_world.id.disconnect()
 
@@ -572,6 +576,8 @@ class Simulation:
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -596,9 +602,8 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        self.debounce_count = 0
-        
+        self.reset_simulation()
+
         my_world.id.disconnect()
 
         return log_file, self.sim_failed

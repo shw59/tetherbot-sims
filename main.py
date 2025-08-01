@@ -20,7 +20,7 @@ LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is w
 
 # vector weightings
 ANGLE_WEIGHT = 15
-STRAIN_WEIGHT = 100
+STRAIN_WEIGHT = 300
 GRADIENT_WEIGHT = 20
 REPULSION_WEIGHT = 5
 
