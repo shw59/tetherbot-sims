@@ -221,8 +221,8 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        
+        self.reset_simulation()
+
         my_world.id.disconnect()
 
         return None
@@ -320,8 +320,7 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        self.debounce_count = 0
+        self.reset_simulation()
 
         my_world.id.disconnect()
 
@@ -428,8 +427,7 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        self.debounce_count = 0
+        self.reset_simulation()
         
         my_world.id.disconnect()
 
@@ -545,9 +543,8 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.sim_failed = False
-        self.debounce_count = 0
-        
+        self.reset_simulation()
+
         my_world.id.disconnect()
 
         return log_file, self.sim_failed
