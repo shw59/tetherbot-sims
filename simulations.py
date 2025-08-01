@@ -193,6 +193,8 @@ class Simulation:
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -285,6 +287,8 @@ class Simulation:
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -402,6 +406,8 @@ class Simulation:
 
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
@@ -519,6 +525,8 @@ class Simulation:
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
+                else:
+                    self.debounce_count = 0
 
                 if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
