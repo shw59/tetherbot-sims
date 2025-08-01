@@ -14,12 +14,19 @@ import numpy as np
 import random
 
 class Simulation:
+    run_debounce = 35 # number of iterations to wait before checking tether slackness
+    debounce_threshold = 5 # number of iterations that the tether can be slack before simulation is considered failed
+
     def __init__(self, time_step, agent_mass, agent_radius, agent_height, agent_max_speed, agent_drive_power, agent_static_mu, agent_dynamic_mu, 
                  unstretched_tether_length, tether_youngs_modulus, tether_diameter, weight_a, weight_s, weight_g, weight_r, sensing_period, logging_period, gui_on):
         """
         Initializes a simulation object with the given attributes that apply to all simulations run from that instance.
         """
         self.time_step = time_step
+        self.sensing_period = sensing_period
+        self.logging_period = logging_period
+        self.gui_on = gui_on
+
         self.agent_mass = agent_mass
         self.agent_radius = agent_radius
         self.agent_height = agent_height
@@ -27,17 +34,18 @@ class Simulation:
         self.agent_drive_power = agent_drive_power
         self.agent_static_mu = agent_static_mu
         self.agent_dynamic_mu = agent_dynamic_mu
+
         self.unstretched_tether_length = unstretched_tether_length
         self.tether_youngs_modulus = tether_youngs_modulus
         self.tether_diameter = tether_diameter
+
         self.weight_angle = weight_a
         self.weight_strain = weight_s
         self.weight_gradient = weight_g
         self.weight_repulsion = weight_r
-        self.sensing_period = sensing_period
-        self.logging_period = logging_period
-        self.gui_on = gui_on
+
         self.sim_failed = False
+        self.debounce_count = 0
 
     def storm_drain(self):
         """
@@ -234,9 +242,13 @@ class Simulation:
             my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
-                if agent.is_tether_slack():
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+
+                if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
                     break
+
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
@@ -259,6 +271,8 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
+
+        self.sim_failed = False
         
         my_world.id.disconnect()
 
@@ -320,9 +334,13 @@ class Simulation:
                 my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
-                if agent.is_tether_slack():
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+
+                if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
                     break
+
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
@@ -352,6 +370,9 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
+
+        self.sim_failed = False
+        self.debounce_count = 0
 
         my_world.id.disconnect()
 
@@ -426,9 +447,18 @@ class Simulation:
                 my_world.agent_list[failed_agent_num].failed = True
 
             for agent in shuffled_list:
-                if agent.is_tether_slack():
+                if agent.tethers[0] is not None:
+                    print(agent.tethers[0].get_strain())
+                else:
+                    print(agent.tethers[1].get_strain())
+
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+
+                if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
                     break
+
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
@@ -448,6 +478,9 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
+
+        self.sim_failed = False
+        self.debounce_count = 0
         
         my_world.id.disconnect()
 
@@ -537,7 +570,10 @@ class Simulation:
                 sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n * 2 - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects * 2 - 1)])
 
             for agent in shuffled_list:
-                if agent.is_tether_slack():
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+
+                if self.debounce_count >= Simulation.debounce_threshold:
                     self.sim_failed = True
                     break
                 agent.sense_gradient(my_world.gradient_source)
@@ -559,7 +595,18 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
+
+        self.sim_failed = False
+        self.debounce_count = 0
         
         my_world.id.disconnect()
 
         return log_file, self.sim_failed
+    
+    def reset_simulation(self):
+        """
+        Resets the simulation state and flags, clearing any previous data and preparing for a new simulation run.
+        """
+        self.sim_failed = False
+        self.debounce_count = 0
+        # additional reset logic can be added here if needed
