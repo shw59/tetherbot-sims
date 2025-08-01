@@ -19,10 +19,10 @@ SENSING_PERIOD = 5 # number of while loop iterations that run before an agent po
 LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is written to a csv file
 
 # vector weightings
-ANGLE_WEIGHT = 8
-STRAIN_WEIGHT = 5
-GRADIENT_WEIGHT = 10
-REPULSION_WEIGHT = 4
+ANGLE_WEIGHT = 15
+STRAIN_WEIGHT = 100
+GRADIENT_WEIGHT = 20
+REPULSION_WEIGHT = 5
 
 # jackal robot parameters
 MASS = 17 # kg
@@ -66,6 +66,8 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
 
+    return True
+
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_to_fail):
     """
     Runs a series of towing failed agents simulations. 
@@ -86,12 +88,15 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_
         for trial in range(1, num_runs + 1):
             file_name, trial_failed = sim.tow_failed_agents_trial(n, trial, time_steps, failed_agent_num)
             if trial_failed:
-                print("hi")
+                print("TRIAL FAILED")
                 failed_trials.append(trial_failed)
             else:
                 trial_list.append(file_name)
-        csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/tow_failed_agents_trialavg_agent{failed_agent_num}_failed.csv"))
-
+        if trial_list:
+            csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/tow_failed_agents_trialavg_agent{failed_agent_num}_failed.csv"))
+        else:
+            return False
+        
     sims_utils.make_graph(csv_averages_list, "time step", ["failed agent x-position"], [f"agent {i} failed" for i in range(n)],
                           "Failed Agent x-Position vs Time Step", "Time Step", ["Failed Agent x-Position"], f"data/figures/towing_agents_graph_{datetime.datetime.now().date()}.png")
 
@@ -100,6 +105,8 @@ def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_
     elapsed_time = end_time - start_time
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "towing failed agents", elapsed_time, failed_trials], SIM_LOG_HEADER)
+
+    return True
 
 def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_nums, offsets, maintain_line):
     """
@@ -126,7 +133,10 @@ def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_n
                     failed_trials.append(file_name)
                 else:
                     trial_list.append(file_name)
-            csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}_offset{offset}.csv"))
+            if trial_list:
+                csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}_offset{offset}.csv"))
+            else:
+                return False
 
         sims_utils.make_graph(csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
                               f"Collective Radius and # of Objects Collected vs Time Step, with Offset {offset}", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_offset{offset}_graph_{datetime.datetime.now().date()}.png")
@@ -137,8 +147,7 @@ def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_n
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"object capture, maintain line {maintain_line}", elapsed_time, failed_trials], SIM_LOG_HEADER)
 
-    return (csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
-            "Collective Radius and # of Objects Collected vs Time Step", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_graph_{datetime.datetime.now().date()}.png")
+    return True
 
 def run_storm_drain(sim_args):
     start_time = time.perf_counter()
@@ -155,6 +164,8 @@ def run_storm_drain(sim_args):
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", "total trials", elapsed_time, ""], SIM_LOG_HEADER)
 
+    return True
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
@@ -164,7 +175,7 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
-    run_tow_failed_agents_simulations((sim_args, False), 5, 10, 10000, [0, 1, 2, 3, 4])
+    run_tow_failed_agents_simulations((sim_args, True), 2, 10, 10000, [0, 1, 2, 3, 4])
     run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
     # run_obstacle_simulations((sim_args, True), 3, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [0], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
