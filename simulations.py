@@ -54,18 +54,13 @@ class Simulation:
         """
         n = 7
 
-        a_weight = 8 # angle vector weighting
-        s_weight = 15 # strain vector weighting
-        g_weight = 7 # gradient vector weighting
-        r_weight = 3 # repulsion vector weighting
-
         gradient = [0, 50]
 
         my_world = World(120, 120, self.time_step, self.gui_on)
 
         my_world.set_gradient_source(gradient)
 
-        Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
         angles = [None, 180, 180, 180, 180, 180, None]
         
@@ -76,7 +71,7 @@ class Simulation:
         # populates the list of robot objects with robot objects
         for i in range(n):
             my_world.create_agent(initial_robot_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -242,6 +237,11 @@ class Simulation:
             my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
+                if agent.tethers[0] is not None:
+                    print(agent.tethers[0].get_strain())
+                else:
+                    print(agent.tethers[1].get_strain())
+
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
                 else:
@@ -409,7 +409,7 @@ class Simulation:
         # populates the list of robot objects with agent objects
         for i in range(n):
             my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                            mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                            mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                             mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -450,10 +450,10 @@ class Simulation:
                 my_world.agent_list[failed_agent_num].failed = True
 
             for agent in shuffled_list:
-                if agent.tethers[0] is not None:
-                    print(agent.tethers[0].get_strain())
-                else:
-                    print(agent.tethers[1].get_strain())
+                # if agent.tethers[0] is not None:
+                #     print(agent.tethers[0].get_strain())
+                # else:
+                #     print(agent.tethers[1].get_strain())
 
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
@@ -515,7 +515,7 @@ class Simulation:
         # populates the list of robot objects with agent objects
         for i in range(n):
             my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
