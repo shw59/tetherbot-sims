@@ -14,10 +14,10 @@ on which tether bot you are flashing code to.
 
 
 // uncomment the tether bot being used
-// #define ROBOT_0
+#define ROBOT_0
 // #define ROBOT_1
 // #define ROBOT_2
-#define ROBOT_3
+// #define ROBOT_3
 // #define ROBOT_4
 // #define ROBOT_5
 
@@ -31,8 +31,8 @@ on which tether bot you are flashing code to.
  #define TETHER_M_ENC_OFFSET 290
  #define TETHER_P_ENC_OFFSET 191
 
- #define TETHER_M_FLEX_STRAIGHT 350
- #define TETHER_M_FLEX_BENT 270
+ #define TETHER_M_FLEX_STRAIGHT 360
+ #define TETHER_M_FLEX_BENT 273
 
  #define TETHER_P_FLEX_STRAIGHT 155
  #define TETHER_P_FLEX_BENT 91
@@ -47,14 +47,14 @@ on which tether bot you are flashing code to.
  #define TETHER_M 1
  #define TETHER_P 1
 
- #define TETHER_M_ENC_OFFSET 221.3
- #define TETHER_P_ENC_OFFSET 65.5
+ #define TETHER_M_ENC_OFFSET 219.81
+ #define TETHER_P_ENC_OFFSET 60.65
 
- #define TETHER_M_FLEX_STRAIGHT 230
- #define TETHER_M_FLEX_BENT 154
+ #define TETHER_M_FLEX_STRAIGHT 226
+ #define TETHER_M_FLEX_BENT 164
 
- #define TETHER_P_FLEX_STRAIGHT 255
- #define TETHER_P_FLEX_BENT 193
+ #define TETHER_P_FLEX_STRAIGHT 260
+ #define TETHER_P_FLEX_BENT 196
 
  #define GOAL_DELTA 180
 #endif
@@ -85,14 +85,14 @@ on which tether bot you are flashing code to.
  #define TETHER_M 1
  #define TETHER_P 1
 
- #define TETHER_M_ENC_OFFSET 186.5
- #define TETHER_P_ENC_OFFSET 290
+ #define TETHER_M_ENC_OFFSET 200
+ #define TETHER_P_ENC_OFFSET 288
 
- #define TETHER_M_FLEX_STRAIGHT 345
- #define TETHER_M_FLEX_BENT 256
+ #define TETHER_M_FLEX_STRAIGHT 310
+ #define TETHER_M_FLEX_BENT 251
 
- #define TETHER_P_FLEX_STRAIGHT 347
- #define TETHER_P_FLEX_BENT 283
+ #define TETHER_P_FLEX_STRAIGHT 322
+ #define TETHER_P_FLEX_BENT 285
 
  #define GOAL_DELTA 180
 #endif
@@ -104,11 +104,11 @@ on which tether bot you are flashing code to.
  #define TETHER_M 1
  #define TETHER_P 1
 
- #define TETHER_M_ENC_OFFSET 175.7
- #define TETHER_P_ENC_OFFSET 151.6
+ #define TETHER_M_ENC_OFFSET 177.4
+ #define TETHER_P_ENC_OFFSET 153.37
 
- #define TETHER_M_FLEX_STRAIGHT 360
- #define TETHER_M_FLEX_BENT 285
+ #define TETHER_M_FLEX_STRAIGHT 366
+ #define TETHER_M_FLEX_BENT 282
 
  #define TETHER_P_FLEX_STRAIGHT 315
  #define TETHER_P_FLEX_BENT 255

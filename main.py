@@ -163,8 +163,8 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    # run_storm_drain((sim_args, True))
-    run_tow_failed_agents_simulations((sim_args, False), 5, 10, 10000, [0, 1, 2, 3, 4])
+    run_storm_drain((sim_args, True))
+    # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 10000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
     # run_obstacle_simulations((sim_args, True), 3, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [0], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
