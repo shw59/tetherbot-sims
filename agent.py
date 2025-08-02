@@ -19,7 +19,7 @@ class Agent:
     err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to 
     err_heading = 10
     err_velocity = .1
-    slack_threshold = 0.2 # the threshold for when a tether is considered slack
+    slack_threshold = 0 # the threshold for when a tether is considered slack
     angle_weight, strain_weight, gradient_weight, repulsion_weight = [5, 6, 2, 5] # The different weightings for the resultant vector, see compute_next_step
 
     @classmethod

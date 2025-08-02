@@ -450,10 +450,10 @@ class Simulation:
                 my_world.agent_list[failed_agent_num].failed = True
 
             for agent in shuffled_list:
-                if agent.tethers[0] is not None:
-                    print(agent.tethers[0].get_strain())
-                else:
-                    print(agent.tethers[1].get_strain())
+                # if agent.tethers[0] is not None:
+                #     print(agent.tethers[0].get_strain())
+                # else:
+                #     print(agent.tethers[1].get_strain())
 
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
