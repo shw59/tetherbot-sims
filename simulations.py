@@ -52,6 +52,8 @@ class Simulation:
         Generates an environment like the one described in the research paper. The robots go through a pipe, get
         to a storm drain, and then collect debris in the storm drain and bring it to the top of the tank.
         """
+        self.reset_simulation()
+        
         n = 7
 
         gradient = [0, 50]
@@ -274,8 +276,6 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.reset_simulation()
-
         my_world.id.disconnect()
 
         return None
@@ -284,6 +284,7 @@ class Simulation:
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
+        self.reset_simulation()
 
         my_world = World(200, 200, self.time_step, gui_on=self.gui_on)
 
@@ -375,8 +376,6 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.reset_simulation()
-
         my_world.id.disconnect()
 
         return log_file
@@ -386,6 +385,8 @@ class Simulation:
         This experiment takes a group of n agents in a W formation and causes one of them to fail at t = 100.
         The other agents attempt to tow the failed agent as the collective advances towards the gradient source goal.
         """
+        self.reset_simulation()
+
         my_world = World(150, 20, self.time_step, self.gui_on)
 
         gradient_source = [100, 0]
@@ -483,8 +484,6 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
-
-        self.reset_simulation()
         
         my_world.id.disconnect()
 
@@ -495,6 +494,8 @@ class Simulation:
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.
         """
+        self.reset_simulation()
+
         my_world = World(150, 150, self.time_step, self.gui_on)
 
         gradient_source = [100, 0]
@@ -601,8 +602,6 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
-
-        self.reset_simulation()
 
         my_world.id.disconnect()
 

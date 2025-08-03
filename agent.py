@@ -34,7 +34,7 @@ class Agent:
         """
         Initializes an agent object and its position and id attributes.
 
-        position_0: a three dimenstional vector in the form [x, y, z] (z is the offset from the plane where a z of 0 means the agent is resting exactly on top of the plane)
+        position_0: a three dimensional vector in the form [x, y, z] (z is the offset from the plane where a z of 0 means the agent is resting exactly on top of the plane)
         heading_0: the direction the heading will face, a float in degrees whose angle is measured from the +x-axis
         radius: the radius of the cylindrical body of the agent, a float
         mass: the mass of the agent, a float

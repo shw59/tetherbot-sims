@@ -162,7 +162,7 @@ def run_storm_drain(sim_args):
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", "total trials", elapsed_time, ""], SIM_LOG_HEADER)
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", elapsed_time, ""], SIM_LOG_HEADER)
 
     return True
 
