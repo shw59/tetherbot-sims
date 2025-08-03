@@ -52,12 +52,9 @@ class Simulation:
         Generates an environment like the one described in the research paper. The robots go through a pipe, get
         to a storm drain, and then collect debris in the storm drain and bring it to the top of the tank.
         """
+        self.reset_simulation()
+        
         n = 7
-
-        a_weight = 8 # angle vector weighting
-        s_weight = 15 # strain vector weighting
-        g_weight = 7 # gradient vector weighting
-        r_weight = 3 # repulsion vector weighting
 
         gradient = [0, 50]
 
@@ -65,7 +62,7 @@ class Simulation:
 
         my_world.set_gradient_source(gradient)
 
-        Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
         angles = [None, 180, 180, 180, 180, 180, None]
         
@@ -76,7 +73,7 @@ class Simulation:
         # populates the list of robot objects with robot objects
         for i in range(n):
             my_world.create_agent(initial_robot_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -242,6 +239,11 @@ class Simulation:
             my_world.id.getCameraImage(320,200)
 
             for agent in shuffled_list:
+                if agent.tethers[0] is not None:
+                    print(agent.tethers[0].get_strain())
+                else:
+                    print(agent.tethers[1].get_strain())
+
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
                 else:
@@ -274,8 +276,6 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.reset_simulation()
-
         my_world.id.disconnect()
 
         return None
@@ -284,6 +284,7 @@ class Simulation:
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
+        self.reset_simulation()
 
         my_world = World(200, 200, self.time_step, gui_on=self.gui_on)
 
@@ -375,8 +376,6 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
-        self.reset_simulation()
-
         my_world.id.disconnect()
 
         return log_file
@@ -386,6 +385,8 @@ class Simulation:
         This experiment takes a group of n agents in a W formation and causes one of them to fail at t = 100.
         The other agents attempt to tow the failed agent as the collective advances towards the gradient source goal.
         """
+        self.reset_simulation()
+
         my_world = World(150, 20, self.time_step, self.gui_on)
 
         gradient_source = [100, 0]
@@ -409,7 +410,7 @@ class Simulation:
         # populates the list of robot objects with agent objects
         for i in range(n):
             my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                            mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                            mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                             mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -483,8 +484,6 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
-
-        self.reset_simulation()
         
         my_world.id.disconnect()
 
@@ -495,6 +494,8 @@ class Simulation:
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.
         """
+        self.reset_simulation()
+
         my_world = World(150, 150, self.time_step, self.gui_on)
 
         gradient_source = [100, 0]
@@ -515,7 +516,7 @@ class Simulation:
         # populates the list of robot objects with agent objects
         for i in range(n):
             my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
-                                  mass=self.agent_mass, height=self.agent_height, color=(1, 0, 0, 1), mu_static=self.agent_static_mu,
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
                                   mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
 
         # populates the list of tether objects with tether objects
@@ -601,8 +602,6 @@ class Simulation:
             runs = runs + 1
             
             my_world.id.stepSimulation()
-
-        self.reset_simulation()
 
         my_world.id.disconnect()
 
