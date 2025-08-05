@@ -1,1 +1,4 @@
 start time,simulation type,elapsed time (s),failed trials
+2025-08-02 21:01:58.062091,towing failed agents,28855.97950305417,[]
+2025-08-03 05:02:54.043206,"object capture, maintain line False",96099.09296793863,[]
+2025-08-04 07:44:33.137379,"object capture, maintain line True",84710.02542079613,[]
