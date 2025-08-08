@@ -58,14 +58,15 @@ def edit_towing_agents():
 
 def edit_obj_capture():
     # load the pickled figure
-    with open("./data/figures/object_capture_maintain_line_False_offset2_graph_2025-08-03.png.pkl", "rb") as f:
+    with open("./data/figures/object_capture_maintain_line_True_offset4_graph_2025-08-05.png.pkl", "rb") as f:
         fig = pickle.load(f)
+
+    # legend_colors = ["yellow", "red", "purple", "blue"]
 
     # access all axes in the figure
     for ax in fig.axes:
         # change title font size
-        ax.set_title("Object Capture Over Time (No Offset)")
-        # ax.set_title("")
+        ax.set_title("")
         ax.title.set_fontsize(30)
 
         # change x/y label font sizes
@@ -84,12 +85,17 @@ def edit_obj_capture():
         for tick in ax.yaxis.get_major_ticks():
             tick.label1.set_fontsize(30)
 
+        # ax.lines → list of Line2D objects (for line plots)
+        # for i, line in enumerate(ax.lines):
+        #     color = legend_colors[i % len(legend_colors)]
+        #     line.set_color(color)
+
         # change legend font size (if it exists)
         legend = ax.get_legend()
         handles, labels = ax.get_legend_handles_labels()
         if legend:
             new_labels = ["5 Obj", "10 Obj", "30 Obj", "50 Obj"]
-            ax.legend(handles, new_labels, loc='upper right', fontsize=25)
+            ax.legend(handles, new_labels, loc='upper right', fontsize=24)
 
     # optionally show or save again
     # plt.show()
