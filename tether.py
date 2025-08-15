@@ -27,16 +27,46 @@ class Tether:
 
         dy = length_0 / num_segments  # length of every segment along the tether between each pair of vertices
         dx = 0.01  # half the width of the tether
+        dz = 0.02 # height of tether (if applicable)
+
         lines = ["o tether"]
         # vertices
         for i in range(num_segments + 1):
             y = -dy * num_segments/2 + dy * i
             lines.append(f"v  { dx:.6f} {y:.6f} 0.000000")
             lines.append(f"v {-dx:.6f} {y:.6f} 0.000000")
+            
+            # # top
+            # lines.append(f"v  { dx:.6f} {y:.6f} {dz:.6f}")
+            # lines.append(f"v {-dx:.6f} {y:.6f} {dz:.6f}")
         # faces
         for i in range(num_segments):
             a, b, c, d = 2*i+1, 2*i+3, 2*i+2, 2*i+4
             lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
+                    
+            # # bottom face
+            # a, b, c, d = 4*i+1, 4*i+5, 4*i+2, 4*i+6
+            # lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
+
+            # # top face
+            # a, b, c, d = 4*i+3, 4*i+7, 4*i+4, 4*i+8
+            # lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
+
+            # # right face
+            # a, b, c, d = 4*i+1, 4*i+3, 4*i+5, 4*i+7
+            # lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
+
+            # # left face
+            # a, b, c, d = 4*i+2, 4*i+4, 4*i+6, 4*i+8
+            # lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
+
+            # # front face (between top & bottom of first pair)
+            # a, b, c, d = 4*i+1, 4*i+2, 4*i+3, 4*i+4
+            # lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
+
+            # # back face (between top & bottom of next pair)
+            # a, b, c, d = 4*i+5, 4*i+6, 4*i+7, 4*i+8
+            # lines += [f"f {a} {b} {c}", f"f {c} {b} {d}"]
 
         tether_filename = f"objects/tether.obj"
         open(tether_filename, "w").write("\n".join(lines))
@@ -66,7 +96,7 @@ class Tether:
         """
         Return the current strain of the tether object.
         """
-        n_verts, verts, *_ = self.world_id.getMeshData(self.id, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+        n_verts, verts, *_ = self.get_verts()
 
         length = 0.0
         for i in range(0, n_verts-3, 2): # sum of distances between each pair of vertices on the tether mesh
@@ -75,6 +105,23 @@ class Tether:
             length += math.dist(p1, p2)
 
         return (length - self.length_0) / self.length_0
+
+        # num_sections = n_verts // 4
+        # centers = []
+
+        # for i in range(num_sections):
+        #     base = 4 * i
+        #     # bottom vertices only: BR (0) & BL (1)
+        #     cx = (verts[base][0] + verts[base+1][0]) / 2.0
+        #     cy = (verts[base][1] + verts[base+1][1]) / 2.0
+        #     cz = (verts[base][2] + verts[base+1][2]) / 2.0
+        #     centers.append((cx, cy, cz))
+
+        # length = 0.0
+        # for i in range(num_sections - 1):
+        #     length += math.dist(centers[i], centers[i+1])
+
+        # return (length - self.length_0) / self.length_0
     
     def get_verts(self):
         """
