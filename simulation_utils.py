@@ -127,7 +127,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
         success_list = []
 
         # Goes through each entry in each_runs_trial, where each entry
-        # is a list of the varius trials that correspond to a particular 
+        # is a list of the various trials that correspond to a particular 
         # angle/offset pair
         for i in range(len(each_runs_trial)):
 
@@ -327,9 +327,16 @@ def heat_map(number_of_trials, angles, offsets, logging_period, obstacle_radius)
     
     big_data = []
 
+    small_data = []
+
+    heat_map_csv_file = "data/completed_heatmap_data.csv"
+
+    complete_file_header = []
+
     for d in angles:
         row = []
         for o in offsets:
+            complete_file_header.append('angle_' + str(d) + '_and_offset_' + str(o))
             avg = 0
             for i in range(1,(number_of_trials+1)):
 
@@ -338,9 +345,13 @@ def heat_map(number_of_trials, angles, offsets, logging_period, obstacle_radius)
                 dataaa = obstacle_avoidance_success(['data/trial'+str(i)+'_degree'+str(d)+'_offset'+str(o)+'.csv'], 1, 1, 6000, logging_period, 9, [10,0], obstacle_radius)
                 avg = avg + dataaa[0]
 
+            
             avg = avg/number_of_trials
+            small_data.append(avg)
             row.append(avg)
         big_data.append(row)
+
+    log_to_csv(heat_map_csv_file, small_data, complete_file_header)
 
     plt.imshow(big_data, cmap='viridis', aspect='auto')
     plt.colorbar(label='Success Rate')

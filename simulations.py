@@ -266,8 +266,8 @@ class Simulation:
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
 
-            # if runs % 1000 == 0:
-                # sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_storm_drain_screenshot.png")
+            if runs % 1000 == 0:
+                sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_storm_drain_screenshot.png")
 
             if self.sim_failed:
                 break
