@@ -57,7 +57,7 @@ class Simulation:
         
         n = 7
 
-        gradient = [0, 50]
+        gradient = [7.5, 50]
 
         my_world = World(120, 120, self.time_step, self.gui_on)
 
@@ -85,7 +85,7 @@ class Simulation:
 
         for i in range(30):
             my_world.create_obstacle("cube", [-10, i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-            my_world.create_obstacle("cube", [15, i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+            my_world.create_obstacle("cube", [25, i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
         # top of the sewer tank
         my_world.create_obstacle("cube", [-10, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
@@ -98,16 +98,26 @@ class Simulation:
         my_world.create_obstacle("cube", [-3, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [-2, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [-1, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [6, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [7, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [8, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [9, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [10, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [0, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [1, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [2, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [3, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [4, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [11, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [12, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [13, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [14, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [15, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [16, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [17, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [18, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [19, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [20, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [21, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [22, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [23, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [24, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [25, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
 
         # bottom of the sewer tank
@@ -136,7 +146,18 @@ class Simulation:
         my_world.create_obstacle("cube", [13, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [14, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [15, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [15, -1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [15, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [16, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [17, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [18, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [19, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [20, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [21, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [22, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [23, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [24, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [25, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        my_world.create_obstacle("cube", [25, -1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
         # tube connected to the tank
         my_world.create_obstacle("cube", [-10, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
@@ -227,7 +248,7 @@ class Simulation:
         my_world.create_obstacle("cube", [-29, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [-30, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
-        sims_utils.generate_obstacles(my_world, [15, 30], [-10, -2], 80, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [25, 30], [-10, -2], 100, "cylinder", 0.5, 0.5, False)
         
         runs = 0
 
@@ -244,10 +265,10 @@ class Simulation:
             self.debounce_count = 0
 
             for agent in shuffled_list:
-                if agent.tethers[0] is not None:
-                    print(agent.tethers[0].get_strain())
-                else:
-                    print(agent.tethers[1].get_strain())
+                # if agent.tethers[0] is not None:
+                    # print(agent.tethers[0].get_strain())
+                # else:
+                    # print(agent.tethers[1].get_strain())
 
 
 
@@ -296,7 +317,7 @@ class Simulation:
 
         return None
 
-    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [0,-9], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [30,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """

@@ -528,7 +528,9 @@ def make_3D_plot(csv_files, n, title="Obstacle Avoidance", file_name="graph100.p
         #     ax2.plot(x_vals, y2_vals, linestyle='--')
 
     # Plot the 3D scatter plot
-    ax.scatter3D(x_vals, y_vals, z_vals, c='r', marker='o')
+    # ax.scatter3D(x_vals, y_vals, z_vals, c='r', marker='o')
+    ax.scatter3d(x_vals, y_vals, z_vals, c=z_vals, cmap='viridis', marker='o')
+
 
     # Set labels for the axes
     ax.set_xlabel('X-axis')
