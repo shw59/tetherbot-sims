@@ -53,18 +53,47 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     args, gui_on = sim_args
     sim = Simulation(*args, gui_on=gui_on)
     list_of_file_names = []
-    for t in range(number_of_trials):
-        for a in angles_to_try:
-            for o in offsets:
-                list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation*LOGGING_PERIOD, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position))
+    list_of_averaged_trials = []
+    failed_trials = []
 
-    sims_utils.heat_map(number_of_trials, angles_to_try, offsets, LOGGING_PERIOD, obst_radius)
+    log_file = "data/success_of_averaged_trials_of_obstacle_avoidance.csv"
+
+    log_header = ["Offsets", "Rate of Success"]
+
+    # for t in range(number_of_trials):
+    #     for a in angles_to_try:
+    #         for o in offsets:
+    #             list_of_file_names.append(sim.obstacle_avoidance(n, o, a, stop = length_of_simulation, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position))
+
+    for a in angles_to_try:
+        list_of_file_names = []
+        for o in offsets:
+            list_of_file_names = []
+            data = [str(o/UNSTRETCHED_TETHER_LENGTH)]
+            for t in range(number_of_trials):
+                file_name, trial_failed = sim.obstacle_avoidance(n, o, a, stop = length_of_simulation, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position, a_weight=ANGLE_WEIGHT, s_weight=STRAIN_WEIGHT, g_weight=GRADIENT_WEIGHT, r_weight=REPULSION_WEIGHT)
+                if trial_failed:
+                    print("TRIAL FAILED")
+                    failed_trials.append(trial_failed)
+                else:
+                    list_of_file_names.append(file_name)
+
+            list_of_averaged_trials = [sims_utils.average_csv_trials(list_of_file_names, f"data/average_for_offset_{o}.csv")]
+            success_of_offset = sims_utils.obstacle_avoidance_success(list_of_averaged_trials, 1, 1, length_of_simulation, LOGGING_PERIOD, n, obst_position, obst_radius)[0]
+
+            data.append(success_of_offset)
+
+            sims_utils.log_to_csv(log_file, data, header=log_header)
+
+    # sims_utils.heat_map(number_of_trials, angles_to_try, offsets, LOGGING_PERIOD, obst_radius)
+
+    sims_utils.make_graph([log_file], "Offsets", ["Rate of Success"], title="Rate of success obstacle avoidance", x_label = "Number of tether lengths off center of obstacle", y_labels="Rate of success", file_name= f"data/figures/avoidance_graph_{datetime.datetime.now().date()}.png")
    
     end_time = time.perf_counter()
 
     elapsed_time = end_time - start_time
 
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", "total trials", "failed trials", elapsed_time], ["start time", "simulation type", "total trials", "failed trials", "elapsed time (s)"])
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, "obstacle avoidance", elapsed_time, failed_trials], SIM_LOG_HEADER)
 
     return True
 
@@ -174,12 +203,14 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    run_storm_drain((sim_args, True))
+    # run_storm_drain((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
-    
-    run_obstacle_simulations((sim_args, False), 9, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [-50, -40, -30 -20, -10, 0, 10, 20, 30, 40, 50], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+
+    # offsets = [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH]
+    offsets = [0]
+    run_obstacle_simulations((sim_args, False), 9, 300, offsets, [0], 1, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
     #sims_utils.make_3D_plot(["data/trial3_degree50_offset0.csv"], 9)
 
 
