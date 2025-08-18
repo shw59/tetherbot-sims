@@ -3,3 +3,4 @@ start time,simulation type,elapsed time (s),failed trials
 2025-08-03 05:02:54.043206,"object capture, maintain line False",96099.09296793863,[]
 2025-08-04 07:44:33.137379,"object capture, maintain line True",84710.02542079613,[]
 2025-08-16 20:25:57.207446,storm drain,17944.396751766035,
+2025-08-17 06:39:36.997692,storm drain,9134.746222004003,
