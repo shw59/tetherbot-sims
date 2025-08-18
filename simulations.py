@@ -407,7 +407,7 @@ class Simulation:
                     data.append(round(agent.get_pose()[0][0], 5))
                     data.append(round(agent.get_pose()[0][1], 5))
                     data.append(agent.get_velocity())
-                data.append(True)
+                # data.append(True)
             
                 sims_utils.log_to_csv(log_file, data, header=log_header)
 
@@ -420,7 +420,7 @@ class Simulation:
 
         my_world.id.disconnect()
 
-        return log_file
+        return log_file, self.sim_failed
 
     def tow_failed_agents_trial(self, n, trial_num, time_steps, failed_agent_num):
         """
