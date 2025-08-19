@@ -48,6 +48,329 @@ class Simulation:
         self.debounce_count = 0
         self.old_debounce_count = 0
 
+    def building_plan(self):
+        """
+        Generates an environment that resembles a building plan. The idea is to create a 2D map for a group
+        of agents to traverse through with both movable and non-movable objects.
+        """
+        self.reset_simulation()
+        
+        n = 5
+
+        gradient = [30, 40]
+
+        my_world = World(120, 120, self.time_step, self.gui_on)
+
+        my_world.set_gradient_source(gradient)
+
+        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+
+        # angles = [None, 180, 180, 180, 180, 180, None]
+        angles = [None, 180, 180, 180, None]
+        
+        initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-15,-20,0], "+x")
+        
+        goal_angles = [None, 180, 90, 180, None]
+
+        # populates the list of robot objects with robot objects
+        for i in range(n):
+            my_world.create_agent(initial_robot_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
+                                  mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
+
+        # populates the list of tether objects with tether objects
+        for i in range(n-1):
+            my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments = 10)
+
+
+        # bottom room, bottom right wall
+        my_world.create_obstacle("cube", [-6, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-5, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-4, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-3, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-2, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-1, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [1, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [2, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [3, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [4, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [5, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [6, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # bottom room, right wall
+        my_world.create_obstacle("cube", [7, -17], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -16], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [6, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # bottom room, bottom left wall
+        my_world.create_obstacle("cube", [-13, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-14, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-16, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-17, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # bottom room, left wall
+        my_world.create_obstacle("cube", [-15, -17], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -16], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-15, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # bottom room, top wall
+        my_world.create_obstacle("cube", [-14, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-13, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-12, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-11, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-8, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-7, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-6, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-5, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-4, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-3, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-2, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-1, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # hallway
+        my_world.create_obstacle("cube", [0, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, -1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, 1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, 2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [1, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [2, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [3, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [4, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [5, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [6, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # top room, bottom wall
+        my_world.create_obstacle("cube", [8, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [9, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [10, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [14, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [15, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [16, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # top room, right wall
+        my_world.create_obstacle("cube", [17, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, -1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 16], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 17], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [17, 18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # top room, left wall
+        my_world.create_obstacle("cube", [7, 4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 16], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 17], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [7, 18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # top room, top left
+        my_world.create_obstacle("cube", [8, 18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [9, 18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # top room, top right
+        my_world.create_obstacle("cube", [16, 18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [15, 18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # big couch
+        my_world.create_obstacle("cube", [-10, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-10, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-9, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-8, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-7, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-6, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-5, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-4, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-8, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-7, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-6, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-5, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-4, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # square table
+        my_world.create_obstacle("cube", [0, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [1, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [2, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [1, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [2, -9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [0, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [1, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [2, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # long table
+        my_world.create_obstacle("cube", [11, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # block representing position of gradient
+        my_world.create_obstacle("cube", gradient, length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+
+        # things to collect
+        sims_utils.generate_obstacles(my_world, [8, 8], [10, 16], 5, "cylinder", 0.5, 0.5, False)
+        
+
+
+        runs = 0
+
+        agent_to_update_next = 0
+
+        shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+
+        # main simulation loop
+        while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
+            my_world.id.getCameraImage(320,200)
+
+            
+
+            self.debounce_count = 0
+
+            for agent in shuffled_list:
+                # if agent.tethers[0] is not None:
+                    # print(agent.tethers[0].get_strain())
+                # else:
+                    # print(agent.tethers[1].get_strain())
+
+
+
+
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+                # else:
+                #     self.debounce_count = 0
+
+                if runs%Simulation.run_debounce == 0:
+
+                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                        self.sim_failed = True
+                        break
+
+                    self.old_debounce_count = self.debounce_count
+
+                # if self.debounce_count >= Simulation.debounce_threshold:
+                #     self.sim_failed = True
+                #     break
+
+                agent.sense_gradient(my_world.gradient_source)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if runs % self.sensing_period == 0:
+                for i in range(len(shuffled_list)):
+                    if i == agent_to_update_next:
+                        shuffled_list[i].set_next_step()
+                    
+                agent_to_update_next = agent_to_update_next + 1
+
+                if agent_to_update_next >= len(shuffled_list):
+                    agent_to_update_next = 0
+
+            if runs % 1000 == 0:
+                sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_building_plan_screenshot.png")
+
+            if self.sim_failed:
+                break
+
+            runs = runs + 1
+            
+            my_world.id.stepSimulation()
+
+        my_world.id.disconnect()
+
+        return None
+    
+
     def storm_drain(self):
         """
         Generates an environment like the one described in the research paper. The robots go through a pipe, get
