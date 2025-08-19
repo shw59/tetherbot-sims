@@ -195,6 +195,23 @@ def run_storm_drain(sim_args):
 
     return True
 
+def run_building_plan(sim_args):
+    start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
+    
+    args, gui_on = sim_args
+    sim = Simulation(*args, gui_on=gui_on)
+    sim.gui_on = True
+    sim.building_plan()
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"building plan", elapsed_time, ""], SIM_LOG_HEADER)
+
+    return True
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
@@ -204,15 +221,15 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
+    run_building_plan((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
 
-    # offsets = [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH]
-    offsets = [3*UNSTRETCHED_TETHER_LENGTH, 3.5*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 4.5*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH, 5.5*UNSTRETCHED_TETHER_LENGTH, 6*UNSTRETCHED_TETHER_LENGTH, 6.5*UNSTRETCHED_TETHER_LENGTH, 7*UNSTRETCHED_TETHER_LENGTH, 7.5*UNSTRETCHED_TETHER_LENGTH, 8*UNSTRETCHED_TETHER_LENGTH, 8.5*UNSTRETCHED_TETHER_LENGTH, 9*UNSTRETCHED_TETHER_LENGTH]
-    # offsets = [0, 3]
+    # offsets = [3*UNSTRETCHED_TETHER_LENGTH, 3.5*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 4.5*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH, 5.5*UNSTRETCHED_TETHER_LENGTH, 6*UNSTRETCHED_TETHER_LENGTH, 6.5*UNSTRETCHED_TETHER_LENGTH, 7*UNSTRETCHED_TETHER_LENGTH, 7.5*UNSTRETCHED_TETHER_LENGTH, 8*UNSTRETCHED_TETHER_LENGTH, 8.5*UNSTRETCHED_TETHER_LENGTH, 9*UNSTRETCHED_TETHER_LENGTH]
 
-    run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 4, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+
+    # run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 4, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
     #sims_utils.make_3D_plot(["data/trial3_degree50_offset0.csv"], 9)
 
 
