@@ -226,11 +226,19 @@ def main():
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
 
+    not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75, 8, 8.25, 8.5, 8.75, 9]
+
+    offsets = []
+
+    for i in not_sized_offsets:
+        offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
+
     # offsets = [3*UNSTRETCHED_TETHER_LENGTH, 3.5*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 4.5*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH, 5.5*UNSTRETCHED_TETHER_LENGTH, 6*UNSTRETCHED_TETHER_LENGTH, 6.5*UNSTRETCHED_TETHER_LENGTH, 7*UNSTRETCHED_TETHER_LENGTH, 7.5*UNSTRETCHED_TETHER_LENGTH, 8*UNSTRETCHED_TETHER_LENGTH, 8.5*UNSTRETCHED_TETHER_LENGTH, 9*UNSTRETCHED_TETHER_LENGTH]
 
 
-    # run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 4, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
-    #sims_utils.make_3D_plot(["data/trial3_degree50_offset0.csv"], 9)
+    #offsets = [6.5*UNSTRETCHED_TETHER_LENGTH]
+    run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 2, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    #sims_utils.make_3D_plot(["data/trial3_degree0_offset9.75.csv"], 9)
 
 
 if __name__ == "__main__":

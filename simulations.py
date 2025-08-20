@@ -273,6 +273,9 @@ class Simulation:
         my_world.create_obstacle("cube", [2, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
         # long table
+        my_world.create_obstacle("cube", [11, 4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [11, 6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [11, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [11, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [11, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
@@ -280,6 +283,9 @@ class Simulation:
         my_world.create_obstacle("cube", [11, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [11, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [11, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [12, 6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [12, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [12, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [12, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
@@ -287,6 +293,9 @@ class Simulation:
         my_world.create_obstacle("cube", [12, 11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [12, 12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [12, 13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 4], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 5], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [13, 6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [13, 7], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [13, 8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [13, 9], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
@@ -640,7 +649,7 @@ class Simulation:
 
         return None
 
-    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [30,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+    def obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [100,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
         """
         Generates a very simple formation of agents in order to test the hysteresis.
         """
