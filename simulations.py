@@ -55,7 +55,7 @@ class Simulation:
         """
         self.reset_simulation()
         
-        n = 6
+        n = 5
 
         gradient = [30, 40]
 
@@ -66,11 +66,11 @@ class Simulation:
         Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
         # angles = [None, 180, 180, 180, 180, 180, None]
-        angles = [None, 180, 180, 180, 180, None]
+        angles = [None, 180, 180, 180, None]
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-18,-20,0], "+x")
         
-        goal_angles = [None, 210, 210, 210, 210, None]
+        goal_angles = [None, 210, 210, 210, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
