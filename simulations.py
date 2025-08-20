@@ -758,6 +758,134 @@ class Simulation:
         my_world.id.disconnect()
 
         return log_file, self.sim_failed
+    
+
+
+
+
+
+
+    def one_agent_follows_gradient(self):
+        """
+        """
+        self.reset_simulation()
+        
+        n = 5
+
+        gradient = [20, 0]
+
+        my_world = World(120, 120, self.time_step, self.gui_on)
+
+        my_world.set_gradient_source(gradient)
+
+        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+
+        angles = [None, 180, 180, 180, None]
+        
+        initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [0,0,0], "+y")
+        
+        goal_angles = [None, 180, 180, 180, None]
+
+        # populates the list of robot objects with robot objects
+        for i in range(n):
+            if i == 0:
+                my_world.create_agent(initial_robot_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
+                                  mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power, only_gradient=True, dont_care_about_gradient = False)
+            else:
+                my_world.create_agent(initial_robot_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
+                                  mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power, only_gradient=False, dont_care_about_gradient = True)
+            
+
+        # populates the list of tether objects with tether objects
+        for i in range(n-1):
+            my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments = 10)
+        
+        runs = 0
+
+        agent_to_update_next = n - 1
+
+        update_cycles_to_weight = 6
+        
+        update_cycles_weighted = 0
+
+        # shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+
+        # main simulation loop
+        while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
+            my_world.id.getCameraImage(320,200)
+
+            self.debounce_count = 0
+
+            for agent in my_world.agent_list:
+                # if agent.tethers[0] is not None:
+                    # print(agent.tethers[0].get_strain())
+                # else:
+                    # print(agent.tethers[1].get_strain())
+
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+                # else:
+                #     self.debounce_count = 0
+
+                if runs%Simulation.run_debounce == 0:
+
+                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                        self.sim_failed = True
+                        break
+
+                    self.old_debounce_count = self.debounce_count
+
+                # if self.debounce_count >= Simulation.debounce_threshold:
+                #     self.sim_failed = True
+                #     break
+
+                agent.sense_gradient(my_world.gradient_source)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if runs % self.sensing_period == 0:
+                for i in range(len(my_world.agent_list) - 1 , -1, -1):
+                    print(i)
+                    if i == 0 and update_cycles_weighted < update_cycles_to_weight:
+                        update_cycles_weighted = update_cycles_weighted + 1
+                    elif i == 0 and update_cycles_weighted >= update_cycles_to_weight:
+                        my_world.agent_list[i].set_next_step()
+                        update_cycles_weighted = 0
+                    else:
+                        if i == agent_to_update_next:
+                            my_world.agent_list[i].set_next_step()
+                    
+                # if update_cycles_weighted > update_cycles_to_weight:
+                #     update_cycles_weighted = 0
+
+                agent_to_update_next = agent_to_update_next - 1
+
+                if agent_to_update_next < 0:
+                    agent_to_update_next = len(my_world.agent_list) - 1
+
+            if runs % 1000 == 0:
+                sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_one_agent_follows_g_screenshot.png")
+
+            if self.sim_failed:
+                break
+
+            runs = runs + 1
+            
+            my_world.id.stepSimulation()
+
+        my_world.id.disconnect()
+
+        return None
+
+
+
+
+
+
+
+
+    
 
     def tow_failed_agents_trial(self, n, trial_num, time_steps, failed_agent_num):
         """

@@ -97,6 +97,29 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     return True
 
+
+
+def run_one_agent_follows_gradient(sim_args):
+    start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
+    
+    args, gui_on = sim_args
+    sim = Simulation(*args, gui_on=gui_on)
+    sim.gui_on = True
+    sim.one_agent_follows_gradient()
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"one agent follows gradient", elapsed_time, ""], SIM_LOG_HEADER)
+
+    return True
+
+
+
+
+
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_to_fail):
     """
     Runs a series of towing failed agents simulations. 
@@ -221,7 +244,8 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
-    run_building_plan((sim_args, True))
+    # run_building_plan((sim_args, True))
+    run_one_agent_follows_gradient((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
