@@ -308,7 +308,9 @@ class Simulation:
         my_world.create_obstacle("cube", gradient, length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
         # things to collect
-        sims_utils.generate_obstacles(my_world, [8, 8], [10, 16], 5, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [8, 5], [10, 14], 5, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [3, -2], [5, 2], 2, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [-3, -10], [-1, -8], 2, "cylinder", 0.5, 0.5, False)
         
 
 
