@@ -68,7 +68,7 @@ class Simulation:
         # angles = [None, 180, 180, 180, 180, 180, None]
         angles = [None, 180, 180, 180, 180, None]
         
-        initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-16,-20,0], "+x")
+        initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-18,-20,0], "+x")
         
         goal_angles = [None, 210, 210, 210, 210, None]
 
@@ -123,6 +123,9 @@ class Simulation:
         my_world.create_obstacle("cube", [-15, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [-16, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [-17, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-18, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-19, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        my_world.create_obstacle("cube", [-20, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
         # bottom room, left wall
         my_world.create_obstacle("cube", [-15, -17], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
