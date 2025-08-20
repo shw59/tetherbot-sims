@@ -25,3 +25,4 @@ start time,simulation type,elapsed time (s),failed trials
 2025-08-18 22:00:23.386238,obstacle avoidance,54.493512125,[]
 2025-08-19 06:31:53.252287,obstacle avoidance,27347.61236299906,[]
 2025-08-19 16:26:17.437833,obstacle avoidance,1865.8353878959315,[]
+2025-08-20 06:44:54.836228,building plan,4003.4198674369836,

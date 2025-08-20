@@ -70,7 +70,7 @@ class Simulation:
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-15,-20,0], "+x")
         
-        goal_angles = [None, 180, 90, 180, None]
+        goal_angles = [None, 210, 210, 210, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -310,7 +310,7 @@ class Simulation:
         # things to collect
         sims_utils.generate_obstacles(my_world, [8, 5], [10, 14], 5, "cylinder", 0.5, 0.5, False)
         sims_utils.generate_obstacles(my_world, [3, -2], [5, 2], 2, "cylinder", 0.5, 0.5, False)
-        sims_utils.generate_obstacles(my_world, [-3, -10], [-1, -8], 2, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [3, -10], [5, -8], 2, "cylinder", 0.5, 0.5, False)
         
 
 

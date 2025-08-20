@@ -237,8 +237,8 @@ def main():
 
 
     #offsets = [6.5*UNSTRETCHED_TETHER_LENGTH]
-    run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 2, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
-    #sims_utils.make_3D_plot(["data/trial3_degree0_offset9.75.csv"], 9)
+    #run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 2, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    #sims_utils.make_3D_plot(["data/trial1_degree0_offset4.5.csv"], 9)
 
 
 if __name__ == "__main__":
