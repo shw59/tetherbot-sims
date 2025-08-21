@@ -806,7 +806,7 @@ class Simulation:
 
         agent_to_update_next = n - 1
 
-        update_cycles_to_weight = 6
+        update_cycles_to_weight = 3
         
         update_cycles_weighted = 0
 
