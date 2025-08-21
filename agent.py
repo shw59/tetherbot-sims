@@ -200,6 +200,13 @@ class Agent:
         """
         self.desired_tether_angle = goal_delta
 
+    def fix_agent(self):
+        """
+        Fixes the agent's position and orientation.
+        """
+        position3d = (self.get_pose()[0][0], self.get_pose()[0][1], 0)
+        self.world_id.createConstraint(self.id, 2, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], position3d)
+
     def get_pose(self):
         """
         Returns the current position, vector heading, and angle heading of the agent as a list [[x, y], [x_heading, y_heading], angle (degrees)].
@@ -223,6 +230,20 @@ class Agent:
         total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
 
         return total_velocity
+    
+    def get_net_force(self):
+        """
+        Returns the net force acting on the agent as a vector [x, y, z].
+        """
+        joint_states = self.world_id.getJointStates(self.id, Agent.joint_indices)
+        total_force = np.array([0.0, 0.0, 0.0])
+        
+        for _, _, reaction_forces, _ in joint_states:
+            # reaction_forces = (Fx, Fy, Fz, Mx, My, Mz)
+            Fx, Fy, Fz = reaction_forces[:3]
+            total_force += np.array([Fx, Fy, Fz])
+        
+        return total_force.tolist()
     
     def get_tether_heading(self, tether_num=0):
         """

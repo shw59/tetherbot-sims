@@ -155,7 +155,6 @@ def run_storm_drain(sim_args):
     
     args, gui_on = sim_args
     sim = Simulation(*args, gui_on=gui_on)
-    sim.gui_on = True
     sim.storm_drain()
 
     end_time = time.perf_counter()
@@ -163,6 +162,26 @@ def run_storm_drain(sim_args):
     elapsed_time = end_time - start_time
 
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"storm drain", elapsed_time, ""], SIM_LOG_HEADER)
+
+    return True
+
+def run_strain_test(sim_args, time_steps):
+
+    start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
+
+    args, gui_on = sim_args
+    sim = Simulation(*args, gui_on=gui_on)
+    file_name, _ = sim.strain_test(time_steps)
+
+    sims_utils.make_graph([file_name], "strain", ["force"], ["Force"],
+                        "Tether Strain vs Force", "Tether Strain", ["Force"], f"data/figures/strain_profile{datetime.datetime.now().strftime("%H%M%S")}.png")
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"strain test", elapsed_time, ""], SIM_LOG_HEADER)
 
     return True
 
@@ -174,14 +193,15 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    run_storm_drain((sim_args, True))
+    # run_storm_drain((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
     
-    run_obstacle_simulations((sim_args, True), 9, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [-50, -40, -30 -20, -10, 0, 10, 20, 30, 40, 50], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_obstacle_simulations((sim_args, True), 9, 500, [-5*UNSTRETCHED_TETHER_LENGTH, -4*UNSTRETCHED_TETHER_LENGTH, -3*UNSTRETCHED_TETHER_LENGTH, -2*UNSTRETCHED_TETHER_LENGTH, -1*UNSTRETCHED_TETHER_LENGTH, 0, UNSTRETCHED_TETHER_LENGTH, 2*UNSTRETCHED_TETHER_LENGTH, 3*UNSTRETCHED_TETHER_LENGTH, 4*UNSTRETCHED_TETHER_LENGTH, 5*UNSTRETCHED_TETHER_LENGTH], [-50, -40, -30 -20, -10, 0, 10, 20, 30, 40, 50], 3, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
     #sims_utils.make_3D_plot(["data/trial3_degree50_offset0.csv"], 9)
 
+    run_strain_test((sim_args, True), 500)
 
 if __name__ == "__main__":
     main()
