@@ -100,8 +100,6 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
 
     return True
 
-
-
 def run_one_agent_follows_gradient(sim_args):
     start_time = time.perf_counter()
     curr_time = datetime.datetime.now()
@@ -118,10 +116,6 @@ def run_one_agent_follows_gradient(sim_args):
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"one agent follows gradient", elapsed_time, ""], SIM_LOG_HEADER)
 
     return True
-
-
-
-
 
 def run_tow_failed_agents_simulations(sim_args, n, num_runs, time_steps, agents_to_fail):
     """
@@ -210,7 +204,6 @@ def run_storm_drain(sim_args):
     
     args, gui_on = sim_args
     sim = Simulation(*args, gui_on=gui_on)
-    sim.gui_on = True
     sim.storm_drain()
 
     end_time = time.perf_counter()
@@ -221,6 +214,26 @@ def run_storm_drain(sim_args):
 
     return True
 
+def run_strain_test(sim_args, time_steps):
+
+    start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
+
+    args, gui_on = sim_args
+    sim = Simulation(*args, gui_on=gui_on)
+    file_name, _ = sim.strain_test(time_steps)
+
+    sims_utils.make_graph([file_name], "strain", ["force"], ["Force"],
+                        "Tether Strain vs Force", "Tether Strain", ["Force"], f"data/figures/strain_profile{datetime.datetime.now().strftime("%H%M%S")}.png")
+    
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+    
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"strain test", elapsed_time, ""], SIM_LOG_HEADER)
+    
+    return True
+  
 def run_building_plan(sim_args):
     start_time = time.perf_counter()
     curr_time = datetime.datetime.now()
@@ -229,13 +242,13 @@ def run_building_plan(sim_args):
     sim = Simulation(*args, gui_on=gui_on)
     sim.gui_on = True
     sim.building_plan()
-
+    
     end_time = time.perf_counter()
-
+    
     elapsed_time = end_time - start_time
-
+    
     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"building plan", elapsed_time, ""], SIM_LOG_HEADER)
-
+    
     return True
 
 def main():
@@ -271,6 +284,7 @@ def main():
     # run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 2, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
     #sims_utils.make_3D_plot(["data/trial1_degree0_offset4.5.csv"], 9)
 
+    run_strain_test((sim_args, True), 500)
 
 if __name__ == "__main__":
     main()
