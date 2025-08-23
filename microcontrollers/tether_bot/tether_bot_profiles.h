@@ -26,7 +26,7 @@ on which tether bot you are flashing code to.
  #define FOLLOWS_GRADIENT 0
 
  #define TETHER_M 1
- #define TETHER_P 1
+ #define TETHER_P 0
 
  #define TETHER_M_ENC_OFFSET 290
  #define TETHER_P_ENC_OFFSET 191
@@ -37,7 +37,7 @@ on which tether bot you are flashing code to.
  #define TETHER_P_FLEX_STRAIGHT 155
  #define TETHER_P_FLEX_BENT 100
 
- #define GOAL_DELTA 180
+ #define GOAL_DELTA 0
 #endif
 
 
@@ -45,7 +45,7 @@ on which tether bot you are flashing code to.
  #define FOLLOWS_GRADIENT 0
 
  #define TETHER_M 1
- #define TETHER_P 0
+ #define TETHER_P 1
 
  #define TETHER_M_ENC_OFFSET 219.81
  #define TETHER_P_ENC_OFFSET 60.65
@@ -56,14 +56,14 @@ on which tether bot you are flashing code to.
  #define TETHER_P_FLEX_STRAIGHT 260
  #define TETHER_P_FLEX_BENT 196
 
- #define GOAL_DELTA 0
+ #define GOAL_DELTA 180
 #endif
 
 
 #ifdef ROBOT_2
- #define FOLLOWS_GRADIENT 1
+ #define FOLLOWS_GRADIENT 0
 
- #define TETHER_M 0
+ #define TETHER_M 1
  #define TETHER_P 1
 
  #define TETHER_M_ENC_OFFSET 250
@@ -75,14 +75,14 @@ on which tether bot you are flashing code to.
  #define TETHER_P_FLEX_STRAIGHT 376
  #define TETHER_P_FLEX_BENT 315
 
- #define GOAL_DELTA 0
+ #define GOAL_DELTA 90
 #endif
 
 
 #ifdef ROBOT_3
  #define FOLLOWS_GRADIENT 0
 
- #define TETHER_M 0
+ #define TETHER_M 1
  #define TETHER_P 1
 
  #define TETHER_M_ENC_OFFSET 200
@@ -94,14 +94,14 @@ on which tether bot you are flashing code to.
  #define TETHER_P_FLEX_STRAIGHT 322
  #define TETHER_P_FLEX_BENT 297
 
- #define GOAL_DELTA 0
+ #define GOAL_DELTA 180
 #endif
 
 
 #ifdef ROBOT_4
  #define FOLLOWS_GRADIENT 0
 
- #define TETHER_M 1
+ #define TETHER_M 0
  #define TETHER_P 1
 
  #define TETHER_M_ENC_OFFSET 177.4
@@ -113,7 +113,7 @@ on which tether bot you are flashing code to.
  #define TETHER_P_FLEX_STRAIGHT 315
  #define TETHER_P_FLEX_BENT 255
 
- #define GOAL_DELTA 180
+ #define GOAL_DELTA 0
 #endif
 
 

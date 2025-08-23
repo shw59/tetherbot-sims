@@ -150,8 +150,9 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                     avg3 = 0
                     avg4 = 0
                     avg5 = 0
-                    avg_distance_from_obstacle = 0
+                    summed_distance_from_obstacle = 0
                     line_count = 0
+                    not_past_obstacle = True
 
                     # reads through each row of the csv file
                     for row in csv_reader:
@@ -159,7 +160,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                         # skips the first row, which only has headings and no data
                         if line_count != 0:
 
-                            if (int(row[0]) == (number_of_while_runs-5*logging_period)):
+                            if (float(row[0]) == (number_of_while_runs-5*logging_period)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
@@ -167,7 +168,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
 
                                 avg5 = avg5/n
 
-                            if (int(row[0]) == (number_of_while_runs-4*logging_period)):
+                            if (float(row[0]) == (number_of_while_runs-4*logging_period)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
@@ -175,7 +176,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                                 
                                 avg4 = avg4/n
 
-                            if (int(row[0]) == (number_of_while_runs-3*logging_period)):
+                            if (float(row[0]) == (number_of_while_runs-3*logging_period)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
@@ -183,7 +184,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                                 
                                 avg3 = avg3/n
 
-                            if (int(row[0]) == (number_of_while_runs-2*logging_period)):
+                            if (float(row[0]) == (number_of_while_runs-2*logging_period)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
@@ -191,7 +192,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
 
                                 avg2 = avg2/n
 
-                            if (int(row[0]) == (number_of_while_runs-logging_period)):
+                            if (float(row[0]) == (number_of_while_runs-logging_period)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
@@ -199,12 +200,16 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
 
                                 avg1 = avg1/n
 
-                            if (int(row[0]) == (number_of_while_runs)):
+                            if (float(row[0]) == (number_of_while_runs)):
 
                                 # sums velocity and distance from obstacel of all agents
                                 for m in range(n):
                                     avg0 = avg0 + float(row[(m+1)*3])
-                                    avg_distance_from_obstacle = avg_distance_from_obstacle + math.sqrt(((obst_position[0]-float(row[(m*3)+1]))**2)+((obst_position[1]-float(row[(m*3)+2]))**2))
+                                    summed_distance_from_obstacle = summed_distance_from_obstacle + math.sqrt(((obst_position[0]-float(row[(m*3)+1]))**2)+((obst_position[1]-float(row[(m*3)+2]))**2))
+
+                                    if not_past_obstacle:
+                                        if (obst_position[0]-float(row[(m*3)+1])) < 0:
+                                            not_past_obstacle = False
 
                                 avg0 = avg0/n
 
@@ -226,7 +231,8 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                     # if the average velocity is less than 0.3 and the average distance is less than
                     # 1.5 obstacles away, then we consider the test to have been unsuccessful because 
                     # the agents are moving very slowly and are not far from the obstacle
-                    if (avg_velocity) <= 0.5 and ((avg_distance_from_obstacle/n) <= 1.5*obst_radius):
+
+                    if (avg_velocity) <= 0.5 and (((summed_distance_from_obstacle/n) <= 1.5*obst_radius) or not_past_obstacle):
                     # if ((avg_distance_from_obstacle/n) <= 2*obst_radius):
                         total = total + 1
                     else:
@@ -397,7 +403,7 @@ def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plo
 
     csv_files (list of str): Paths to the CSV files
     x_column (str): Name of the column to use as the x-axis
-    y_column (str): Name of the column to use as the y-axis
+    y_columns (list of str): Name(s) of the column(s) to use as the y-axis
     labels (list of str, optional): Labels for each CSV file's plot
     title (str, optional): Title of the plot
     xlabel (str, optional): Label for the x-axis
@@ -529,7 +535,7 @@ def make_3D_plot(csv_files, n, title="Obstacle Avoidance", file_name="graph100.p
 
     # Plot the 3D scatter plot
     # ax.scatter3D(x_vals, y_vals, z_vals, c='r', marker='o')
-    ax.scatter3d(x_vals, y_vals, z_vals, c=z_vals, cmap='viridis', marker='o')
+    ax.scatter3D(x_vals, y_vals, z_vals, c=z_vals, cmap='viridis', marker='o')
 
 
     # Set labels for the axes

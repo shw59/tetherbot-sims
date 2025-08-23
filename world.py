@@ -72,12 +72,12 @@ class World:
         # -y boundary
         create_boundary([0, -width / 2, boundary_height / 2], [length / 2, thickness, boundary_height / 2])
         
-    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=17, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.25, mu_dynamic=0.9, max_velocity=2, max_velocity_angular=10, drive_power=500):
+    def create_agent(self, position_0, heading_0, radius, goal_delta=None, mass=17, color=(0, 0.5, 1, 1), height=0.01, mu_static=1.25, mu_dynamic=0.9, max_velocity=2, max_velocity_angular=10, drive_power=500, only_gradient = False, dont_care_about_gradient = False):
         """
         Adds an agent to the simulation world and returns its object.
         """
         # print(position_0)
-        agent = Agent(position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity, max_velocity_angular, drive_power)
+        agent = Agent(position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity, max_velocity_angular, drive_power, only_gradient = only_gradient, dont_care_about_gradient = dont_care_about_gradient)
         agent.world_id = self.id
         agent.set_desired_tether_angle(goal_delta)
         self.obj_list.append(agent)

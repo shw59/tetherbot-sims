@@ -30,7 +30,7 @@ class Agent:
         Agent.angle_weight, Agent.strain_weight, Agent.gradient_weight, Agent.repulsion_weight = weight_list
 
     # Initializes an agent object
-    def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity, max_velocity_angular, drive_power):
+    def __init__(self, position_0, heading_0, radius, mass, color, height, mu_static, mu_dynamic, max_velocity, max_velocity_angular, drive_power, only_gradient = False, dont_care_about_gradient = False):
         """
         Initializes an agent object and its position and id attributes.
 
@@ -57,6 +57,8 @@ class Agent:
         self.cr_sensor_data = [] # initializes an empty list of sensor data
         self.gradient_sensor_data = None # initializes the gradient sensor data to none
         self.failed = False # True if agent has failed and stopped working
+        self.only_gradient = only_gradient # Determines if the agent should only care about the gradient
+        self.dont_care_about_gradient = dont_care_about_gradient # Tells agents to ignore the gradient
 
         # inertia of a solid cylinder about its own center
         ixx = iyy = (1/12) * mass * (3 * radius**2 + height**2)
@@ -560,6 +562,13 @@ class Agent:
             v_repulsion = self.compute_vector_repulsion()
 
             resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
+                                + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+            
+            if self.only_gradient:
+                resulting_vector =  Agent.gradient_weight * v_gradient
+
+            if self.dont_care_about_gradient:
+                resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) \
                                 + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
             
             # print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
