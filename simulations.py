@@ -12,6 +12,7 @@ import simulation_utils as sims_utils
 import math
 import numpy as np
 import random
+import time
 
 class Simulation:
     run_debounce = 35 # number of iterations to wait before checking tether slackness
@@ -790,6 +791,8 @@ class Simulation:
 
         # shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
+        time.sleep(5)
+
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
             my_world.id.getCameraImage(320,200)
@@ -824,7 +827,6 @@ class Simulation:
 
             if runs % self.sensing_period == 0:
                 for i in range(len(my_world.agent_list) - 1 , -1, -1):
-                    print(i)
                     if i == 0 and update_cycles_weighted < update_cycles_to_weight:
                         update_cycles_weighted = update_cycles_weighted + 1
                     elif i == 0 and update_cycles_weighted >= update_cycles_to_weight:
@@ -842,7 +844,7 @@ class Simulation:
                 if agent_to_update_next < 0:
                     agent_to_update_next = len(my_world.agent_list) - 1
 
-            if runs % 1000 == 0:
+            if runs % 200 == 0:
                 sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_one_agent_follows_g_screenshot.png")
 
             if self.sim_failed:
@@ -1005,7 +1007,7 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        sims_utils.generate_obstacles(my_world, [0, -2], [3, 2], num_objects, "cylinder", 0.1, 0.1, False)
+        sims_utils.generate_obstacles(my_world, [0, -5], [5, 5], num_objects, "cylinder", 0.1, 0.1, False)
 
         my_world.display_axis_labels()
         
@@ -1091,6 +1093,81 @@ class Simulation:
             
             my_world.id.stepSimulation()
 
+        my_world.id.disconnect()
+
+        return log_file, self.sim_failed
+    
+    def strain_test(self, time_steps):
+        """
+        Conduct a quick strain test with 2 robots to evaluate the tether's strain profile
+        """
+        self.reset_simulation()
+
+        my_world = World(200, 200, self.time_step, self.gui_on)
+
+        gradient_source = [100, 0]
+
+        my_world.set_gradient_source(gradient_source)
+
+        Agent.set_weights([0, 0, self.weight_gradient, 0])
+
+        start_angles = [180, 180]
+
+        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, 2, start_angles, [-2, (2 - 1) * self.unstretched_tether_length / 2, 0], "+y")
+
+        goal_angles = [None, None]
+
+        # populates the list of robot objects with agent objects
+        for i in range(2):
+            my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                            mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
+                            mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
+
+        my_world.agent_list[1].failed = True # make sure agent doesn't try to move
+        my_world.agent_list[1].fix_agent() # fix agent in place
+
+        # populates the list of tether objects with tether objects
+        my_world.create_and_anchor_tether(my_world.agent_list[0], my_world.agent_list[1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
+
+        my_world.display_axis_labels()
+        
+        log_file = f"data/strain_test.csv"
+        runs = 0
+
+        agent_to_update_next = 0
+
+        shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+
+        # main simulation loop
+        while my_world.id.isConnected() and runs <= time_steps:
+            my_world.id.getCameraImage(320,200)
+
+            strain = my_world.agent_list[0].tethers[1].get_strain()
+            # area = math.pi * (self.tether_diameter / 2)**2
+            # force = self.tether_youngs_modulus * area * strain
+            force = utils.magnitude_of_vector(my_world.agent_list[0].get_net_force()[:2])
+
+            csv_row = [runs, force, strain]
+            sims_utils.log_to_csv(log_file, csv_row, header=["time step", "force", "strain"])
+
+            for agent in shuffled_list:
+                agent.sense_gradient(my_world.gradient_source)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if runs % self.sensing_period == 0:
+                for i in range(len(shuffled_list)):
+                    if i == agent_to_update_next:
+                        shuffled_list[i].set_next_step()
+
+                agent_to_update_next = agent_to_update_next + 1
+
+                if agent_to_update_next >= len(shuffled_list):
+                    agent_to_update_next = 0
+
+            runs = runs + 1
+            
+            my_world.id.stepSimulation()
+        
         my_world.id.disconnect()
 
         return log_file, self.sim_failed

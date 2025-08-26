@@ -58,7 +58,7 @@ def edit_towing_agents():
 
 def edit_obj_capture():
     # load the pickled figure
-    with open("./data/figures/object_capture_maintain_line_True_offset4_graph_2025-08-05.png.pkl", "rb") as f:
+    with open("./data/figures/object_capture_maintain_line_False_offset2_graph_2025-08-25.png.pkl", "rb") as f:
         fig = pickle.load(f)
 
     # legend_colors = ["yellow", "red", "purple", "blue"]
@@ -75,9 +75,9 @@ def edit_obj_capture():
 
         # change tick size for right side only
         # if this axis has a right y-axis label, modify its ticks
-        if ax.yaxis.get_label_position() == 'left':
+        if ax.yaxis.get_label_position() == 'right':
             # ax.yaxis.set_major_locator(plt.MaxNLocator(5))  # at most 5 ticks
-            ax.set_yticks([0, 20000, 40000, 60000, 80000])
+            ax.set_yticks([0, 100, 200, 300, 400, 500])
 
         # change tick label font sizes
         for tick in ax.xaxis.get_major_ticks():
