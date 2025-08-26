@@ -251,8 +251,8 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
-    run_building_plan((sim_args1, True))
-    # run_one_agent_follows_gradient((sim_args, True))
+    # run_building_plan((sim_args1, True))
+    run_one_agent_follows_gradient((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)

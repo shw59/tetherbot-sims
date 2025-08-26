@@ -22,7 +22,8 @@ void setup() {
 }
 
 void loop() {
-  driveMotors(150, 150); 
+  // driveMotors(150, 150); 
+  driveMotors(180, 180); 
   Serial.println("Driving forward");
 
   delay(2000);
@@ -32,7 +33,8 @@ void loop() {
 
   delay(2000);
 
-  driveMotors(-150, 150); // counter-clockwise on-axis turn
+  // driveMotors(-150, 150); // counter-clockwise on-axis turn
+  driveMotors(-180, 180); 
   Serial.println("CCW turn");
 
   delay(2000);
@@ -42,7 +44,8 @@ void loop() {
 
   delay(2000);
 
-  driveMotors(150, 150);
+  // driveMotors(150, 150);
+  driveMotors(180, 180); 
   Serial.println("Driving forward");
 
   delay(2000);
@@ -52,7 +55,8 @@ void loop() {
 
   delay(2000);
 
-  driveMotors(150, -150); // clockwise on-axis turn
+  // driveMotors(150, -150); // clockwise on-axis turn
+  driveMotors(180, -180); 
   Serial.println("CW turn");
 
   delay(2000);
