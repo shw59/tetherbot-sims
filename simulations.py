@@ -12,6 +12,7 @@ import simulation_utils as sims_utils
 import math
 import numpy as np
 import random
+import time
 
 class Simulation:
     run_debounce = 35 # number of iterations to wait before checking tether slackness
@@ -790,6 +791,8 @@ class Simulation:
 
         # shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
+        time.sleep(5)
+
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
             my_world.id.getCameraImage(320,200)
@@ -824,7 +827,6 @@ class Simulation:
 
             if runs % self.sensing_period == 0:
                 for i in range(len(my_world.agent_list) - 1 , -1, -1):
-                    print(i)
                     if i == 0 and update_cycles_weighted < update_cycles_to_weight:
                         update_cycles_weighted = update_cycles_weighted + 1
                     elif i == 0 and update_cycles_weighted >= update_cycles_to_weight:
@@ -842,7 +844,7 @@ class Simulation:
                 if agent_to_update_next < 0:
                     agent_to_update_next = len(my_world.agent_list) - 1
 
-            if runs % 1000 == 0:
+            if runs % 200 == 0:
                 sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_one_agent_follows_g_screenshot.png")
 
             if self.sim_failed:
@@ -1005,7 +1007,7 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        sims_utils.generate_obstacles(my_world, [0, -2], [3, 2], num_objects, "cylinder", 0.1, 0.1, False)
+        sims_utils.generate_obstacles(my_world, [0, -5], [5, 5], num_objects, "cylinder", 0.1, 0.1, False)
 
         my_world.display_axis_labels()
         
