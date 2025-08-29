@@ -41,7 +41,7 @@ class World:
         self.id.setTimeStep(time_step)
 
         # load plane
-        self.id.loadURDF("plane.urdf")
+        # self.id.loadURDF("plane.urdf")
 
         # boundary dimensions
         boundary_height = 0.2

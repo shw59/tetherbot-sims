@@ -264,10 +264,10 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
-    run_building_plan((sim_args1, True))
+    # run_building_plan((sim_args1, True))
     # run_one_agent_follows_gradient((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
-    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
+    run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
 
     not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75, 8, 8.25, 8.5, 8.75, 9]
