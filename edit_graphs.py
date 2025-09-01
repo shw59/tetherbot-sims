@@ -110,6 +110,8 @@ def edit_obj_capture():
         ax.xaxis.label.set_fontsize(30)
         ax.yaxis.label.set_fontsize(30)
 
+        ax.set_xlim(0, 5000)
+
         # change tick size for right side only
         # if this axis has a right y-axis label, modify its ticks
         if ax.yaxis.get_label_position() == 'right':

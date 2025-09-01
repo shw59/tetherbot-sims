@@ -19,8 +19,8 @@ SENSING_PERIOD = 5 # number of while loop iterations that run before an agent po
 LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is written to a csv file
 
 # vector weightings
-ANGLE_WEIGHT = 15
-STRAIN_WEIGHT = 500
+ANGLE_WEIGHT = 67
+STRAIN_WEIGHT = 100
 GRADIENT_WEIGHT = 20
 REPULSION_WEIGHT = 5
 
@@ -251,6 +251,44 @@ def run_building_plan(sim_args):
     
     return True
 
+def run_w_to_m(sim_args, time_steps, num_trials):
+    """
+    Runs a series of W-to-M simulations.
+
+    time_steps: Number of time steps to run for
+    num_trials: Number of trials for each object amount
+    """
+    start_time = time.perf_counter()
+    curr_time = datetime.datetime.now()
+
+    args, gui_on = sim_args
+    sim = Simulation(*args, gui_on=gui_on)
+    failed_trials = []
+    csv_averages_list = []
+    trial_list = []
+    for trial in range(1, num_trials + 1):
+        file_name, trial_failed = sim.w_to_m(time_steps, trial)
+        if trial_failed:
+            failed_trials.append(file_name)
+        else:
+            trial_list.append(file_name)
+    if trial_list:
+        csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/w_to_m_trialavg.csv"))
+    else:
+        return False
+    
+    for i in range(1, 4):
+        sims_utils.make_graph(csv_averages_list, "time step", [f"agent {i}"], [f"agent {i}"],
+                                f"Error to Desired Tether Angle (W to M)", "Time Step", ["abs(error) (degrees)"], f"data/figures/w_to_m_graph_{datetime.datetime.now().date()}.png")
+
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+
+    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"W to M", elapsed_time, failed_trials], SIM_LOG_HEADER)
+
+    return True
+
 def main():
     """
     Is the function called when running the program. This function calls which ever function you want to test.
@@ -267,15 +305,15 @@ def main():
     # run_building_plan((sim_args1, True))
     # run_one_agent_follows_gradient((sim_args, True))
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 10000, [0, 1, 2, 3, 4])
-    run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0, 2, 4], True)
 
-    not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75, 8, 8.25, 8.5, 8.75, 9]
+    # not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75, 8, 8.25, 8.5, 8.75, 9]
 
-    offsets = []
+    # offsets = []
 
-    for i in not_sized_offsets:
-        offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
+    # for i in not_sized_offsets:
+    #     offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
     # offsets = [3*UNSTRETCHED_TETHER_LENGTH]
 
@@ -284,7 +322,8 @@ def main():
     # run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 2, [10,0], 4*UNSTRETCHED_TETHER_LENGTH)
     #sims_utils.make_3D_plot(["data/trial1_degree0_offset4.5.csv"], 9)
 
-    run_strain_test((sim_args, True), 500)
+    # run_strain_test((sim_args, True), 500)
+    run_w_to_m((sim_args, False), 500, 8)
 
 if __name__ == "__main__":
     main()
