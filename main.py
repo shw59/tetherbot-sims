@@ -269,8 +269,8 @@ def main():
 
     # run_one_agent_follows_gradient((sim_args, True))
 
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [100, 300, 500], [2, 4], False)
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [100, 300, 500], [0, 2, 4], True)
+    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50, 100], [0, 2, 4], False)
+    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50, 100], [0, 2, 4], True)
 
     run_tow_failed_agents_simulations((sim_args, False), 5, 10, 15000, [0, 1, 2, 3, 4])
 

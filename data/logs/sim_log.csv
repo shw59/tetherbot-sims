@@ -29,3 +29,6 @@ start time,simulation type,elapsed time (s),failed trials
 2025-08-20 14:54:14.249200,building plan,3689.9333735009423,
 2025-08-21 11:52:51.381262,building plan,3787.7454658159986,
 2025-08-21 13:29:49.303511,building plan,2843.3187750689685,
+2025-08-28 13:45:29.773332,"object capture, maintain line False",135407.94993735896,[]
+2025-08-30 03:22:17.723358,"object capture, maintain line True",117179.07576409914,[]
+2025-08-31 11:55:16.799168,towing failed agents,45884.83701527491,[]

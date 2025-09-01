@@ -858,8 +858,6 @@ class Simulation:
 
         return None
 
-
-
     def tow_failed_agents_trial(self, n, trial_num, time_steps, failed_agent_num):
         """
         This experiment takes a group of n agents in a W formation and causes one of them to fail at t = 100.
