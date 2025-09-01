@@ -1095,6 +1095,94 @@ class Simulation:
 
         return log_file, self.sim_failed
     
+    def w_to_m(self, time_steps, trial_num):
+        """
+        Recreates the W-to-M hardware experiment in simulation for comparison purposes.
+        """
+        n = 5
+
+        self.reset_simulation()
+
+        my_world = World(150, 150, self.time_step, self.gui_on)
+
+        Agent.set_weights([self.weight_angle, self.weight_strain, 0, 0])
+
+        start_angles = [45, 90, 270, 90, 45]
+        
+        initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -(n - 1) * self.unstretched_tether_length / 2, 0], "+y")
+
+        goal_angles = [None, 270, 90, 270, None]
+
+        # populates the list of robot objects with agent objects
+        for i in range(n):
+            my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goal_angles[i], 
+                                  mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
+                                  mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
+
+        # populates the list of tether objects with tether objects
+        for i in range(n-1):
+            my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
+
+        my_world.display_axis_labels()
+        
+        log_file = f"data/w_to_m_trial{trial_num}.csv"
+        runs = 0
+        agent_to_update_next = 0
+        shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+
+        # main simulation loop
+        while my_world.id.isConnected() and runs <= time_steps:
+
+            self.debounce_count = 0
+
+            my_world.id.getCameraImage(320,200)
+
+            if runs % self.logging_period == 0:
+                csv_row = [runs]
+                for agent in my_world.agent_list:
+                    if None not in agent.tethers:
+                        curr_angle = agent.get_delta()
+                        goal_angle = agent.desired_tether_angle
+                        err = abs(goal_angle - curr_angle)
+                        csv_row.append(err)
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "agent 1 error", "agent 2 error", "agent 3 error"])
+
+            for agent in shuffled_list:
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+
+                if runs%Simulation.run_debounce == 0:
+
+                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                        self.sim_failed = True
+                        break
+
+                    self.old_debounce_count = self.debounce_count
+                    
+                agent.sense_gradient(my_world.gradient_source)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if self.sim_failed:
+                break
+
+            if runs % self.sensing_period == 0:
+                for i in range(len(shuffled_list)):
+                    if i == agent_to_update_next:
+                        shuffled_list[i].set_next_step()
+
+                agent_to_update_next = agent_to_update_next + 1
+
+                if agent_to_update_next >= len(shuffled_list):
+                    agent_to_update_next = 0
+
+            runs = runs + 1
+            
+            my_world.id.stepSimulation()
+
+        my_world.id.disconnect()
+
+        return log_file, self.sim_failed
+    
     def strain_test(self, time_steps):
         """
         Conduct a quick strain test with 2 robots to evaluate the tether's strain profile
