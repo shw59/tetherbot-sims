@@ -213,25 +213,24 @@ def run_storm_drain(sim_args):
 
     return True
 
-def run_strain_test(sim_args, time_steps):
+# def run_strain_test(sim_args, time_steps):
 
-    start_time = time.perf_counter()
-    curr_time = datetime.datetime.now()
+#     start_time = time.perf_counter()
+#     curr_time = datetime.datetime.now()
 
-    args, gui_on = sim_args
-    sim = Simulation(*args, gui_on=gui_on)
-    file_name, _ = sim.strain_test(time_steps)
+#     args, gui_on = sim_args
+#     sim = Simulation(*args, gui_on=gui_on)
+#     file_name, _ = sim.strain_test(time_steps)
 
-    sims_utils.make_graph([file_name], "strain", ["force"], ["Force"],
-                        "Tether Strain vs Force", "Tether Strain", ["Force"], f"data/figures/strain_profile{datetime.datetime.now().strftime("%H%M%S")}.png")
+#     sims_utils.make_graph([file_name], "strain", ["force"], ["Force"], "Tether Strain vs Force", "Tether Strain", ["Force"], f"data/figures/strain_profile{datetime.datetime.now().strftime("%H%M%S")}.png")
     
-    end_time = time.perf_counter()
+#     end_time = time.perf_counter()
 
-    elapsed_time = end_time - start_time
+#     elapsed_time = end_time - start_time
     
-    sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"strain test", elapsed_time, ""], SIM_LOG_HEADER)
+#     sims_utils.log_to_csv(SIM_LOG_FILE, [curr_time, f"strain test", elapsed_time, ""], SIM_LOG_HEADER)
     
-    return True
+#     return True
   
 def run_building_plan(sim_args):
     start_time = time.perf_counter()
@@ -296,9 +295,9 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT, 
                 SENSING_PERIOD, LOGGING_PERIOD)
     
-    sim_args1 = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 15, 500, 8, 5, 
-                SENSING_PERIOD, LOGGING_PERIOD)
+    # sim_args1 = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+    #             UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 15, 500, 8, 5, 
+    #             SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
     # run_building_plan((sim_args1, True))
@@ -307,27 +306,27 @@ def main():
 
     # run_one_agent_follows_gradient((sim_args, True))
 
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50, 100], [0, 2, 4], False)
-    run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50, 100], [0, 2, 4], True)
+    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50, 100], [0, 2, 4], False)
+    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50, 100], [0, 2, 4], True)
 
-    run_tow_failed_agents_simulations((sim_args, False), 5, 10, 15000, [0, 1, 2, 3, 4])
+    # run_tow_failed_agents_simulations((sim_args, False), 5, 10, 15000, [0, 1, 2, 3, 4])
 
     not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7]
 
-    # offsets = []
+    offsets = []
 
-    # for i in not_sized_offsets:
-    #     offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
+    for i in not_sized_offsets:
+        offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
-    # offsets = [3*UNSTRETCHED_TETHER_LENGTH]
+    # offsets = [UNSTRETCHED_TETHER_LENGTH]
 
 
     #offsets = [6.5*UNSTRETCHED_TETHER_LENGTH]
-    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 3, [5,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 3, [4,0], 4*UNSTRETCHED_TETHER_LENGTH)
     #sims_utils.make_3D_plot(["data/trial1_degree0_offset4.5.csv"], 9)
 
     # run_strain_test((sim_args, True), 500)
-    run_w_to_m((sim_args, False), 500, 8)
+    # run_w_to_m((sim_args, False), 500, 8)
 
 if __name__ == "__main__":
     main()

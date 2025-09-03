@@ -376,7 +376,7 @@ class Simulation:
         """
         self.reset_simulation()
         
-        n = 7
+        n = 5
 
         gradient = [7.5, 50]
 
@@ -386,11 +386,11 @@ class Simulation:
 
         Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
-        angles = [None, 180, 180, 180, 180, 180, None]
+        angles = [None, 180, 180, 180, None]
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-30,-7,0], "+x")
         
-        goal_angles = [None, 180, 270, 180, 270, 180, None]
+        goal_angles = [None, 180, 270, 180, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -765,6 +765,9 @@ class Simulation:
         
         goal_angles = [None, 180, 180, 180, None]
 
+        sims_utils.generate_obstacles(my_world, [-75, -30], [-90, -2], 200, "cylinder", 0.5, 0.5, False)
+
+
         # populates the list of robot objects with robot objects
         for i in range(n):
             if i == 0:
@@ -785,16 +788,17 @@ class Simulation:
 
         agent_to_update_next = n - 1
 
-        update_cycles_to_weight = 3
+        update_cycles_to_weight = 0
         
         update_cycles_weighted = 0
 
         # shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
-        time.sleep(5)
+        # time.sleep(5)
 
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
+
             my_world.id.getCameraImage(320,200)
 
             self.debounce_count = 0
