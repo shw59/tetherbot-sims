@@ -722,17 +722,31 @@ class Simulation:
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
 
+            stop_while_loop = False
+
             if runs % self.logging_period == 0:
+                min_x = my_world.agent_list[0].get_pose()[0][0]
                 data = [runs]
                 for agent in my_world.agent_list:
                     data.append(round(agent.get_pose()[0][0], 5))
                     data.append(round(agent.get_pose()[0][1], 5))
                     data.append(agent.get_velocity())
+
+                    if agent.get_pose()[0][0] < min_x:
+                        min_x = agent.get_pose()[0][0]
+                    
+
                 # data.append(True)
             
                 sims_utils.log_to_csv(log_file, data, header=log_header)
 
+                if min_x >= obst_pos[0]+obst_radius:
+                    stop_while_loop = True
+
             if self.sim_failed:
+                break
+
+            if stop_while_loop:
                 break
 
             runs = runs + 1
@@ -741,7 +755,7 @@ class Simulation:
 
         my_world.id.disconnect()
 
-        return log_file, self.sim_failed
+        return log_file, self.sim_failed, runs
 
 
     def one_agent_follows_gradient(self):
