@@ -13,6 +13,7 @@ import math
 import numpy as np
 import random
 import time
+import keyboard
 
 class Simulation:
     run_debounce = 35 # number of iterations to wait before checking tether slackness
@@ -913,7 +914,7 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        my_world.display_axis_labels()
+        # my_world.display_axis_labels()
         
         log_file = f"data/tow_failed_agents_trial{trial_num}_agent{failed_agent_num}_failed.csv"
         runs = 0
@@ -1023,9 +1024,9 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        sims_utils.generate_obstacles(my_world, [0, -5], [5, 5], num_objects, "cylinder", 0.1, 0.1, False)
+        sims_utils.generate_obstacles(my_world, [0, -4], [4, 5], num_objects, "cylinder", 0.1, 0.1, False)
 
-        my_world.display_axis_labels()
+        # my_world.display_axis_labels()
         
         log_file = f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}_offset{offset}.csv"
         runs = 0
@@ -1038,76 +1039,76 @@ class Simulation:
 
         # main simulation loop
         while my_world.id.isConnected() and runs <= time_steps:
+            if keyboard.is_pressed('s'): # step through simulation
+                self.debounce_count = 0
 
-            self.debounce_count = 0
+                my_world.id.getCameraImage(320,200)
 
-            my_world.id.getCameraImage(320,200)
-
-            if runs % self.logging_period == 0:
-                obstacle_pos_flattened = []
-                for obj in my_world.obj_list:
-                    if obj.label == "obstacle":
-                        obstacle_pos_flattened.append(obj.get_pose()[0][0])
-                        obstacle_pos_flattened.append(obj.get_pose()[0][1])
-                        for agent in my_world.agent_list:
-                            if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
-                                    if not obj.collected:
-                                        obj_collected += 1
-                                        obj.collected = True
-                                        break
-                            else:
-                                if obj.collected:
-                                    obj_collected -= 1
-                                    obj.collected = False
-                
-                agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
-
-                # sliding window average
-                collective_radius_avgs.append(utils.get_collective_radius(agent_pos))
-                
-                if len(collective_radius_avgs) > 5:
-                    collective_radius_avgs.pop(0)
-
-                collective_radius = np.mean(collective_radius_avgs)
-
-                agent_pos_flattened = []
-                for pos in agent_pos:
-                    agent_pos_flattened.append(pos[0])
-                    agent_pos_flattened.append(pos[1])
-                csv_row = [runs, collective_radius, obj_collected] + agent_pos_flattened + obstacle_pos_flattened
-                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n * 2 - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects * 2 - 1)])
-
-            for agent in shuffled_list:
-                if runs > Simulation.run_debounce and agent.is_tether_slack():
-                    self.debounce_count += 1
-
-                if runs%Simulation.run_debounce == 0:
-
-                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                        self.sim_failed = True
-                        break
-
-                    self.old_debounce_count = self.debounce_count
+                if runs % self.logging_period == 0:
+                    obstacle_pos_flattened = []
+                    for obj in my_world.obj_list:
+                        if obj.label == "obstacle":
+                            obstacle_pos_flattened.append(obj.get_pose()[0][0])
+                            obstacle_pos_flattened.append(obj.get_pose()[0][1])
+                            for agent in my_world.agent_list:
+                                if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
+                                        if not obj.collected:
+                                            obj_collected += 1
+                                            obj.collected = True
+                                            break
+                                else:
+                                    if obj.collected:
+                                        obj_collected -= 1
+                                        obj.collected = False
                     
-                agent.sense_gradient(my_world.gradient_source)
-                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                    agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
 
-            if self.sim_failed:
-                break
+                    # sliding window average
+                    collective_radius_avgs.append(utils.get_collective_radius(agent_pos))
+                    
+                    if len(collective_radius_avgs) > 5:
+                        collective_radius_avgs.pop(0)
 
-            if runs % self.sensing_period == 0:
-                for i in range(len(shuffled_list)):
-                    if i == agent_to_update_next:
-                        shuffled_list[i].set_next_step()
+                    collective_radius = np.mean(collective_radius_avgs)
 
-                agent_to_update_next = agent_to_update_next + 1
+                    agent_pos_flattened = []
+                    for pos in agent_pos:
+                        agent_pos_flattened.append(pos[0])
+                        agent_pos_flattened.append(pos[1])
+                    csv_row = [runs, collective_radius, obj_collected] + agent_pos_flattened + obstacle_pos_flattened
+                    sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n * 2 - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects * 2 - 1)])
 
-                if agent_to_update_next >= len(shuffled_list):
-                    agent_to_update_next = 0
+                for agent in shuffled_list:
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
 
-            runs = runs + 1
-            
-            my_world.id.stepSimulation()
+                    if runs%Simulation.run_debounce == 0:
+
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
+
+                        self.old_debounce_count = self.debounce_count
+                        
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+                if self.sim_failed:
+                    break
+
+                if runs % self.sensing_period == 0:
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                            shuffled_list[i].set_next_step()
+
+                    agent_to_update_next = agent_to_update_next + 1
+
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
+
+                runs = runs + 1
+                
+                my_world.id.stepSimulation()
 
         my_world.id.disconnect()
 

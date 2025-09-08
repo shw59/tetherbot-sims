@@ -37,14 +37,18 @@ def edit_towing_agents():
         ax.set_xlim(0, 5000)
         ax.set_ylim(-4, 30)
 
+        ax.grid(False)
+
         # change tick label font sizes
         for tick in ax.xaxis.get_major_ticks():
             tick.label1.set_fontsize(30)
         for tick in ax.yaxis.get_major_ticks():
             tick.label1.set_fontsize(30)
 
+        ax.axvline(500, linestyle='solid', color='black')
+
         # ax.lines → list of Line2D objects (for line plots)
-        for i, line in enumerate(ax.lines):
+        for i, line in enumerate(ax.lines[:-1]):
             color = legend_colors[i % len(legend_colors)]
             line.set_color(color)
 
@@ -54,9 +58,9 @@ def edit_towing_agents():
         if legend:
             # labels for the towing agents legend
             new_labels = ["I", "II", "III", "IV", "V"]
-            ax.legend(handles, new_labels)
+            ax.legend(handles, new_labels, loc='upper left')
             for text in ax.get_legend().get_texts():
-                text.set_fontsize(30)
+                text.set_fontsize(25)
 
     # optionally show or save again
     # plt.show()
@@ -192,8 +196,8 @@ def edit_w_to_m_graph():
         ax.xaxis.label.set_fontsize(30)
         ax.yaxis.label.set_fontsize(30)
 
-        ax.set_xlim(500, 1500)
-        ax.set_ylim(0, 100)
+        ax.set_xlim(0, 1500)
+        ax.set_ylim(0, 210)
 
         for line, lbl in zip(ax.lines, new_labels):
             x = line.get_xdata()

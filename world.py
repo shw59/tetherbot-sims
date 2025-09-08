@@ -36,12 +36,12 @@ class World:
 
         # set parameters
         self.id.resetSimulation(p.RESET_USE_DEFORMABLE_WORLD)
-        self.id.configureDebugVisualizer(p.COV_ENABLE_GUI,0) # disable side bar windows in the GUI
+        self.id.configureDebugVisualizer(p.COV_ENABLE_GUI,0, rgbBackground=[1.0, 1.0, 1.0]) # disable side bar windows in the GUI
         self.id.setGravity(0, 0, GRAVITYZ)
         self.id.setTimeStep(time_step)
 
         # load plane
-        self.id.loadURDF("plane.urdf")
+        # self.id.loadURDF("plane.urdf")
 
         # boundary dimensions
         boundary_height = 0.2
