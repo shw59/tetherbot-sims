@@ -208,7 +208,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                                     summed_distance_from_obstacle = summed_distance_from_obstacle + math.sqrt(((obst_position[0]-float(row[(m*3)+1]))**2)+((obst_position[1]-float(row[(m*3)+2]))**2))
 
                                     if not_past_obstacle:
-                                        if (obst_position[0]-float(row[(m*3)+1])) < 0:
+                                        if (obst_position[0]*obst_radius-float(row[(m*3)+1])) <= 0:
                                             not_past_obstacle = False
 
                                 avg0 = avg0/n
@@ -232,7 +232,15 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                     # 1.5 obstacles away, then we consider the test to have been unsuccessful because 
                     # the agents are moving very slowly and are not far from the obstacle
 
-                    if (avg_velocity) <= 0.5 and (((summed_distance_from_obstacle/n) <= 1.5*obst_radius) or not_past_obstacle):
+                    print("Avg velocity: " + str(avg_velocity))
+                    print("(avg_velocity) <= 0.5: " + str((avg_velocity) <= 0.5))
+                    print("Not past obstacle: " + str(not_past_obstacle))
+                    # print("Fails?: " + str(summed_distance_from_obstacle/n))
+                    print("(summed_distance_from_obstacle/n) <= 1.5*obst_radius: " + str((summed_distance_from_obstacle/n) <= 1.5*obst_radius))
+                    # print("Fails?: " + str((summed_distance_from_obstacle/n) <= 1.5*obst_radius))
+
+                    # if (avg_velocity) <= 0.5 and (((summed_distance_from_obstacle/n) <= 1.5*obst_radius) or not_past_obstacle):
+                    if (((summed_distance_from_obstacle/n) <= 1.5*obst_radius)):
                     # if ((avg_distance_from_obstacle/n) <= 2*obst_radius):
                         total = total + 1
                     else:
