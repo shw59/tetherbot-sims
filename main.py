@@ -19,8 +19,8 @@ SENSING_PERIOD = 5 # number of while loop iterations that run before an agent po
 LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is written to a csv file
 
 # vector weightings
-ANGLE_WEIGHT = 67
-STRAIN_WEIGHT = 100
+ANGLE_WEIGHT = 67 # originally 15
+STRAIN_WEIGHT = 100 # originally 500
 GRADIENT_WEIGHT = 20
 REPULSION_WEIGHT = 5
 
@@ -268,20 +268,20 @@ def run_w_to_m(sim_args, time_steps, num_trials):
     failed_trials = []
     csv_averages_list = []
     trial_list = []
-    for trial in range(1, num_trials + 1):
-        file_name, trial_failed = sim.w_to_m(time_steps, trial)
-        if trial_failed:
-            failed_trials.append(file_name)
+    for i in range (1, 4):
+        for trial in range(1, num_trials + 1):
+            file_name, trial_failed = sim.w_to_m(time_steps, trial, i)
+            if trial_failed:
+                failed_trials.append(file_name)
+            else:
+                trial_list.append(file_name)
+        if trial_list:
+            csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/w_to_m_trialavg_agent{i}.csv"))
         else:
-            trial_list.append(file_name)
-    if trial_list:
-        csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/w_to_m_trialavg.csv"))
-    else:
-        return False
+            return False
     
-    for i in range(1, 4):
-        sims_utils.make_graph(csv_averages_list, "time step", [f"agent {i}"], [f"agent {i}"],
-                                f"Error to Desired Tether Angle (W to M)", "Time Step", ["abs(error) (degrees)"], f"data/figures/w_to_m_graph_{datetime.datetime.now().date()}.png")
+    sims_utils.make_graph(csv_averages_list, "time step", [f"agent error"], [f"agent {i}" for i in range(1, 4)],
+                            f"Error to Desired Tether Angle (W to M)", "Time Step", ["abs(error) (degrees)"], f"data/figures/w_to_m_graph_{datetime.datetime.now().date()}.png")
 
     end_time = time.perf_counter()
 
@@ -334,7 +334,6 @@ def main():
 
     #offsets = [UNSTRETCHED_TETHER_LENGTH]
 
-
     # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
@@ -352,7 +351,7 @@ def main():
             # sims_utils.make_3D_plot([name], 9)
 
     # run_strain_test((sim_args, True), 500)
-    # run_w_to_m((sim_args, False), 500, 8)
+    # run_w_to_m((sim_args, False), 1500, 8)
 
 if __name__ == "__main__":
     main()

@@ -1113,7 +1113,7 @@ class Simulation:
 
         return log_file, self.sim_failed
     
-    def w_to_m(self, time_steps, trial_num):
+    def w_to_m(self, time_steps, trial_num, agent_num):
         """
         Recreates the W-to-M hardware experiment in simulation for comparison purposes.
         """
@@ -1143,7 +1143,7 @@ class Simulation:
 
         my_world.display_axis_labels()
         
-        log_file = f"data/w_to_m_trial{trial_num}.csv"
+        log_file = f"data/w_to_m_trial{trial_num}_agent{agent_num}.csv"
         runs = 0
         agent_to_update_next = 0
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
@@ -1157,13 +1157,15 @@ class Simulation:
 
             if runs % self.logging_period == 0:
                 csv_row = [runs]
-                for agent in my_world.agent_list:
-                    if None not in agent.tethers:
-                        curr_angle = agent.get_delta()
-                        goal_angle = agent.desired_tether_angle
-                        err = abs(goal_angle - curr_angle)
-                        csv_row.append(err)
-                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "agent 1 error", "agent 2 error", "agent 3 error"])
+                for i in range(len(my_world.agent_list)):
+                    if i==agent_num:
+                        agent = my_world.agent_list[i]
+                        if None not in agent.tethers:
+                            curr_angle = agent.get_delta()
+                            goal_angle = agent.desired_tether_angle
+                            err = abs(goal_angle - curr_angle)
+                            csv_row.append(err)
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "agent error"])
 
             for agent in shuffled_list:
                 if runs > Simulation.run_debounce and agent.is_tether_slack():

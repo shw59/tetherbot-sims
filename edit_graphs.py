@@ -60,7 +60,7 @@ def edit_towing_agents():
 
     # optionally show or save again
     # plt.show()
-    fig.savefig("new_figure.png", dpi=300, bbox_inches="tight")
+    fig.savefig("new_figure.svg", dpi=300, bbox_inches="tight")
 
 def edit_obj_capture():
     """
@@ -148,10 +148,81 @@ def edit_obj_capture():
 
     # optionally show or save again
     # plt.show()
+    fig.savefig("new_figure.svg", dpi=300, bbox_inches="tight")
+    
+def edit_w_to_m_graph():
+    """
+    Polishes up the graphs produced from the W-to-M simulations. Edit anything below as needed.
+    """
+    #load the pickled figure
+    with open("./data/figures/w_to_m_graph_2025-09-06.png.pkl", "rb") as f:
+        fig = pickle.load(f)
+
+    # load files and calculate the std deviations 
+    files_agent1 = glob.glob("./data/w_to_m_trial*_agent1.csv")
+    dfs_agent1 = [pd.read_csv(f) for f in files_agent1]
+    trial_matrix_agent1 = np.column_stack([df["agent error"].values for df in dfs_agent1])
+    std_agent1  = np.std(trial_matrix_agent1, axis=1)
+
+    files_agent2 = glob.glob("./data/w_to_m_trial*_agent2.csv")
+    dfs_agent2 = [pd.read_csv(f) for f in files_agent2]
+    trial_matrix_agent2 = np.column_stack([df["agent error"].values for df in dfs_agent2])
+    std_agent2  = np.std(trial_matrix_agent2, axis=1)
+
+    files_agent3 = glob.glob("./data/w_to_m_trial*_agent3.csv")
+    dfs_agent3 = [pd.read_csv(f) for f in files_agent3]
+    trial_matrix_agent3 = np.column_stack([df["agent error"].values for df in dfs_agent3])
+    std_agent3  = np.std(trial_matrix_agent3, axis=1)
+
+    std_map = {
+        "Agent 1":  std_agent1,
+        "Agent 2": std_agent2,
+        "Agent 3": std_agent3,
+    }
+
+    new_labels = ["Agent 1", "Agent 2", "Agent 3"]
+
+    # access all axes in the figure
+    for ax in fig.axes:
+        # change title font size
+        ax.set_title("")
+        ax.title.set_fontsize(30)
+
+        # change x/y label font sizes
+        ax.xaxis.label.set_fontsize(30)
+        ax.yaxis.label.set_fontsize(30)
+
+        ax.set_xlim(500, 1500)
+        ax.set_ylim(0, 100)
+
+        for line, lbl in zip(ax.lines, new_labels):
+            x = line.get_xdata()
+            y = line.get_ydata()
+            if lbl in std_map:
+                std = std_map[lbl]
+                print(lbl, len(x), len(y), len(std))  # debugging
+                ax.fill_between(x, y-std, y+std, color=line.get_color(), alpha=0.2) # add std deviation shading
+
+        # change tick label font sizes
+        for tick in ax.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(30)
+        for tick in ax.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(30)
+
+        # change legend font size (if it exists)
+        legend = ax.get_legend()
+        handles, labels = ax.get_legend_handles_labels()
+        if legend:
+            ax.legend(handles, new_labels, loc='upper right', fontsize=24)
+
+    # optionally show or save again
+    # plt.show()
     fig.savefig("new_figure.png", dpi=300, bbox_inches="tight")
 
 def main():
-    edit_obj_capture()
+    # edit_towing_agents()
+    # edit_obj_capture()
+    edit_w_to_m_graph()
 
 if __name__ == "__main__":
     main()
