@@ -25,8 +25,9 @@ plt.ylabel("Absolute Value of Error (degrees)")
 plt.title("Average Error from Desired Angle")
 
 plt.legend()
-
 plt.show()
+
+plt.savefig("error_w_to_m_hardware.svg", dpi=300, bbox_inches="tight")
 
 
 # import matplotlib.pyplot as plt

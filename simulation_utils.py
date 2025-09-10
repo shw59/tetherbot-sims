@@ -304,7 +304,7 @@ def angle_and_position_offset(n, angle, offset, seperation):
 
     return positions
 
-def generate_obstacles(world, corner_1, corner_2, num, shape, length, width, fixed):
+def generate_obstacles(world, corner_1, corner_2, num, shape, length, width, height, fixed):
     """
     Randomly generates obstacles within a box made by two corner positions.
     """
@@ -321,7 +321,7 @@ def generate_obstacles(world, corner_1, corner_2, num, shape, length, width, fix
                 if obj.label == "obstacle" and math.dist(obj.get_pose()[0], [x, y]) <= max(length, width) * 2:
                     no_overlap = False
                     break
-        world.create_obstacle(shape, position=[x, y], length=length, width=width, fixed=fixed)
+        world.create_obstacle(shape, position=[x, y], length=length, width=width, height=height, fixed=fixed)
 
 def log_to_csv(filename, data_row, header=None):
     """

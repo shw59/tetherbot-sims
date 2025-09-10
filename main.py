@@ -34,7 +34,7 @@ MU_STATIC = 1.25
 MU_DYNAMIC = 0.9
 
 # paracord 550 parameters
-UNSTRETCHED_TETHER_LENGTH = 1
+UNSTRETCHED_TETHER_LENGTH = 1.5
 YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
@@ -311,7 +311,7 @@ def main():
     # run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0], True)
 
-    # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [0, 1, 2, 3, 4])
+    run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [4])
 
     start = 0.0
     
@@ -333,7 +333,8 @@ def main():
     offsets = [2.5*UNSTRETCHED_TETHER_LENGTH]
 
     # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
-    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 1, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    
+    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
     trials = 7
