@@ -310,60 +310,59 @@ class Simulation:
 
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
-            my_world.id.getCameraImage(320,200)
+            if keyboard.is_preseed('s'):
+                my_world.id.getCameraImage(320,200)
 
-            
+                self.debounce_count = 0
 
-            self.debounce_count = 0
-
-            for agent in shuffled_list:
-                # if agent.tethers[0] is not None:
-                    # print(agent.tethers[0].get_strain())
-                # else:
-                    # print(agent.tethers[1].get_strain())
-
+                for agent in shuffled_list:
+                    # if agent.tethers[0] is not None:
+                        # print(agent.tethers[0].get_strain())
+                    # else:
+                        # print(agent.tethers[1].get_strain())
 
 
 
-                if runs > Simulation.run_debounce and agent.is_tether_slack():
-                    self.debounce_count += 1
-                # else:
-                #     self.debounce_count = 0
 
-                if runs%Simulation.run_debounce == 0:
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
+                    # else:
+                    #     self.debounce_count = 0
 
-                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                        self.sim_failed = True
-                        break
+                    if runs%Simulation.run_debounce == 0:
 
-                    self.old_debounce_count = self.debounce_count
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
 
-                # if self.debounce_count >= Simulation.debounce_threshold:
-                #     self.sim_failed = True
-                #     break
+                        self.old_debounce_count = self.debounce_count
 
-                agent.sense_gradient(my_world.gradient_source)
-                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                    # if self.debounce_count >= Simulation.debounce_threshold:
+                    #     self.sim_failed = True
+                    #     break
 
-            if runs % self.sensing_period == 0:
-                for i in range(len(shuffled_list)):
-                    if i == agent_to_update_next:
-                        shuffled_list[i].set_next_step()
-                    
-                agent_to_update_next = agent_to_update_next + 1
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-                if agent_to_update_next >= len(shuffled_list):
-                    agent_to_update_next = 0
+                if runs % self.sensing_period == 0:
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                            shuffled_list[i].set_next_step()
+                        
+                    agent_to_update_next = agent_to_update_next + 1
 
-            if runs % 1000 == 0:
-                sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_building_plan_screenshot.png")
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
 
-            if self.sim_failed:
-                break
+                if runs % 1000 == 0:
+                    sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_building_plan_screenshot.png")
 
-            runs = runs + 1
-            
-            my_world.id.stepSimulation()
+                if self.sim_failed:
+                    break
+
+                runs = runs + 1
+                
+                my_world.id.stepSimulation()
 
         my_world.id.disconnect()
 
@@ -650,8 +649,20 @@ class Simulation:
         my_world.set_gradient_source(gradient)
 
         Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+
+        start = [10.66435,2.61832,1.7178015867129035,11.69837,4.41912,0.008455429980073625,13.7678,5.06304,0.0026835581232114874,13.78616,7.08026,0.0011685954320433077,15.71217,6.6164,0.0009300594955369165,17.00229,8.24761,0.1086975315872433,17.82913,6.40982,0.009906272248240856,19.75934,6.63694,0.7376781911783291,22.06267,6.86474,0.21756226673416776]
         
-        initial_agent_positions = sims_utils.angle_and_position_offset(n, angle_off_y, y_offset, self.unstretched_tether_length)
+        sets = int(len(start)/3)
+
+        pos = []
+
+        for i in range(sets):
+            pos.append([start[i*3], start[(i*3)+1], 0])
+        
+        # initial_agent_positions = sims_utils.angle_and_position_offset(n, angle_off_y, y_offset, self.unstretched_tether_length)
+
+        initial_agent_positions = pos
+
 
         goals = []
         for i in range(n):
@@ -672,7 +683,7 @@ class Simulation:
 
         my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
 
-        my_world.display_axis_labels()
+        # my_world.display_axis_labels()
         
         runs = 0
 
@@ -693,64 +704,67 @@ class Simulation:
         # main simulation loop
         while (runs <= stop) and (my_world.id.isConnected()):
 
-            self.debounce_count = 0
+            # self.debounce_count = 0
 
-            if runs%30:
-                my_world.id.getCameraImage(320,200)
+            # if runs%30:
+            #     my_world.id.getCameraImage(320,200)
 
-            for agent in shuffled_list:
-                if runs > Simulation.run_debounce and agent.is_tether_slack():
-                    self.debounce_count += 1
+            # for agent in shuffled_list:
+            #     if runs > Simulation.run_debounce and agent.is_tether_slack():
+            #         self.debounce_count += 1
 
-                if runs%Simulation.run_debounce == 0:
+            #     if runs%Simulation.run_debounce == 0:
 
-                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                        self.sim_failed = True
-                        break
+            #         if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+            #             self.sim_failed = True
+            #             break
 
-                    self.old_debounce_count = self.debounce_count
+            #         self.old_debounce_count = self.debounce_count
 
-                agent.sense_gradient(my_world.gradient_source)
-                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+            #     agent.sense_gradient(my_world.gradient_source)
+            #     agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-            if runs % self.sensing_period == 0:
-                for i in range(len(shuffled_list)):
-                    if i == agent_to_update_next:
-                        shuffled_list[i].set_next_step()
+            # if runs % self.sensing_period == 0:
+            #     for i in range(len(shuffled_list)):
+            #         if i == agent_to_update_next:
+            #            shuffled_list[i].set_next_step()
                 
-                agent_to_update_next = agent_to_update_next + 1
+            #     agent_to_update_next = agent_to_update_next + 1
 
-                if agent_to_update_next >= len(shuffled_list):
-                    agent_to_update_next = 0
+            #     if agent_to_update_next >= len(shuffled_list):
+            #         agent_to_update_next = 0
 
-            stop_while_loop = False
+            # stop_while_loop = False
 
-            if runs % self.logging_period == 0:
-                min_x = my_world.agent_list[0].get_pose()[0][0]
-                data = [runs]
-                for agent in my_world.agent_list:
-                    data.append(round(agent.get_pose()[0][0], 5))
-                    data.append(round(agent.get_pose()[0][1], 5))
-                    data.append(agent.get_velocity())
+            # if runs % self.logging_period == 0:
+            #     min_x = my_world.agent_list[0].get_pose()[0][0]
+            #     data = [runs]
+            #     for agent in my_world.agent_list:
+            #         data.append(round(agent.get_pose()[0][0], 5))
+            #         data.append(round(agent.get_pose()[0][1], 5))
+            #         data.append(agent.get_velocity())
 
-                    if agent.get_pose()[0][0] < min_x:
-                        min_x = agent.get_pose()[0][0]
+            #         if agent.get_pose()[0][0] < min_x:
+            #             min_x = agent.get_pose()[0][0]
                     
 
-                # data.append(True)
+            #     # data.append(True)
             
-                sims_utils.log_to_csv(log_file, data, header=log_header)
+            #     sims_utils.log_to_csv(log_file, data, header=log_header)
 
-                if min_x >= obst_pos[0]+obst_radius:
-                    stop_while_loop = True
+            #     if min_x >= obst_pos[0]+obst_radius:
+            #         stop_while_loop = True
 
-            if self.sim_failed:
-                break
+            # if self.sim_failed:
+            #     break
 
-            if stop_while_loop:
-                break
+            # if stop_while_loop:
+            #     break
 
-            runs = runs + 1
+            # if runs % 1000 == 0:
+            #     sims_utils.screenshot_gui(ss_filename=f"data/recordings_valid/time_step_{runs}_obstacle_screenshot.png")
+
+            # runs = runs + 1
             
             my_world.id.stepSimulation()
 
@@ -990,7 +1004,7 @@ class Simulation:
 
         return log_file, self.sim_failed
 
-    def object_capture_trial(self, n, trial_num, time_steps, num_objects, offset, maintain_line):
+   # def object_capture_trial(self, n, trial_num, time_steps, num_objects, offset, maintain_line):
         """
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.

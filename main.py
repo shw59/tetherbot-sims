@@ -299,16 +299,16 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, ANGLE_WEIGHT, STRAIN_WEIGHT, GRADIENT_WEIGHT, REPULSION_WEIGHT, 
                 SENSING_PERIOD, LOGGING_PERIOD)
     
-    # sim_args1 = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-    #             UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 15, 500, 8, 5, 
-    #             SENSING_PERIOD, LOGGING_PERIOD)
+    sim_args1 = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
+                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 15, 500, 8, 5, 
+                SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args, True))
-    # run_building_plan((sim_args1, True))
+    run_building_plan((sim_args1, True))
 
     # run_one_agent_follows_gradient((sim_args, True))
 
-    run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0], False)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0], True)
 
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [0, 1, 2, 3, 4])
@@ -330,10 +330,10 @@ def main():
     for i in not_sized_offsets:
         offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
-    #offsets = [UNSTRETCHED_TETHER_LENGTH]
+    offsets = [2.5*UNSTRETCHED_TETHER_LENGTH]
 
     # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
-    run_obstacle_simulations((sim_args, False), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 1, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
     trials = 7
@@ -346,10 +346,11 @@ def main():
             # result = sims_utils.obstacle_avoidance_success([name], 1, 1, 10000, LOGGING_PERIOD, 9, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)[0]
             # print("Result: " + str(result))
             # print("\n")
-            # sims_utils.make_3D_plot([name], 9)
+    sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], 9)
 
     # run_strain_test((sim_args, True), 500)
     # run_w_to_m((sim_args, False), 1500, 8)
 
 if __name__ == "__main__":
     main()
+
