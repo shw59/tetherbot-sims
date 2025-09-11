@@ -72,7 +72,7 @@ class Simulation:
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-14,-20,0], "+x")
         
-        goal_angles = [None, 250, 250, 250, None]
+        goal_angles = [None, 180, 180, 180, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -119,8 +119,8 @@ class Simulation:
         my_world.create_obstacle("cube", [7, -3], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
         # bottom room, bottom left wall
-        my_world.create_obstacle("cube", [-13, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-14, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-13, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-14, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [-15, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [-16, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [-17, -18], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
@@ -250,35 +250,35 @@ class Simulation:
         my_world.create_obstacle("cube", [28, 15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
         my_world.create_obstacle("cube", [27, 15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
-        # big couch
-        my_world.create_obstacle("cube", [-10, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-10, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-10, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-10, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-10, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-10, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # # big couch
+        # my_world.create_obstacle("cube", [-10, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-10, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-10, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-10, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-10, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-10, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
-        my_world.create_obstacle("cube", [-9, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-9, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-9, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-9, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-9, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-9, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-9, -15], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-9, -14], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-9, -13], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-9, -12], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-9, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-9, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
-        my_world.create_obstacle("cube", [-8, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-8, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-7, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-7, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-6, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-6, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-5, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-5, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-4, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-4, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-3, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-3, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-2, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
-        my_world.create_obstacle("cube", [-2, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-8, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-8, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-7, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-7, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-6, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-6, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-5, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-5, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-4, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-4, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-3, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-3, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-2, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
+        # my_world.create_obstacle("cube", [-2, -11], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
         # square table
         # my_world.create_obstacle("cube", [-1, -10], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
@@ -297,8 +297,11 @@ class Simulation:
         # block representing position of gradient
         my_world.create_obstacle("cube", gradient, length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=1)
 
+        my_world.create_obstacle("hexagon", [-2,-10], length=5, width=5, color=(0, 0, 0, 1), fixed=True, height=1)
+
         # things to collect
-        sims_utils.generate_obstacles(my_world, [16, 0], [25, 14], 5, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [16, 0], [25, 14], 5, "cylinder", 0.5, 0.5, 0.5, False)
+
         
 
 
@@ -310,59 +313,59 @@ class Simulation:
 
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
-            if keyboard.is_preseed('s'):
-                my_world.id.getCameraImage(320,200)
+            # if keyboard.is_pressed('s'):
+            my_world.id.getCameraImage(320,200)
 
-                self.debounce_count = 0
+            self.debounce_count = 0
 
-                for agent in shuffled_list:
-                    # if agent.tethers[0] is not None:
-                        # print(agent.tethers[0].get_strain())
-                    # else:
-                        # print(agent.tethers[1].get_strain())
-
-
+            for agent in shuffled_list:
+                # if agent.tethers[0] is not None:
+                    # print(agent.tethers[0].get_strain())
+                # else:
+                    # print(agent.tethers[1].get_strain())
 
 
-                    if runs > Simulation.run_debounce and agent.is_tether_slack():
-                        self.debounce_count += 1
-                    # else:
-                    #     self.debounce_count = 0
 
-                    if runs%Simulation.run_debounce == 0:
 
-                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                            self.sim_failed = True
-                            break
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+                # else:
+                #     self.debounce_count = 0
 
-                        self.old_debounce_count = self.debounce_count
+                if runs%Simulation.run_debounce == 0:
 
-                    # if self.debounce_count >= Simulation.debounce_threshold:
-                    #     self.sim_failed = True
-                    #     break
+                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                        self.sim_failed = True
+                        break
 
-                    agent.sense_gradient(my_world.gradient_source)
-                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                    self.old_debounce_count = self.debounce_count
 
-                if runs % self.sensing_period == 0:
-                    for i in range(len(shuffled_list)):
-                        if i == agent_to_update_next:
-                            shuffled_list[i].set_next_step()
-                        
-                    agent_to_update_next = agent_to_update_next + 1
+                # if self.debounce_count >= Simulation.debounce_threshold:
+                #     self.sim_failed = True
+                #     break
 
-                    if agent_to_update_next >= len(shuffled_list):
-                        agent_to_update_next = 0
+                agent.sense_gradient(my_world.gradient_source)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-                if runs % 1000 == 0:
-                    sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_building_plan_screenshot.png")
+            if runs % self.sensing_period == 0:
+                for i in range(len(shuffled_list)):
+                    if i == agent_to_update_next:
+                        shuffled_list[i].set_next_step()
+                    
+                agent_to_update_next = agent_to_update_next + 1
 
-                if self.sim_failed:
-                    break
+                if agent_to_update_next >= len(shuffled_list):
+                    agent_to_update_next = 0
 
-                runs = runs + 1
-                
-                my_world.id.stepSimulation()
+            if runs % 1000 == 0:
+                sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_building_plan_screenshot.png")
+
+            if self.sim_failed:
+                break
+
+            runs = runs + 1
+            
+            my_world.id.stepSimulation()
 
         my_world.id.disconnect()
 

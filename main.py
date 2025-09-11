@@ -311,30 +311,30 @@ def main():
     # run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0], False)
     # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0], True)
 
-    run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [4])
+    # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [4])
 
-    start = 0.0
+    # start = 0.0
     
-    num_of_offsets_plus_one = 21
+    # num_of_offsets_plus_one = 21
 
-    # not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7]
+    # # not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7]
 
-    not_sized_offsets = []
+    # not_sized_offsets = []
 
-    for i in range(num_of_offsets_plus_one):
-        not_sized_offsets.append(start)
-        start = start + 0.25
+    # for i in range(num_of_offsets_plus_one):
+    #     not_sized_offsets.append(start)
+    #     start = start + 0.25
 
-    offsets = []
+    # offsets = []
 
-    for i in not_sized_offsets:
-        offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
+    # for i in not_sized_offsets:
+    #     offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
-    offsets = [2.5*UNSTRETCHED_TETHER_LENGTH]
+    # offsets = [2.5*UNSTRETCHED_TETHER_LENGTH]
 
-    # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
+    # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
     trials = 7
@@ -347,7 +347,7 @@ def main():
             # result = sims_utils.obstacle_avoidance_success([name], 1, 1, 10000, LOGGING_PERIOD, 9, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)[0]
             # print("Result: " + str(result))
             # print("\n")
-    sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], 9)
+    # sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], 9)
 
     # run_strain_test((sim_args, True), 500)
     # run_w_to_m((sim_args, False), 1500, 8)
