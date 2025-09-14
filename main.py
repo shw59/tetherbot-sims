@@ -300,11 +300,11 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
     
     sim_args1 = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 15, 500, 8, 5, 
+                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 20, 500, 8, 5, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    # run_storm_drain((sim_args, True))
-    run_building_plan((sim_args1, True))
+    run_storm_drain((sim_args1, True))
+    # run_building_plan((sim_args1, True))
 
     # run_one_agent_follows_gradient((sim_args, True))
 

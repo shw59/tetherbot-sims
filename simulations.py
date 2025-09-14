@@ -379,21 +379,41 @@ class Simulation:
         """
         self.reset_simulation()
         
-        n = 5
+        n = 6
 
-        gradient = [7.5, 50]
+        bottom_position = -5
+        top_position = 15
+        right_position = 6
+        left_position = -6
+        tunnel_width = 2
+        tunnel_length = 5
+        length_of_tank = right_position - left_position
+        doorway_length = length_of_tank/2
+
+        size_of_block = 0.1
+        blocks_per_unit = 1/size_of_block
+
+        ramp_length = 2
+
+        starter_length = n + 5
+
+        gradient = [(np.sqrt(2)*(length_of_tank/2))*((4/3)*((length_of_tank)/2)), (np.sqrt(2)*(length_of_tank))*((4/3)*(top_position-bottom_position))]
 
         my_world = World(120, 120, self.time_step, self.gui_on)
+
+        my_world.create_obstacle("hexagon", gradient, length=1, width=1, color=(1, 0, 0, 1), fixed=True, height=0.5)
 
         my_world.set_gradient_source(gradient)
 
         Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
-        angles = [None, 180, 180, 180, None]
+        angles = [None, 180, 180, 180, 180, None]
+
+        pos = [left_position - tunnel_length - ramp_length - n - 2, bottom_position - ramp_length - int(tunnel_width/2), 0]
         
-        initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, [-30,-7,0], "+x")
+        initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, pos, "+x")
         
-        goal_angles = [None, 180, 270, 180, None]
+        goal_angles = [None, 200, 200, 200, 200, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -405,174 +425,42 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments = 10)
 
-        # sides of sewer tank
 
-        for i in range(30):
-            my_world.create_obstacle("cube", [-10, i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-            my_world.create_obstacle("cube", [25, i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        
+        # sides of sewer tank
+        for i in range(0, int(blocks_per_unit*(top_position-bottom_position))):
+            my_world.create_obstacle("cube", [left_position, size_of_block*i+bottom_position], length=size_of_block, width=size_of_block, color=(0, 0, 0, 1), fixed=True, height=0.5)
+            my_world.create_obstacle("cube", [right_position, size_of_block*i+bottom_position], length=size_of_block, width=size_of_block, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
         # top of the sewer tank
-        my_world.create_obstacle("cube", [-10, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-9, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-8, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-7, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-6, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-5, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-4, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-3, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-2, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-1, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [0, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [1, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [2, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [3, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [4, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [11, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [12, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [13, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [14, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [15, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [16, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [17, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [18, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [19, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [20, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [21, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [22, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [23, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [24, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [25, 30], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-
-
+        
+        for i in range(0, int((blocks_per_unit*(int(length_of_tank/2)-int(doorway_length/2))))):
+            my_world.create_obstacle("cube", [size_of_block*i + left_position, top_position + size_of_block*i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+            my_world.create_obstacle("cube", [right_position - size_of_block*i, top_position + size_of_block*i], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        
         # bottom of the sewer tank
-        my_world.create_obstacle("cube", [-9, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-8, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-7, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-6, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-5, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-4, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-3, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-2, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-1, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [0, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [1, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [2, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [3, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [4, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [5, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [6, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [7, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [8, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [9, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [10, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [11, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [12, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [13, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [14, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [15, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [15, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [16, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [17, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [18, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [19, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [20, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [21, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [22, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [23, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [24, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [25, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [25, -1], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        for i in range(0, int((blocks_per_unit*(right_position - left_position)))):
+            my_world.create_obstacle("cube", [size_of_block*i + left_position, bottom_position - tunnel_width], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
-        # tube connected to the tank
-        my_world.create_obstacle("cube", [-10, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-11, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-12, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-13, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-14, -2], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-10, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-11, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-12, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-13, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-14, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-15, 0], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        for i in range(0, int(blocks_per_unit*tunnel_width)):
+            if i != 0 or i != (int(blocks_per_unit*tunnel_width) - 1):
+                my_world.create_obstacle("cube", [right_position, bottom_position - tunnel_width + i*size_of_block], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        
+        for i in range(0, -1*int(blocks_per_unit*(tunnel_length - 1)), -1):
+            if i != 0:
+                my_world.create_obstacle("cube", [size_of_block*i + left_position, bottom_position], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+                my_world.create_obstacle("cube", [size_of_block*i + left_position, bottom_position - tunnel_width], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        
+        for i in range(0, -int(blocks_per_unit*ramp_length), -1):
+            my_world.create_obstacle("cube", [size_of_block*i + (left_position - tunnel_length + 1 ), size_of_block*i + bottom_position], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+            my_world.create_obstacle("cube", [size_of_block*i + (left_position-tunnel_length + 1), size_of_block*i +bottom_position - tunnel_width], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+        
+        for i in range(0, -int(blocks_per_unit*starter_length), -1):
+            my_world.create_obstacle("cube", [size_of_block*i + (left_position-tunnel_length-ramp_length + 1), bottom_position - tunnel_width - ramp_length], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
+            my_world.create_obstacle("cube", [size_of_block*i + (left_position-tunnel_length-ramp_length + 1), bottom_position  - ramp_length], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
-
-        # diagonal part
-        # my_world.create_obstacle("hexagon", [-14.25, -2.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        # my_world.create_obstacle("hexagon", [-14.5, -2.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-14.75, -2], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-15, -2.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-15.25, -2.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-15.5, -2.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-15.75, -3], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16, -3.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16.25, -3.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16.5, -3.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16.75, -4], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17, -4.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17.25, -4.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17.5, -4.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17.75, -5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18, -5.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18.25, -5.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18.5, -5.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18.75, -6], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19, -6.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19.25, -6.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19.5, -6.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19.75, -7], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20, -7.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20.25, -7.50], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20.5, -7.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20.75, -8], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-21, -8], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-21.25, -8], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-15.75, -.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-15.75, -.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16, -1], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16.25, -1.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16.5, -1.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-16.75, -1.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17, -2], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17.25, -2.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17.5, -2.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-17.75, -2.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18, -3], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18.25, -3.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18.5, -3.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-18.75, -3.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19, -4], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19.25, -4.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19.5, -4.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-19.75, -4.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20, -5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20.25, -5.25], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20.5, -5.5], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-20.75, -5.75], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-21, -6], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("hexagon", [-21.25, -6], length=0.35, width=0.35, color=(0, 0, 0, 1), fixed=True, height=0.5)
-
-        # tube where the agents start
-        my_world.create_obstacle("cube", [-22, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-23, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-24, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-25, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-26, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-27, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-28, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-29, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-30, -6], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-22, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-23, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-24, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-25, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-26, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-27, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-28, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-29, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-        my_world.create_obstacle("cube", [-30, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
-
-        sims_utils.generate_obstacles(my_world, [25, 30], [-10, -2], 100, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [left_position, bottom_position - tunnel_width], [right_position, top_position], 150, "cylinder", 0.25, 0.25, 1, False)
+        
         
         runs = 0
 
@@ -628,7 +516,7 @@ class Simulation:
                     agent_to_update_next = 0
 
             if runs % 1000 == 0:
-                sims_utils.screenshot_gui(ss_filename=f"data/figures/time_step_{runs}_storm_drain_screenshot.png")
+                sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
 
             if self.sim_failed:
                 break
