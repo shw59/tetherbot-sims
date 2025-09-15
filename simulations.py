@@ -569,7 +569,7 @@ class Simulation:
         my_world.create_obstacle("cube", [-29, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
         my_world.create_obstacle("cube", [-30, -8], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
-        sims_utils.generate_obstacles(my_world, [25, 30], [-10, -2], 100, "cylinder", 0.5, 0.5, False)
+        sims_utils.generate_obstacles(my_world, [25, 30], [-10, -2], 100, "cylinder", 0.5, 0.5, self.agent_height, False)
         
         runs = 0
 
@@ -1005,7 +1005,7 @@ class Simulation:
 
         return log_file, self.sim_failed
 
-   # def object_capture_trial(self, n, trial_num, time_steps, num_objects, offset, maintain_line):
+    def object_capture_trial(self, n, trial_num, time_steps, num_objects, offset, maintain_line):
         """
         This experiment takes a group of n agents and places them in a line. The agents then attempt to collect randomly placed movable obstacles.
         The collective may either attempt to maintain a straight line or have no goal angle.
@@ -1018,16 +1018,13 @@ class Simulation:
 
         my_world.set_gradient_source(gradient_source)
 
-        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+        Agent.set_weights([0, self.weight_strain, 0, self.weight_repulsion])
 
         start_angles = [None] + [180] * (n - 2) + [None]
         
         initial_agent_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, start_angles, [-2, -(n - 1) * self.unstretched_tether_length / 2 + offset, 0], "+y")
 
-        if maintain_line:
-            goal_angles = start_angles[:]
-        else:
-            goal_angles = [None] * n
+        goal_angles = start_angles[:]
 
         # populates the list of robot objects with agent objects
         for i in range(n):
@@ -1039,7 +1036,7 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        sims_utils.generate_obstacles(my_world, [0, -4], [4, 5], num_objects, "cylinder", 0.25, 0.25, self.agent_height, False)
+        sims_utils.generate_obstacles(my_world, [0, -6], [4, 6], num_objects, "cylinder", 0.25, 0.25, self.agent_height, False)
 
         # my_world.display_axis_labels()
         
@@ -1051,79 +1048,144 @@ class Simulation:
         obj_collected = 0
 
         collective_radius_avgs = []
+        variance = []
+
+        # number of runs to get the collective stretched out
+        set_up_runs = 800
+        is_setting_up = True
 
         # main simulation loop
         while my_world.id.isConnected() and runs <= time_steps:
-            if keyboard.is_pressed('s'): # step through simulation
-                self.debounce_count = 0
+            # set-up phase
+            while is_setting_up:
+                # if keyboard.is_pressed('q'):
+                    my_world.id.getCameraImage(320,200)
 
-                my_world.id.getCameraImage(320,200)
+                    # print(runs)
 
-                if runs % self.logging_period == 0:
-                    obstacle_pos_flattened = []
-                    for obj in my_world.obj_list:
-                        if obj.label == "obstacle":
-                            obstacle_pos_flattened.append(obj.get_pose()[0][0])
-                            obstacle_pos_flattened.append(obj.get_pose()[0][1])
-                            for agent in my_world.agent_list:
-                                if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
-                                        if not obj.collected:
-                                            obj_collected += 1
-                                            obj.collected = True
-                                            break
-                                else:
-                                    if obj.collected:
-                                        obj_collected -= 1
-                                        obj.collected = False
+                    for agent in shuffled_list:
+                        # if agent.tethers[0] is not None:
+                            # print(agent.tethers[0].get_strain())
+                        # if agent.tethers[1] is not None:
+                            # print(agent.tethers[1].get_strain())
+                        if runs > Simulation.run_debounce and agent.is_tether_slack():
+                            self.debounce_count += 1
+
+                        if runs%Simulation.run_debounce == 0:
+
+                            if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                                self.sim_failed = True
+                                break
+
+                            self.old_debounce_count = self.debounce_count
+                            
+                        agent.sense_gradient(my_world.gradient_source)
+                        agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+                    if self.sim_failed:
+                        break
+
+                    if runs % self.sensing_period == 0:
+                        for i in range(len(shuffled_list)):
+                            if i == agent_to_update_next:
+                                shuffled_list[i].set_next_step_revised()
+                                if runs < set_up_runs:
+                                    for agent in my_world.agent_list:
+                                        agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
+                                shuffled_list[i].move_to(shuffled_list[i].max_force)
+
+                        agent_to_update_next = agent_to_update_next + 1
+
+                        if agent_to_update_next >= len(shuffled_list):
+                            agent_to_update_next = 0
+
+                    runs = runs + 1
+
+                    if runs > set_up_runs:
+                        is_setting_up = False
+                        # set the experimental parameters
+                        if maintain_line:
+                            Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+                        else:
+                            Agent.set_weights([0, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+
+                        runs = 0
                     
-                    agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
+                    my_world.id.stepSimulation()
+            
+            # actual experiment begins
+            # if keyboard.is_pressed('q'): # step through simulation
+            self.debounce_count = 0
 
-                    # sliding window average
-                    collective_radius_avgs.append(utils.get_collective_radius(agent_pos))
-                    
-                    if len(collective_radius_avgs) > 5:
-                        collective_radius_avgs.pop(0)
+            # print(runs)
 
-                    collective_radius = np.mean(collective_radius_avgs)
+            my_world.id.getCameraImage(320,200)
 
-                    agent_pos_flattened = []
-                    for pos in agent_pos:
-                        agent_pos_flattened.append(pos[0])
-                        agent_pos_flattened.append(pos[1])
-                    csv_row = [runs, collective_radius, obj_collected] + agent_pos_flattened + obstacle_pos_flattened
-                    sims_utils.log_to_csv(log_file, csv_row, header=["time step", "collective radius", "# of objects collected", "agent positions"] + ["" for _ in range(n * 2 - 1)] + ["obstacle positions"] + ["" for _ in range(num_objects * 2 - 1)])
-
-                for agent in shuffled_list:
-                    if runs > Simulation.run_debounce and agent.is_tether_slack():
-                        self.debounce_count += 1
-
-                    if runs%Simulation.run_debounce == 0:
-
-                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                            self.sim_failed = True
-                            break
-
-                        self.old_debounce_count = self.debounce_count
-                        
-                    agent.sense_gradient(my_world.gradient_source)
-                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
-
-                if self.sim_failed:
-                    break
-
-                if runs % self.sensing_period == 0:
-                    for i in range(len(shuffled_list)):
-                        if i == agent_to_update_next:
-                            shuffled_list[i].set_next_step()
-
-                    agent_to_update_next = agent_to_update_next + 1
-
-                    if agent_to_update_next >= len(shuffled_list):
-                        agent_to_update_next = 0
-
-                runs = runs + 1
+            if runs % self.logging_period == 0:
+                for obj in my_world.obj_list:
+                    if obj.label == "obstacle":
+                        for agent in my_world.agent_list:
+                            if math.dist(agent.get_pose()[0], obj.get_pose()[0]) <= 2:
+                                    if not obj.collected:
+                                        obj_collected += 1
+                                        obj.collected = True
+                                        break
+                            else:
+                                if obj.collected:
+                                    obj_collected -= 1
+                                    obj.collected = False
                 
-                my_world.id.stepSimulation()
+                # get agent positions to put in csv if we want
+                agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
+
+                # sliding window average (tether angle variance between agents)
+                agent_deltas = [agent.get_delta() for agent in my_world.agent_list[1:n-2]]
+                variance.append(np.var(agent_deltas))
+
+                if len(variance) > 25:
+                    variance.pop(0)
+
+                avg_variance = np.mean(variance)
+
+                csv_row = [runs, avg_variance, obj_collected] + agent_deltas
+                sims_utils.log_to_csv(log_file, csv_row, header=["time step", "variance", "# of objects collected", "tether angles"] + ["" for _ in range(n * 2 - 1)])
+
+            for agent in shuffled_list:
+                # if agent.tethers[0] is not None:
+                    # print(agent.tethers[0].get_strain())
+                # if agent.tethers[1] is not None:
+                    # print(agent.tethers[1].get_strain())
+                if runs > Simulation.run_debounce and agent.is_tether_slack():
+                    self.debounce_count += 1
+
+                if runs%Simulation.run_debounce == 0:
+
+                    if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                        self.sim_failed = True
+                        break
+
+                    self.old_debounce_count = self.debounce_count
+                    
+                agent.sense_gradient(my_world.gradient_source)
+                agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+            if self.sim_failed:
+                break
+
+            if runs % self.sensing_period == 0:
+                for i in range(len(shuffled_list)):
+                    if i == agent_to_update_next:
+                        shuffled_list[i].set_next_step()
+                        shuffled_list[i].move_to(shuffled_list[i].max_force)
+
+                agent_to_update_next = agent_to_update_next + 1
+
+                if agent_to_update_next >= len(shuffled_list):
+                    agent_to_update_next = 0
+
+            runs = runs + 1
+            
+            my_world.id.stepSimulation()
 
         my_world.id.disconnect()
 

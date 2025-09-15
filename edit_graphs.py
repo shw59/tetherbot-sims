@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import glob
+import numpy as np
 
 def edit_towing_agents():
     """
@@ -71,37 +72,43 @@ def edit_obj_capture():
     Polishes up the graphs produced from the object capture simulations. Edit anything below as needed.
     """
     # load the pickled figure
-    with open("./data/figures/object_capture_maintain_line_False_offset0_graph_2025-08-03.png.pkl", "rb") as f:
+    with open("./data/figures/object_capture_maintain_line_False_offset0_graph_2025-09-14.png.pkl", "rb") as f:
         fig = pickle.load(f)
+
+    new_labels = ["25 Obj", "50 Obj", "75 Obj", "100 Obj"]
 
     # legend_colors = ["yellow", "red", "purple", "blue"]
 
     # load files and calculate the std deviations 
-    files_5 = glob.glob("./data/8-3-25_to_8-5-25/object_capture_maintain_line_False_trial*_objects5_offset0.csv")
-    dfs_5 = [pd.read_csv(f) for f in files_5]
-    trial_matrix_5 = np.column_stack([df["# of objects collected"].values for df in dfs_5])
-    std_5  = np.std(trial_matrix_5, axis=1)
+    # files_25 = glob.glob("./data/object_capture_maintain_line_True_trial*_objects25_offset0.csv")
+    files_25 = glob.glob("./data/object_capture_maintain_line_False_trial*_objects25_offset0.csv")
+    dfs_25 = [pd.read_csv(f) for f in files_25]
+    trial_matrix_25 = np.column_stack([df["variance"].values for df in dfs_25])
+    std_25  = np.std(trial_matrix_25, axis=1)
 
-    files_10 = glob.glob("./data/8-3-25_to_8-5-25/object_capture_maintain_line_False_trial*_objects10_offset0.csv")
-    dfs_10 = [pd.read_csv(f) for f in files_10]
-    trial_matrix_10 = np.column_stack([df["# of objects collected"].values for df in dfs_10])
-    std_10  = np.std(trial_matrix_10, axis=1)
-
-    files_30 = glob.glob("./data/8-3-25_to_8-5-25/object_capture_maintain_line_False_trial*_objects30_offset0.csv")
-    dfs_30 = [pd.read_csv(f) for f in files_30]
-    trial_matrix_30 = np.column_stack([df["# of objects collected"].values for df in dfs_30])
-    std_30  = np.std(trial_matrix_30, axis=1)
-
-    files_50 = glob.glob("./data/8-3-25_to_8-5-25/object_capture_maintain_line_False_trial*_objects50_offset0.csv")
+    # files_50 = glob.glob("./data/object_capture_maintain_line_True_trial*_objects50_offset0.csv")
+    files_50 = glob.glob("./data/object_capture_maintain_line_False_trial*_objects50_offset0.csv")
     dfs_50 = [pd.read_csv(f) for f in files_50]
-    trial_matrix_50 = np.column_stack([df["# of objects collected"].values for df in dfs_50])
+    trial_matrix_50 = np.column_stack([df["variance"].values for df in dfs_50])
     std_50  = np.std(trial_matrix_50, axis=1)
 
+    # files_75 = glob.glob("./data/object_capture_maintain_line_True_trial*_objects75_offset0.csv")
+    files_75 = glob.glob("./data/object_capture_maintain_line_False_trial*_objects75_offset0.csv")
+    dfs_75 = [pd.read_csv(f) for f in files_75]
+    trial_matrix_75 = np.column_stack([df["variance"].values for df in dfs_75])
+    std_75  = np.std(trial_matrix_75, axis=1)
+
+    # files_100 = glob.glob("./data/object_capture_maintain_line_True_trial*_objects100_offset0.csv")
+    files_100 = glob.glob("./data/object_capture_maintain_line_False_trial*_objects100_offset0.csv")
+    dfs_100 = [pd.read_csv(f) for f in files_100]
+    trial_matrix_100 = np.column_stack([df["variance"].values for df in dfs_100])
+    std_100  = np.std(trial_matrix_100, axis=1)
+
     std_map = {
-        "5 Obj":  std_5,
-        "10 Obj": std_10,
-        "30 Obj": std_30,
+        "25 Obj":  std_25,
         "50 Obj": std_50,
+        "75 Obj": std_75,
+        "100 Obj": std_100,
     }
 
     # access all axes in the figure
@@ -114,23 +121,20 @@ def edit_obj_capture():
         ax.xaxis.label.set_fontsize(30)
         ax.yaxis.label.set_fontsize(30)
 
-        ax.set_xlim(0, 5000)
-
-        # change tick size for right side only
-        # if this axis has a right y-axis label, modify its ticks
-        if ax.yaxis.get_label_position() == 'right':
-            # ax.yaxis.set_major_locator(plt.MaxNLocator(5))  # at most 5 ticks
-            ax.set_yticks([0, 10, 20, 30, 40, 50])
-            for line, lbl in zip(ax.lines, new_labels):
-                x = line.get_xdata()
-                y = line.get_ydata()
-                if lbl in std_map:
-                    std = std_map[lbl]
-                    print(lbl, len(x), len(y), len(std))  # debugging
-                    ax.fill_between(x, y-std, y+std, color=line.get_color(), alpha=0.2) # add std deviation shading
+        # ax.set_xlim(0, 15000)
+        ax.set_xticks([0, 3000, 6000, 9000, 12000, 15000])
         
-        if ax.yaxis.get_label_position() == 'left':
-            ax.set_yticks([0, 20000, 40000, 60000, 80000])
+        # if ax.yaxis.get_label_position() == 'left':
+        ax.set_ylim(100, 2500)
+
+        # std deviation shading
+        # for line, lbl in zip(ax.lines, new_labels):
+        #     x = line.get_xdata()
+        #     y = line.get_ydata()
+
+        #     if lbl in std_map:
+        #         std = std_map[lbl]
+        #         ax.fill_between(x, y-std, y+std, color=line.get_color(), alpha=0.2) # add std deviation shading
 
         # change tick label font sizes
         for tick in ax.xaxis.get_major_ticks():
@@ -138,16 +142,11 @@ def edit_obj_capture():
         for tick in ax.yaxis.get_major_ticks():
             tick.label1.set_fontsize(30)
 
-        # ax.lines → list of Line2D objects (for line plots)
-        # for i, line in enumerate(ax.lines):
-        #     color = legend_colors[i % len(legend_colors)]
-        #     line.set_color(color)
-
         # change legend font size (if it exists)
         legend = ax.get_legend()
         handles, labels = ax.get_legend_handles_labels()
         if legend:
-            new_labels = ["5 Obj", "10 Obj", "30 Obj", "50 Obj"]
+            new_labels = ["25 Obj", "50 Obj", "75 Obj", "100 Obj"]
             ax.legend(handles, new_labels, loc='upper right', fontsize=24)
 
     # optionally show or save again
@@ -227,7 +226,7 @@ def edit_w_to_m_graph():
         if legend:
             ax.legend(handles, new_labels, loc='upper right', fontsize=24)
     
-    
+    # graph hardware experimental data on top of the simulated data
     # time = [0,0.03571428571,0.07142857143,0.1071428571,0.1428571429,0.1785714286,0.2142857143,0.25,0.2857142857,0.3214285714,0.3571428571,0.3928571429,0.4285714286,0.4642857143,0.5,0.5357142857,0.5714285714,0.6071428571,0.6428571429,0.6785714286,0.7142857143,0.75,0.7857142857,0.8214285714,0.8571428571,0.8928571429,0.9285714286,0.9642857143,1]
     # Agent2 = [171.5714286,166.2857143,161.5714286,150.8571429,140.8571429,131.1428571,121.7142857,115.5714286,109,106.5714286,98.42857143,94.57142857,84.42857143,82,75,65,52.85714286,42.28571429,31.14285714,30,28.14285714,26.14285714,25.85714286,23.57142857,23.85714286,24.14285714,20.57142857,20.42857143,20.85714286]
     # Agent3 = [177.7142857,174.5714286,169.4285714,174,152.8571429,144.5714286,136,125,122.8571429,120.7142857,115,109.2857143,105,102,95.57142857,81.28571429,69.57142857,56.42857143,44.14285714,37.14285714,28.42857143,23,22.57142857,20,21,23.85714286,19,19.14285714,20.85714286]
@@ -276,7 +275,7 @@ def make_empty_graph(rows=1, cols=1):
     # Flatten axes to make them easy to iterate
     # axes = axes.ravel()
 
-    labels = ["50 Objects"]
+    labels = ["100 Objects"]
 
     for ax, lbl in zip(axes, labels):
         ax.set_xticks([])
@@ -294,9 +293,9 @@ def make_empty_graph(rows=1, cols=1):
 
 def main():
     # edit_towing_agents()
-    # edit_obj_capture()
+    edit_obj_capture()
     # edit_w_to_m_graph()
-    make_empty_graph()
+    # make_empty_graph()
 
 if __name__ == "__main__":
     main()

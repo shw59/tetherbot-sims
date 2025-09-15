@@ -90,7 +90,9 @@ class Tether:
                                 frictionCoeff=mu, 
                                 useFaceContact=1)
         
-        self.world_id.changeVisualShape(self.id, -1, rgbaColor=[1.0, 0.5, 0, 1.0], flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+        color = [1.0, 0.5, 0, 1.0] # orange
+        # color = [1.0, 1.0, 1.0, 1.0] # white
+        self.world_id.changeVisualShape(self.id, -1, rgbaColor=color, flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
     
     def get_strain(self):
         """
