@@ -45,3 +45,5 @@ start time,simulation type,elapsed time (s),failed trials
 2025-09-12 16:48:47.251194,"object capture, maintain line False",11242.845473499969,[]
 2025-09-13 22:35:49.330263,"object capture, maintain line True",23145.774365799996,[]
 2025-09-13 22:34:57.064873,"object capture, maintain line False",23674.776767100004,[]
+2025-09-14 09:48:15.655682,storm drain,5639.77592166001,
+2025-09-18 22:55:42.211927,storm drain,5489.829784516245,
