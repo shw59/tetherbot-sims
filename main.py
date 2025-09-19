@@ -34,7 +34,7 @@ MU_STATIC = 1.25
 MU_DYNAMIC = 0.9
 
 # paracord 550 parameters
-UNSTRETCHED_TETHER_LENGTH = 1.5
+UNSTRETCHED_TETHER_LENGTH = 1.4
 YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
@@ -308,10 +308,10 @@ def main():
 
     # run_one_agent_follows_gradient((sim_args, True))
 
-    run_object_capture_simulations((sim_args, False), 9, 10, 15000, [25, 50, 75, 100], [0], False)
-    # run_object_capture_simulations((sim_args, False), 9, 10, 15000, [25, 50, 75, 100], [0], True)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [25, 50, 75, 100], [0], False)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], True)
 
-    # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [4])
+    run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [2, 3, 4])
 
     # start = 0.0
     
