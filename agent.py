@@ -16,7 +16,7 @@ class Agent:
     desired_strain = 0.5 # how much strain the agents will attempt to maintain in their tethers, if they have any
     err_pos = 0.5
     err_delta = 7 # The allowable error in the accuracy of the goal angle between an agent's two tether
-    err_strain = 0.05 # The allowable error in the accuracy of the goal strain that the agent's want to 
+    err_strain = 0.1 # The allowable error in the accuracy of the goal strain that the agent's want to 
     err_heading = 10
     err_velocity = .1
     slack_threshold = 1e-4 # the threshold for when a tether is considered slack
@@ -578,12 +578,60 @@ class Agent:
             # print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
             # print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
             
-            if utils.magnitude_of_vector(resulting_vector) > 0.25:
-                self.next_position = curr_position + 0.25 * utils.normalize(resulting_vector)
+            if utils.magnitude_of_vector(resulting_vector) > 0.1:
+                self.next_position = curr_position + 0.1 * utils.normalize(resulting_vector)
             else:
                 self.next_position = curr_position + resulting_vector
 
             self.move_to(self.max_force)
+
+    def set_next_step_revised(self):
+        """
+        Calculates and sets the next position the agent should move to based on 
+        the resultant weighted vector sum and its current close-range sensor data.
+        The function then calls move_to so that the robot begins to move in that direction.
+
+        This version was made temporarily for object capture such that it doesn't call move_to() within this function.
+        """
+        self.stop_move()
+        if not self.failed:
+            curr_position = np.array(self.get_pose()[0])
+            
+            try: # if agent has one tether instantiated
+                tether_num = not self.tethers.index(None) # retrieves the list index of the one tether (either 0 or 1)
+                v_m_strain = np.array([0, 0]) if tether_num else self.compute_vector_strain(tether_num)
+                v_p_strain = self.compute_vector_strain(tether_num) if tether_num else np.array([0, 0])
+                v_angle = np.array([0, 0])
+            except ValueError: # if agent has two tethers instantiated
+                v_m_strain = self.compute_vector_strain(0)
+                v_p_strain = self.compute_vector_strain(1)
+                v_angle = self.compute_vector_angle()
+
+            v_gradient = self.compute_vector_gradient()
+
+            v_repulsion = self.compute_vector_repulsion()
+
+            resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) + Agent.gradient_weight * v_gradient \
+                                + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+            
+            if self.only_gradient:
+                resulting_vector =  Agent.gradient_weight * v_gradient
+
+            if self.dont_care_about_gradient:
+                resulting_vector = Agent.strain_weight * (v_m_strain + v_p_strain) \
+                                + Agent.repulsion_weight * v_repulsion + Agent.angle_weight * v_angle
+            
+            # print(f"v_m_strain: {v_m_strain}", f"magnitude: {utils.magnitude_of_vector(v_m_strain)}")
+            # print(f"v_p_strain: {v_p_strain}", f"magnitude: {utils.magnitude_of_vector(v_p_strain)}")
+            # print(f"v_angle: {v_angle}", f"magnitude: {utils.magnitude_of_vector(v_angle)}")
+            # print(f"v_gradient: {v_gradient}", f"magnitude: {utils.magnitude_of_vector(v_gradient)}")
+            # print(f"v_repulsion: {v_repulsion}", f"magnitude: {utils.magnitude_of_vector(v_repulsion)}")
+            # print(f"resulting_vector: {resulting_vector}", f"magnitude: {utils.magnitude_of_vector(resulting_vector)}\n")
+            
+            if utils.magnitude_of_vector(resulting_vector) > 0.1:
+                self.next_position = curr_position + 0.1 * utils.normalize(resulting_vector)
+            else:
+                self.next_position = curr_position + resulting_vector
             
     def stop_move(self):
         """

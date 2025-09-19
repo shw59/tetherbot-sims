@@ -21,7 +21,7 @@ LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is w
 # vector weightings
 ANGLE_WEIGHT = 15 # originally 15
 STRAIN_WEIGHT = 500 # originally 500
-GRADIENT_WEIGHT = 20
+GRADIENT_WEIGHT = 20 # originally 20
 REPULSION_WEIGHT = 5
 
 # jackal robot parameters
@@ -34,7 +34,7 @@ MU_STATIC = 1.25
 MU_DYNAMIC = 0.9
 
 # paracord 550 parameters
-UNSTRETCHED_TETHER_LENGTH = 1.5
+UNSTRETCHED_TETHER_LENGTH = 1.4
 YOUNGS_MODULUS = 900e6
 DIAMETER = 0.0019 # m
 
@@ -190,8 +190,8 @@ def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_n
             else:
                 return False
 
-        sims_utils.make_graph(csv_averages_list, "time step", ["collective radius", "# of objects collected"], [f"{object_num} objects" for object_num in object_nums],
-                              f"Collective Radius and # of Objects Collected vs Time Step, with Offset {offset}", "Time Step", ["Collective Radius", "# of Objects Collected"], f"data/figures/object_capture_maintain_line_{maintain_line}_offset{offset}_graph_{datetime.datetime.now().date()}.png")
+        sims_utils.make_graph(csv_averages_list, "time step", ["variance"], [f"{object_num} objects" for object_num in object_nums],
+                              f"Tether Angle Variance vs Time Step, with Offset {offset}", "Time Step", ["Variance"], f"data/figures/object_capture_maintain_line_{maintain_line}_offset{offset}_graph_{datetime.datetime.now().date()}.png")
 
     end_time = time.perf_counter()
 
@@ -304,14 +304,15 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
 
     # run_storm_drain((sim_args1, True))
+
     # run_building_plan((sim_args1, True))
 
     # run_one_agent_follows_gradient((sim_args, True))
 
-    # run_object_capture_simulations((sim_args, True), 9, 10, 10000, [5, 10, 30, 50], [0], False)
-    # run_object_capture_simulations((sim_args, False), 9, 10, 10000, [5, 10, 30, 50], [0], True)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [25, 50, 75, 100], [0], False)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], True)
 
-    # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [4])
+    run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [2, 3, 4])
 
     # start = 0.0
     
@@ -337,7 +338,7 @@ def main():
     run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
-    trials = 7
+    # trials = 7
     
     # for t in range(1, trials + 1):
         # for i in not_sized_offsets:
