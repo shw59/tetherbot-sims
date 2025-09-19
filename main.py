@@ -300,10 +300,10 @@ def main():
                 SENSING_PERIOD, LOGGING_PERIOD)
     
     sim_args1 = (TIME_STEP, MASS, RADIUS, HEIGHT, MAX_SPEED, DRIVE_POWER, MU_STATIC, MU_DYNAMIC, 
-                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 20, 500, 8, 5, 
+                UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 25, 500, 8, 5, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    run_storm_drain((sim_args1, True))
+    # run_storm_drain((sim_args1, True))
     # run_building_plan((sim_args1, True))
 
     # run_one_agent_follows_gradient((sim_args, True))
@@ -330,11 +330,11 @@ def main():
     # for i in not_sized_offsets:
     #     offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
-    # offsets = [2.5*UNSTRETCHED_TETHER_LENGTH]
+    offsets = [3*UNSTRETCHED_TETHER_LENGTH]
 
     # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    # run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
     trials = 7
