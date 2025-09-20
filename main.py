@@ -303,7 +303,7 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 25, 500, 8, 5, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    # run_storm_drain((sim_args1, True))
+    run_storm_drain((sim_args1, True))
 
     # run_building_plan((sim_args1, True))
 
@@ -312,7 +312,7 @@ def main():
     # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [25, 50, 75, 100], [0], False)
     # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], True)
 
-    run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [2, 3, 4])
+    # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [2, 3, 4])
 
     # start = 0.0
     
@@ -335,7 +335,7 @@ def main():
 
     # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
     # trials = 7

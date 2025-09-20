@@ -477,63 +477,86 @@ class Simulation:
 
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
+        set_up_runs = 200
+        is_setting_up = True
+
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
+            while is_setting_up:
+                # if keyboard.is_pressed('q'):
+                my_world.id.getCameraImage(320,200)
+                # print(runs)
+                for agent in shuffled_list:
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
+                    if runs%Simulation.run_debounce == 0:
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
+                        self.old_debounce_count = self.debounce_count
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                if self.sim_failed:
+                    break
+                if runs % self.sensing_period == 0:
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                            shuffled_list[i].set_next_step()
+                    agent_to_update_next = agent_to_update_next + 1
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
+            # if runs % 1000 == 0:
+            #     sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
+            # if self.sim_failed:
+            #     break
+                runs = runs + 1
+                if runs > set_up_runs:
+                    is_setting_up = False
+                    Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+                    runs = 0
+                my_world.id.stepSimulation()
             my_world.id.getCameraImage(320,200)
-
-            
-
+            # print(runs)
             self.debounce_count = 0
-
+            # if runs % self.logging_period == 0:
             for agent in shuffled_list:
-                # if agent.tethers[0] is not None:
-                    # print(agent.tethers[0].get_strain())
-                # else:
-                    # print(agent.tethers[1].get_strain())
-
-
-
-
+            #     # if agent.tethers[0] is not None:
+            #         # print(agent.tethers[0].get_strain())
+            #     # else:
+            #         # print(agent.tethers[1].get_strain())
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
-                # else:
-                #     self.debounce_count = 0
-
+            #     # else:
+            #     #     self.debounce_count = 0
                 if runs%Simulation.run_debounce == 0:
-
                     if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
                         self.sim_failed = True
                         break
-
                     self.old_debounce_count = self.debounce_count
-
-                # if self.debounce_count >= Simulation.debounce_threshold:
-                #     self.sim_failed = True
-                #     break
-
+            #     # if self.debounce_count >= Simulation.debounce_threshold:
+            #     #     self.sim_failed = True
+            #     #     break
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
-
+            if self.sim_failed:
+                break
             if runs % self.sensing_period == 0:
                 for i in range(len(shuffled_list)):
                     if i == agent_to_update_next:
                         shuffled_list[i].set_next_step()
-                    
                 agent_to_update_next = agent_to_update_next + 1
-
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
-
-            # if runs % 1000 == 0:
-            #     sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
-
-            if self.sim_failed:
-                break
-
+            # # if runs % 1000 == 0:
+            # #     sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
+            # # if self.sim_failed:
+            # #     break
             runs = runs + 1
-            
+            # if runs > set_up_runs:
+            #     is_setting_up = False
+            #     Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+            #     runs = 0
             my_world.id.stepSimulation()
-
         my_world.id.disconnect()
 
         return None
