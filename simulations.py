@@ -624,10 +624,67 @@ class Simulation:
             log_header.append('agent_' + str(i) + '_x')
             log_header.append('agent_' + str(i) + '_y')
             log_header.append('agent_' + str(i) + '_velocity')
+
+        set_up_runs = 1500
+        is_setting_up = True
         
         # main simulation loop
         while (runs <= stop) and (my_world.id.isConnected()):
+            # set-up phase
+            while is_setting_up:
+                if keyboard.is_pressed('q'):
+                    my_world.id.getCameraImage(320,200)
 
+                    print(runs)
+
+                    for agent in shuffled_list:
+                        # if agent.tethers[0] is not None:
+                            # print(agent.tethers[0].get_strain())
+                        # if agent.tethers[1] is not None:
+                            # print(agent.tethers[1].get_strain())
+                        if runs > Simulation.run_debounce and agent.is_tether_slack():
+                            self.debounce_count += 1
+
+                        if runs%Simulation.run_debounce == 0:
+
+                            if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                                self.sim_failed = True
+                                break
+
+                            self.old_debounce_count = self.debounce_count
+                            
+                        agent.sense_gradient(my_world.gradient_source)
+                        agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+
+                    if self.sim_failed:
+                        break
+
+                    if runs % self.sensing_period == 0:
+                        for i in range(len(shuffled_list)):
+                            if i == agent_to_update_next:
+                                shuffled_list[i].set_next_step_revised()
+                                if runs < set_up_runs:
+                                    for agent in my_world.agent_list:
+                                        agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
+                                shuffled_list[i].move_to(shuffled_list[i].max_force)
+
+                        agent_to_update_next = agent_to_update_next + 1
+
+                        if agent_to_update_next >= len(shuffled_list):
+                            agent_to_update_next = 0
+
+                    runs = runs + 1
+
+                    if runs > set_up_runs:
+                        is_setting_up = False
+                        # set the experimental parameters
+                        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+
+                        runs = 0
+                    
+                    my_world.id.stepSimulation()
+
+            # experiment starts
             self.debounce_count = 0
 
             if runs%30:
@@ -916,6 +973,7 @@ class Simulation:
                         runs = 0
                     
                     my_world.id.stepSimulation()
+
             # if keyboard.is_pressed('q'):
             my_world.id.getCameraImage(320,200)
 

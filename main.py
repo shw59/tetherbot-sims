@@ -309,8 +309,8 @@ def main():
 
     # run_one_agent_follows_gradient((sim_args, True))
 
-    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [25, 50, 75, 100], [0], False)
-    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], True)
+    # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], False)
+    run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], True)
 
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [2, 3, 4])
 
@@ -331,11 +331,12 @@ def main():
     # for i in not_sized_offsets:
     #     offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
-    offsets = [3*UNSTRETCHED_TETHER_LENGTH]
+    # offsets = [0*UNSTRETCHED_TETHER_LENGTH]
 
     # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    # run_obstacle_simulations((sim_args, True), 9, 10000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_obstacle_simulations((sim_args, True), 9, 20000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
     # trials = 7
