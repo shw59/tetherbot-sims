@@ -398,7 +398,7 @@ class Simulation:
         starter_length = n + 5
 
         # gradient = [(np.sqrt(2)*(length_of_tank/2))*((4/3)*((length_of_tank)/2)), (np.sqrt(2)*(length_of_tank))*((4/3)*(top_position-bottom_position))]
-        gradient = [6, 30]
+        gradient = [6, 35]
 
         my_world = World(120, 120, self.time_step, self.gui_on)
 
@@ -414,7 +414,7 @@ class Simulation:
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, pos, "+x")
         
-        goal_angles = [None, 160, 160, 160, 160, None]
+        goal_angles = [None, 270, 180, 180, 270, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -452,6 +452,7 @@ class Simulation:
         for i in range(0, int((blocks_per_unit*(right_position - left_position)))):
             my_world.create_obstacle("cube", [size_of_block*i + left_position, bottom_position - tunnel_width], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
+        
         for i in range(0, int(blocks_per_unit*tunnel_width)):
             if i != 0 or i != (int(blocks_per_unit*tunnel_width) - 1):
                 my_world.create_obstacle("cube", [right_position, bottom_position - tunnel_width + i*size_of_block], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
