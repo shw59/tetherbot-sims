@@ -398,7 +398,7 @@ class Simulation:
         starter_length = n + 5
 
         # gradient = [(np.sqrt(2)*(length_of_tank/2))*((4/3)*((length_of_tank)/2)), (np.sqrt(2)*(length_of_tank))*((4/3)*(top_position-bottom_position))]
-        gradient = [6, 30]
+        gradient = [6, 35]
 
         my_world = World(120, 120, self.time_step, self.gui_on)
 
@@ -414,7 +414,7 @@ class Simulation:
         
         initial_robot_positions = sims_utils.basic_starting_positions(self.unstretched_tether_length, n, angles, pos, "+x")
         
-        goal_angles = [None, 160, 160, 160, 160, None]
+        goal_angles = [None, 270, 180, 180, 270, None]
 
         # populates the list of robot objects with robot objects
         for i in range(n):
@@ -452,6 +452,7 @@ class Simulation:
         for i in range(0, int((blocks_per_unit*(right_position - left_position)))):
             my_world.create_obstacle("cube", [size_of_block*i + left_position, bottom_position - tunnel_width], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
 
+        
         for i in range(0, int(blocks_per_unit*tunnel_width)):
             if i != 0 or i != (int(blocks_per_unit*tunnel_width) - 1):
                 my_world.create_obstacle("cube", [right_position, bottom_position - tunnel_width + i*size_of_block], length=1, width=1, color=(0, 0, 0, 1), fixed=True, height=0.5)
@@ -477,63 +478,86 @@ class Simulation:
 
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
 
+        set_up_runs = 200
+        is_setting_up = True
+
         # main simulation loop
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
+            while is_setting_up:
+                # if keyboard.is_pressed('q'):
+                my_world.id.getCameraImage(320,200)
+                # print(runs)
+                for agent in shuffled_list:
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
+                    if runs%Simulation.run_debounce == 0:
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
+                        self.old_debounce_count = self.debounce_count
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                if self.sim_failed:
+                    break
+                if runs % self.sensing_period == 0:
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                            shuffled_list[i].set_next_step()
+                    agent_to_update_next = agent_to_update_next + 1
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
+            # if runs % 1000 == 0:
+            #     sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
+            # if self.sim_failed:
+            #     break
+                runs = runs + 1
+                if runs > set_up_runs:
+                    is_setting_up = False
+                    Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+                    runs = 0
+                my_world.id.stepSimulation()
             my_world.id.getCameraImage(320,200)
-
-            
-
+            # print(runs)
             self.debounce_count = 0
-
+            # if runs % self.logging_period == 0:
             for agent in shuffled_list:
-                # if agent.tethers[0] is not None:
-                    # print(agent.tethers[0].get_strain())
-                # else:
-                    # print(agent.tethers[1].get_strain())
-
-
-
-
+            #     # if agent.tethers[0] is not None:
+            #         # print(agent.tethers[0].get_strain())
+            #     # else:
+            #         # print(agent.tethers[1].get_strain())
                 if runs > Simulation.run_debounce and agent.is_tether_slack():
                     self.debounce_count += 1
-                # else:
-                #     self.debounce_count = 0
-
+            #     # else:
+            #     #     self.debounce_count = 0
                 if runs%Simulation.run_debounce == 0:
-
                     if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
                         self.sim_failed = True
                         break
-
                     self.old_debounce_count = self.debounce_count
-
-                # if self.debounce_count >= Simulation.debounce_threshold:
-                #     self.sim_failed = True
-                #     break
-
+            #     # if self.debounce_count >= Simulation.debounce_threshold:
+            #     #     self.sim_failed = True
+            #     #     break
                 agent.sense_gradient(my_world.gradient_source)
                 agent.sense_close_range(my_world.obj_list, sensing_mode=2)
-
+            if self.sim_failed:
+                break
             if runs % self.sensing_period == 0:
                 for i in range(len(shuffled_list)):
                     if i == agent_to_update_next:
                         shuffled_list[i].set_next_step()
-                    
                 agent_to_update_next = agent_to_update_next + 1
-
                 if agent_to_update_next >= len(shuffled_list):
                     agent_to_update_next = 0
-
-            # if runs % 1000 == 0:
-            #     sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
-
-            if self.sim_failed:
-                break
-
+            # # if runs % 1000 == 0:
+            # #     sims_utils.screenshot_gui(ss_filename=f"data/time_step_{runs}_storm_drain_screenshot.png")
+            # # if self.sim_failed:
+            # #     break
             runs = runs + 1
-            
+            # if runs > set_up_runs:
+            #     is_setting_up = False
+            #     Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+            #     runs = 0
             my_world.id.stepSimulation()
-
         my_world.id.disconnect()
 
         return None
