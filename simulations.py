@@ -738,17 +738,17 @@ class Simulation:
                 if min_x >= obst_pos[0]+obst_radius:
                     stop_while_loop = True
             
-            if runs % check_distance_rate == 0:
-                distance = 0
-                for agent in my_world.agent_list:
-                    distance = distance + np.sqrt(((round(agent.get_pose()[0][0], 5))**2)+((round(agent.get_pose()[0][1], 5))**2))
-                print("Distance: " + str(distance))
-                print("prev_distance_sum: " + str(prev_distance_sum))
-                print("2*self.agent_radius: " + str(2*self.agent_radius))
-                if np.abs(distance - prev_distance_sum) <= self.agent_radius:
-                    stop_while_loop = True
-                else:
-                    prev_distance_sum = distance
+            # if runs % check_distance_rate == 0:
+            #     distance = 0
+            #     for agent in my_world.agent_list:
+            #         distance = distance + np.sqrt(((round(agent.get_pose()[0][0], 5))**2)+((round(agent.get_pose()[0][1], 5))**2))
+            #     print("Distance: " + str(distance))
+            #     print("prev_distance_sum: " + str(prev_distance_sum))
+            #     print("2*self.agent_radius: " + str(2*self.agent_radius))
+            #     if np.abs(distance - prev_distance_sum) <= self.agent_radius:
+            #         stop_while_loop = True
+            #     else:
+            #         prev_distance_sum = distance
 
             if self.sim_failed:
                 break

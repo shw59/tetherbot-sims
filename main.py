@@ -341,7 +341,7 @@ def main():
 
     # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    run_obstacle_simulations((sim_args, True), 9, 20000, offsets, [0], 10, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    run_obstacle_simulations((sim_args, False), 9, 20000, offsets, [0], 10, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
