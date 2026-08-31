@@ -37,6 +37,7 @@ class World:
         # set parameters
         self.id.resetSimulation(p.RESET_USE_DEFORMABLE_WORLD)
         self.id.configureDebugVisualizer(p.COV_ENABLE_GUI,0, rgbBackground=[1.0, 1.0, 1.0]) # disable side bar windows in the GUI
+        # self.id.configureDebugVisualizer(p.COV_ENABLE_GUI,0, rgbBackground=[0.0, 0.0, 0.0]) # disable side bar windows in the GUI
         self.id.setGravity(0, 0, GRAVITYZ)
         self.id.setTimeStep(time_step)
 
@@ -95,7 +96,8 @@ class World:
 
         tether_x, tether_y = [(agent_1_pos[i] + agent_2_pos[i]) / 2 for i in range(2)]
 
-        tether_pos = [tether_x, tether_y, agent_1.height / 2]
+        # tether_pos = [tether_x, tether_y, agent_1.height / 2]
+        tether_pos = [tether_x, tether_y, agent_1.height * (3/4)]
 
         # solve for the tether's orientation
         diff_x, diff_y = np.array(agent_1_pos) - np.array(agent_2_pos)
@@ -128,6 +130,27 @@ class World:
         self.id.createSoftBodyAnchor(tether.id, n_verts-1, agent_2.id, 2)
 
         return tether
+    
+### EVERYTHING BELOW WAS ADDED BY CLAUDE
+    
+    def update_tether_overlays(self):
+        """
+        Refresh the purely-visual highlight lines drawn over every tether in the world so they
+        follow the tethers' current (possibly deformed) shape. Should be called once per
+        simulation step. This only updates debug-line annotations and never touches physics.
+        """
+        for obj in self.obj_list:
+            if isinstance(obj, Tether):
+                obj.update_overlay()
+
+    def step(self):
+        """
+        Advance the physics simulation by one time step and refresh the tether visual overlays.
+        """
+        self.id.stepSimulation()
+        self.update_tether_overlays()
+
+### EVERYTHING ABOVE WAS ADDED BY CLAUDE
     
     def create_obstacle(self, shape, position, heading=0, mass=1.0, length=1, width=1, height=1, color=(0, 1, 0, 1), mu_static=1.25, mu_dynamic=0.5, fixed=True):
         """

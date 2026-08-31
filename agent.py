@@ -293,6 +293,7 @@ class Agent:
         Returns None if there is no second tether. The angle is always positive and in between 0-360 degrees.
         """
         if (self.tethers[1] is None) or (self.tethers[0] is None):
+            print("Agent " + str(self.id) + "only has one tether")
             return None
         theta_m = self.get_theta(0)
         theta_p = self.get_theta(1)
@@ -632,7 +633,20 @@ class Agent:
                 self.next_position = curr_position + 0.1 * utils.normalize(resulting_vector)
             else:
                 self.next_position = curr_position + resulting_vector
-            
+
+### EVERYTHING BELOW WAS ADDED BY CLAUDE
+
+    def _update_tether_overlays(self):
+        """
+        Refresh the purely-visual highlight lines drawn over this agent's tethers so they follow
+        the tethers' current shape. Safe to call every simulation step; only updates debug-line
+        annotations and never touches physics.
+        """
+        for tether in self.tethers:
+            if tether is not None:
+                tether.update_overlay()
+### EVERYTHING ABOVE WAS ADDED BY CLAUDE
+
     def stop_move(self):
         """
         Stop the agent's current motion and check that it is stopped.
@@ -641,6 +655,10 @@ class Agent:
         while self.world_id.getJointState(self.id, 2)[1] > Agent.err_velocity or self.world_id.getJointState(self.id, 2)[1] < -Agent.err_velocity:
             self.world_id.getCameraImage(320,200)
             self.world_id.stepSimulation()
+
+### EVERYTHING BELOW WAS ADDED BY CLAUDE
+            self._update_tether_overlays()
+### EVERYTHING ABOVE WAS ADDED BY CLAUDE
 
     def move_to(self, force=float('inf')):
         """
@@ -665,6 +683,10 @@ class Agent:
         while self.get_pose()[2] > math.degrees(rotation) + Agent.err_heading or self.get_pose()[2] < math.degrees(rotation) - Agent.err_heading:
             self.world_id.getCameraImage(320,200)
             self.world_id.stepSimulation()
+
+### EVERYTHING BELOW WAS ADDED BY CLAUDE
+            self._update_tether_overlays()
+### EVERYTHING ABOVE WAS ADDED BY CLAUDE
 
         target_positions = [x_move, y_move, rotation]
         

@@ -365,7 +365,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -515,7 +515,7 @@ class Simulation:
                     is_setting_up = False
                     Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
                     runs = 0
-                my_world.id.stepSimulation()
+                my_world.step()
             my_world.id.getCameraImage(320,200)
             # print(runs)
             self.debounce_count = 0
@@ -557,7 +557,7 @@ class Simulation:
             #     is_setting_up = False
             #     Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
             #     runs = 0
-            my_world.id.stepSimulation()
+            my_world.step()
         my_world.id.disconnect()
 
         return None
@@ -627,62 +627,64 @@ class Simulation:
 
         set_up_runs = 1500
         is_setting_up = True
+        prev_distance_sum = 0
+        check_distance_rate = 1000
         
         # main simulation loop
         while (runs <= stop) and (my_world.id.isConnected()):
             # set-up phase
             while is_setting_up:
-                if keyboard.is_pressed('q'):
-                    my_world.id.getCameraImage(320,200)
+                # if keyboard.is_pressed('q'):
+                my_world.id.getCameraImage(320,200)
 
-                    print(runs)
+                print(runs)
 
-                    for agent in shuffled_list:
-                        # if agent.tethers[0] is not None:
-                            # print(agent.tethers[0].get_strain())
-                        # if agent.tethers[1] is not None:
-                            # print(agent.tethers[1].get_strain())
-                        if runs > Simulation.run_debounce and agent.is_tether_slack():
-                            self.debounce_count += 1
+                for agent in shuffled_list:
+                    # if agent.tethers[0] is not None:
+                        # print(agent.tethers[0].get_strain())
+                    # if agent.tethers[1] is not None:
+                        # print(agent.tethers[1].get_strain())
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
 
-                        if runs%Simulation.run_debounce == 0:
+                    if runs%Simulation.run_debounce == 0:
 
-                            if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                                self.sim_failed = True
-                                break
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
 
-                            self.old_debounce_count = self.debounce_count
-                            
-                        agent.sense_gradient(my_world.gradient_source)
-                        agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                        self.old_debounce_count = self.debounce_count
+                        
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-                    if self.sim_failed:
-                        break
+                if self.sim_failed:
+                    break
 
-                    if runs % self.sensing_period == 0:
-                        for i in range(len(shuffled_list)):
-                            if i == agent_to_update_next:
-                                shuffled_list[i].set_next_step_revised()
-                                if runs < set_up_runs:
-                                    for agent in my_world.agent_list:
-                                        agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
-                                shuffled_list[i].move_to(shuffled_list[i].max_force)
+                if runs % self.sensing_period == 0:
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                            shuffled_list[i].set_next_step_revised()
+                            if runs < set_up_runs:
+                                for agent in my_world.agent_list:
+                                    agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
+                            shuffled_list[i].move_to(shuffled_list[i].max_force)
 
-                        agent_to_update_next = agent_to_update_next + 1
+                    agent_to_update_next = agent_to_update_next + 1
 
-                        if agent_to_update_next >= len(shuffled_list):
-                            agent_to_update_next = 0
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
 
-                    runs = runs + 1
+                runs = runs + 1
 
-                    if runs > set_up_runs:
-                        is_setting_up = False
-                        # set the experimental parameters
-                        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+                if runs > set_up_runs:
+                    is_setting_up = False
+                    # set the experimental parameters
+                    Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
-                        runs = 0
-                    
-                    my_world.id.stepSimulation()
+                    runs = 0
+                
+                my_world.step()
 
             # experiment starts
             self.debounce_count = 0
@@ -731,10 +733,22 @@ class Simulation:
 
                 # data.append(True)
             
-                # sims_utils.log_to_csv(log_file, data, header=log_header)
+                sims_utils.log_to_csv(log_file, data, header=log_header)
 
                 if min_x >= obst_pos[0]+obst_radius:
                     stop_while_loop = True
+            
+            if runs % check_distance_rate == 0:
+                distance = 0
+                for agent in my_world.agent_list:
+                    distance = distance + np.sqrt(((round(agent.get_pose()[0][0], 5))**2)+((round(agent.get_pose()[0][1], 5))**2))
+                print("Distance: " + str(distance))
+                print("prev_distance_sum: " + str(prev_distance_sum))
+                print("2*self.agent_radius: " + str(2*self.agent_radius))
+                if np.abs(distance - prev_distance_sum) <= self.agent_radius:
+                    stop_while_loop = True
+                else:
+                    prev_distance_sum = distance
 
             if self.sim_failed:
                 break
@@ -746,8 +760,10 @@ class Simulation:
             #     sims_utils.screenshot_gui(ss_filename=f"data/recordings_valid/time_step_{runs}_obstacle_screenshot.png")
 
             runs = runs + 1
+
+            print(runs)
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -866,7 +882,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -972,7 +988,7 @@ class Simulation:
 
                         runs = 0
                     
-                    my_world.id.stepSimulation()
+                    my_world.step()
 
             # if keyboard.is_pressed('q'):
             my_world.id.getCameraImage(320,200)
@@ -1036,7 +1052,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
         
         my_world.id.disconnect()
 
@@ -1073,11 +1089,11 @@ class Simulation:
         for i in range(n-1):
             my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments=10)
 
-        sims_utils.generate_obstacles(my_world, [0, -6], [4, 6], num_objects, "cylinder", 0.25, 0.25, self.agent_height, False)
+        sims_utils.generate_obstacles(my_world, [0, -6], [4, 6], num_objects, "cylinder", 0.25, 0.25, self.agent_height*1.5, False)
 
         # my_world.display_axis_labels()
         
-        log_file = f"data/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}_offset{offset}.csv"
+        log_file = f"data/2026/raw_no_formation_control/object_capture_maintain_line_{maintain_line}_trial{trial_num}_objects{num_objects}_offset{offset}.csv"
         runs = 0
         agent_to_update_next = 0
         shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
@@ -1095,60 +1111,61 @@ class Simulation:
         while my_world.id.isConnected() and runs <= time_steps:
             # set-up phase
             while is_setting_up:
-                if keyboard.is_pressed('q'):
-                    my_world.id.getCameraImage(320,200)
+            # if keyboard.is_pressed('q'):
+                my_world.id.getCameraImage(320,200)
 
-                    print(runs)
+                print(runs)
 
-                    for agent in shuffled_list:
-                        # if agent.tethers[0] is not None:
-                            # print(agent.tethers[0].get_strain())
-                        # if agent.tethers[1] is not None:
-                            # print(agent.tethers[1].get_strain())
-                        if runs > Simulation.run_debounce and agent.is_tether_slack():
-                            self.debounce_count += 1
+                for agent in shuffled_list:
+                    # if agent.tethers[0] is not None:
+                        # print(agent.tethers[0].get_strain())
+                    # if agent.tethers[1] is not None:
+                        # print(agent.tethers[1].get_strain())
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
 
-                        if runs%Simulation.run_debounce == 0:
+                    if runs%Simulation.run_debounce == 0:
 
-                            if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
-                                self.sim_failed = True
-                                break
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
 
-                            self.old_debounce_count = self.debounce_count
-                            
-                        agent.sense_gradient(my_world.gradient_source)
-                        agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+                        self.old_debounce_count = self.debounce_count
+                        
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
 
-                    if self.sim_failed:
-                        break
+                if self.sim_failed:
+                    break
 
-                    if runs % self.sensing_period == 0:
-                        for i in range(len(shuffled_list)):
-                            if i == agent_to_update_next:
-                                shuffled_list[i].set_next_step_revised()
-                                if runs < set_up_runs:
-                                    for agent in my_world.agent_list:
-                                        agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
-                                shuffled_list[i].move_to(shuffled_list[i].max_force)
+                if runs % self.sensing_period == 0:
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                            shuffled_list[i].set_next_step_revised()
+                            if runs < set_up_runs:
+                                for agent in my_world.agent_list:
+                                    agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
+                            shuffled_list[i].move_to(shuffled_list[i].max_force)
 
-                        agent_to_update_next = agent_to_update_next + 1
+                    agent_to_update_next = agent_to_update_next + 1
 
-                        if agent_to_update_next >= len(shuffled_list):
-                            agent_to_update_next = 0
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
 
-                    runs = runs + 1
+                runs = runs + 1
 
-                    if runs > set_up_runs:
-                        is_setting_up = False
-                        # set the experimental parameters
-                        if maintain_line:
-                            Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
-                        else:
-                            Agent.set_weights([0, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+                if runs > set_up_runs:
+                    is_setting_up = False
+                    # set the experimental parameters
+                    if maintain_line:
+                        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+                    else:
+                        Agent.set_weights([0, self.weight_strain, self.weight_gradient, self.weight_repulsion])
 
-                        runs = 0
-                    
-                    my_world.id.stepSimulation()
+                    runs = 0
+                
+                # my_world.id.stepSimulation()
+                my_world.step()
             
             # actual experiment begins
             # if keyboard.is_pressed('q'): # step through simulation
@@ -1176,8 +1193,10 @@ class Simulation:
                 agent_pos = [agent.get_pose()[0] for agent in my_world.agent_list]
 
                 # sliding window average (tether angle variance between agents)
-                agent_deltas = [agent.get_delta() for agent in my_world.agent_list[1:n-2]]
-                variance.append(np.var(agent_deltas))
+                # agent_deltas = [agent.get_delta() for agent in my_world.agent_list[1:n-2]]
+                agent_deltas = [agent.get_delta() for agent in my_world.agent_list[1:n-1]]
+                # variance.append(np.var(agent_deltas))
+                variance.append(np.std(agent_deltas))
 
                 if len(variance) > 25:
                     variance.pop(0)
@@ -1222,7 +1241,8 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            # my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -1312,7 +1332,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -1387,7 +1407,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
         
         my_world.id.disconnect()
 

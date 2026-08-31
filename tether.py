@@ -90,10 +90,40 @@ class Tether:
                                 frictionCoeff=mu, 
                                 useFaceContact=1)
         
-        color = [1.0, 0.5, 0, 1.0] # orange
+        # color = [1.0, 0.5, 0, 1.0] # orange
+        color = [0.0, 0.0, 0, 1.0] # black
         # color = [1.0, 1.0, 1.0, 1.0] # white
         self.world_id.changeVisualShape(self.id, -1, rgbaColor=color, flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
     
+### EVERYTHING BELOW WAS ADDED BY CLAUDE
+        self.overlay_line_ids = [] # unique ids of the debug lines used to highlight this tether, for in-place updates
+
+    def update_overlay(self, color=(1, 0, 0), width=5):
+        """
+        Draw (or move, if already drawn) a bright debug line along the tether's centerline so it
+        is easier to see. Debug lines are visualization-only annotations in pybullet: they have no
+        mass or collision shape and cannot affect or be affected by the tethers, robots, or obstacles.
+        """
+        n_verts, verts = self.get_verts()
+
+        centerline = [[(verts[i][k] + verts[i+1][k]) / 2.0 for k in range(3)] for i in range(0, n_verts, 2)]
+
+
+
+        for i in range(len(centerline) - 1):
+            replace_id = self.overlay_line_ids[i] if i < len(self.overlay_line_ids) else -1
+            line_id = self.world_id.addUserDebugLine(centerline[i], centerline[i+1], lineColorRGB=color,
+                                            lineWidth=width, replaceItemUniqueId=replace_id)
+            if i < len(self.overlay_line_ids):
+                self.overlay_line_ids[i] = line_id
+            else:
+                self.overlay_line_ids.append(line_id)
+
+
+
+### EVERYTHING ABOVE WAS ADDED BY CLAUDE
+
+
     def get_strain(self):
         """
         Return the current strain of the tether object.

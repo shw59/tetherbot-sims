@@ -18,10 +18,16 @@ TIME_STEP = 1/240 # seconds
 SENSING_PERIOD = 5 # number of while loop iterations that run before an agent position updates
 LOGGING_PERIOD = 20 # number of while loop iterations that pass before data is written to a csv file
 
+# # vector weightings
+# ANGLE_WEIGHT = 15 # originally 15
+# STRAIN_WEIGHT = 500 # originally 500
+# GRADIENT_WEIGHT = 20 # originally 20
+# REPULSION_WEIGHT = 5
+
 # vector weightings
 ANGLE_WEIGHT = 15 # originally 15
-STRAIN_WEIGHT = 500 # originally 500
-GRADIENT_WEIGHT = 20 # originally 20
+STRAIN_WEIGHT = 4000 # originally 500
+GRADIENT_WEIGHT = 7.2 # originally 20
 REPULSION_WEIGHT = 5
 
 # jackal robot parameters
@@ -186,7 +192,7 @@ def run_object_capture_simulations(sim_args, n, num_trials, time_steps, object_n
                 else:
                     trial_list.append(file_name)
             if trial_list:
-                csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}_offset{offset}.csv"))
+                csv_averages_list.append(sims_utils.average_csv_trials(trial_list, f"data/2026/avg_no_formation_control/object_capture_maintain_line_{maintain_line}_trialavg_objects{object_num}_offset{offset}.csv"))
             else:
                 return False
 
@@ -303,39 +309,39 @@ def main():
                 UNSTRETCHED_TETHER_LENGTH, YOUNGS_MODULUS, DIAMETER, 45, 500, 5, 5, 
                 SENSING_PERIOD, LOGGING_PERIOD)
 
-    run_storm_drain((sim_args1, True))
+    # run_storm_drain((sim_args1, True))
 
     # run_building_plan((sim_args1, True))
 
     # run_one_agent_follows_gradient((sim_args, True))
 
     # run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], False)
-    run_object_capture_simulations((sim_args, True), 9, 10, 15000, [100], [0], True)
+    # run_object_capture_simulations((sim_args, True), 9, 1, 15000, [100], [0], True)
 
     # run_tow_failed_agents_simulations((sim_args, True), 5, 10, 15000, [2, 3, 4])
 
-    # start = 0.0
+    start = 0.0
     
-    # num_of_offsets_plus_one = 21
+    num_of_offsets_plus_one = 21
 
     # # not_sized_offsets = [3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7]
 
-    # not_sized_offsets = []
+    not_sized_offsets = []
 
-    # for i in range(num_of_offsets_plus_one):
-    #     not_sized_offsets.append(start)
-    #     start = start + 0.25
+    for i in range(num_of_offsets_plus_one):
+        not_sized_offsets.append(start)
+        start = start + 0.25
 
-    # offsets = []
+    offsets = []
 
-    # for i in not_sized_offsets:
-    #     offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
+    for i in not_sized_offsets:
+        offsets.append(i*UNSTRETCHED_TETHER_LENGTH)
 
     # offsets = [0*UNSTRETCHED_TETHER_LENGTH]
 
     # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    # run_obstacle_simulations((sim_args, True), 9, 20000, offsets, [0], 5, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    run_obstacle_simulations((sim_args, True), 9, 20000, offsets, [0], 10, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
