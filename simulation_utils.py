@@ -640,6 +640,65 @@ def make_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plo
 
     plt.close()
 
+
+def make_bar_graph(csv_files, x_column, y_columns, labels=None, title="Tetherbot Plot",
+                      x_label="x-axis", y_labels=None, file_name="graph.png", width = 1):
+    """
+    Plots the specified x and y columns from one or more CSV files.
+
+    csv_files (list of str): Paths to the CSV files
+    x_column (str): Name of the column to use as the x-axis
+    y_columns (list of str): Name(s) of the column(s) to use as the y-axis
+    labels (list of str, optional): Labels for each CSV file's plot
+    title (str, optional): Title of the plot
+    xlabel (str, optional): Label for the x-axis
+    ylabel (str, optional): Label for the y-axis
+    file_name (str, optional): If provided, saves the figure with this file name
+    """
+    if y_labels is None:
+        y_labels = y_columns
+
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    for i, file in enumerate(csv_files):
+        with open(file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            x_vals = []
+            y1_vals = []
+            y2_vals = []
+
+            for row in reader:
+                x_vals.append(float(row[x_column]))
+                y1_vals.append(float(row[y_columns[0]]))
+                if len(y_columns) == 2:
+                    y2_vals.append(float(row[y_columns[1]]))
+
+        label = labels[i] if labels else f"File {i+1}"
+        ax1.bar(x_vals, y1_vals, width=width, label=label)
+
+        if len(y_columns) == 2:
+            if i == 0:
+                ax2 = ax1.twinx()
+            ax2.bar(x_vals, y2_vals, width=width, linestyle='--')
+
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(y_labels[0])
+    ax1.grid(True)
+
+    if len(y_columns) == 2:
+        ax2.set_ylabel(y_labels[1])
+
+    ax1.legend(loc='best')
+    plt.title(title)
+    plt.tight_layout()
+
+    plt.savefig(file_name, format='png')
+
+    with open(f"{file_name}.pkl", 'wb') as f:
+        pickle.dump(fig, f)
+
+    plt.close()
+
 def screenshot_gui(ss_filename="pybullet_screenshot.png"):
     """
     Takes a screenshot of the PyBullet GUI.

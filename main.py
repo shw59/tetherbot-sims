@@ -358,61 +358,75 @@ def main():
 
 
 
-    trials = 10
+
+
+
+
+
+    # trials = 10
     
-    # for t in range(1, trials + 1):
-    #     for i in not_sized_offsets:
+    # # for t in range(1, trials + 1):
+    # #     for i in not_sized_offsets:
 
 
-    log_file = "data/obstacleA/data.csv"
+    # log_file = "data/obstacleA/data.csv"
 
-    log_header = ['Offset', 'Trials Finished', 'Trials with Success', 'Percentage of Trials with Success', 'Average Time Steps of Successful Trials']
+    # log_header = ['Offset', 'Trials Finished', 'Trials with Success', 'Percentage of Trials with Success', 'Average Time Steps of Successful Trials']
     
-    for i in not_sized_offsets:
-        data = [str(i)]
+    # for i in not_sized_offsets:
+    #     data = [str(i)]
 
-        trials_finished = 0
-        trials_with_success = 0
-        percent = 0
-        good_finish_times = []
+    #     trials_finished = 0
+    #     trials_with_success = 0
+    #     percent = 0
+    #     good_finish_times = []
 
-        for t in range(1, trials + 1):
-            name = "data/trial" + str(t) + "_degree0_offset" + str(i*UNSTRETCHED_TETHER_LENGTH) + ".csv"
+    #     for t in range(1, trials + 1):
+    #         name = "data/trial" + str(t) + "_degree0_offset" + str(i*UNSTRETCHED_TETHER_LENGTH) + ".csv"
 
-            print("Trial: " + str(t))
-            print("Offset: " + str(i))
+    #         print("Trial: " + str(t))
+    #         print("Offset: " + str(i))
 
-            try:
-                with open(name, "r") as file:
-                    result, timing = sims_utils.new_new_obstacle_avoidance_success([name], 1, 1, 10000, LOGGING_PERIOD, 9, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
-                    print("Result: " + str(result[0]))
-                    print("Result time: " + str(timing[0]))
-                    print("\n")
+    #         try:
+    #             with open(name, "r") as file:
+    #                 result, timing = sims_utils.new_new_obstacle_avoidance_success([name], 1, 1, 10000, LOGGING_PERIOD, 9, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    #                 print("Result: " + str(result[0]))
+    #                 print("Result time: " + str(timing[0]))
+    #                 print("\n")
 
-                    trials_finished = trials_finished + 1
-                    if result[0] == int(1):
-                        trials_with_success = trials_with_success + 1
-                        good_finish_times.append(timing[0])
-                    # sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], trials)
-                    # sims_utils.make_3D_plot([name], 9)
-            except FileNotFoundError:
-                print("The file does not exist.")
+    #                 trials_finished = trials_finished + 1
+    #                 if result[0] == int(1):
+    #                     trials_with_success = trials_with_success + 1
+    #                     good_finish_times.append(timing[0])
+    #                 # sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], trials)
+    #                 # sims_utils.make_3D_plot([name], 9)
+    #         except FileNotFoundError:
+    #             print("The file does not exist.")
 
-        percent = round((trials_with_success/trials_finished)*100,2)
+    #     percent = round((trials_with_success/trials_finished)*100,2)
 
-        data.append(str(trials_finished))
-        data.append(str(trials_with_success))
-        data.append(str(percent) + "%")
+    #     data.append(str(trials_finished))
+    #     data.append(str(trials_with_success))
+    #     data.append(str(percent))
 
-        finished = len(good_finish_times)
-        average = 0
-        if finished > 0:
-            for l in range(finished):
-                average = average + good_finish_times[l]
-            average = average/finished
-        data.append(str(average))
+    #     finished = len(good_finish_times)
+    #     average = 0
+    #     if finished > 0:
+    #         for l in range(finished):
+    #             average = average + good_finish_times[l]
+    #         average = round(average/finished,0)
+    #     data.append(str(average))
 
-        sims_utils.log_to_csv(log_file, data, header=log_header)
+    #     sims_utils.log_to_csv(log_file, data, header=log_header)
+
+
+
+
+    sims_utils.make_graph(["data/obstacleA/data.csv"], "Offset", ["Percentage of Trials with Success"], labels=["Percentage Success of Trials"], title="Success of Trials",
+                          x_label="Offsets", y_labels=["Percentage of Success"], file_name="data/obstacleA/success_graph_hist.png")
+
+    sims_utils.make_bar_graph(["data/obstacleA/data.csv"], "Offset", ["Average Time Steps of Successful Trials"], labels=["Average Time of Successful Trials"], title="Average Time of Successful Trials",
+                      x_label="Offsets", y_labels=["Time Steps"], file_name="data/obstacleA/time_graph_hist.png", width=0.125)
 
 
 
