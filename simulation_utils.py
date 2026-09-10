@@ -235,7 +235,7 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
                     print("Avg velocity: " + str(avg_velocity))
                     print("(avg_velocity) <= 0.5: " + str((avg_velocity) <= 0.5))
                     print("Not past obstacle: " + str(not_past_obstacle))
-                    # print("Fails?: " + str(summed_distance_from_obstacle/n))
+                    print("Fails?: " + str(summed_distance_from_obstacle/n))
                     print("(summed_distance_from_obstacle/n) <= 1.5*obst_radius: " + str((summed_distance_from_obstacle/n) <= 1.5*obst_radius))
                     # print("Fails?: " + str((summed_distance_from_obstacle/n) <= 1.5*obst_radius))
 
@@ -250,6 +250,184 @@ def obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_p
             success_list.append(successful/total)
         
         return success_list
+
+def new_obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, obst_radius):
+    """
+    This function returns a list that is number_of_angles*number_of_offsets long, 
+    where each entry corresponds with the success rate of a particular 
+    angle/offset pair, averaged over all of the trials of each particular pair.
+
+    list_of_files: a list of csv files, where each file corresponds with a specific
+                  trial number of a particular angle/offset pair
+    number_of_trials: an integer value that is the number of trials ran for each pair, which
+                      is the same for all the pairs
+    number_of_runs_per_trial: an integer, represents how many different angle/offest pairs
+                              are ran for each trial. This is equal to 
+                              the value of number_of_angles*number_of_offsets long
+    number_of_while_runs: an integer number, represents the number of times the while loop
+                          should loop
+    logging_period: an integer, represents how often to gather and store the wanted data
+    n: an integer, the number of agents in the simulation
+    obst_position: the xy-coordinate of the obstacle
+    l_0: the unstretched length of the tethers between each agent
+    """
+
+    # # If the simulation doesn't run for long enough, increase the simulation time length
+    # if (number_of_while_runs-4*logging_period <= 0):
+
+    #     print("Increase the number of while loop iterations please")
+    #     return 0
+    
+    # else:
+
+    # The following snippet of code creates a list of lists of csv files 
+    # named each_runs_trial, and these sublists are the results from different 
+    # trials of a particular angle/offset pair. In other words, it groups 
+    # the data from each angle/offset pair with their own trials, 
+    # and places these groups in a list
+
+    each_runs_trial = []
+
+    for i in range(number_of_runs_per_trial):
+
+        set_up = []
+        for k in range(number_of_trials):
+            set_up.append(list_of_files[i+k*number_of_runs_per_trial])
+        each_runs_trial.append(set_up)
+
+
+    success_list = []
+    time_list = []
+
+    # Goes through each entry in each_runs_trial, where each entry
+    # is a list of the various trials that correspond to a particular 
+    # angle/offset pair
+    for i in range(len(each_runs_trial)):
+
+        total = 0
+        successful = 0
+
+        # Goes through each trial, so this is the length of 
+        # each list within each_runs_trial
+        for k in range(number_of_trials):
+
+            # In a particular angle/offset pair, opens the csv file
+            # corresponding with trial k
+            with open(each_runs_trial[i][k]) as csv_file:
+
+                csv_reader = csv.reader(csv_file, delimiter=',')
+
+                for row in csv_reader:
+                    last_row = row
+
+                print("Last row: " + last_row[0])
+
+                if int(last_row[0]) <= number_of_while_runs:
+                    total = total + 1
+                    successful = successful + 1
+                    time_list.append(last_row[0])
+                else:
+                    total = total + 1
+                    time_list.append(last_row[0])
+
+        success_list.append(successful/total)
+    
+    return success_list, time_list
+
+def new_new_obstacle_avoidance_success(list_of_files, number_of_trials, number_of_runs_per_trial, number_of_while_runs, logging_period, n, obst_position, obst_radius):
+
+    each_runs_trial = []
+
+    for i in range(number_of_runs_per_trial):
+
+        set_up = []
+        for k in range(number_of_trials):
+            set_up.append(list_of_files[i+k*number_of_runs_per_trial])
+        each_runs_trial.append(set_up)
+
+
+    success_list = []
+    time_list = []
+
+    # Goes through each entry in each_runs_trial, where each entry
+    # is a list of the various trials that correspond to a particular 
+    # angle/offset pair
+    for i in range(len(each_runs_trial)):
+
+        total = 0
+        successful = 0
+
+        # Goes through each trial, so this is the length of 
+        # each list within each_runs_trial
+        for k in range(number_of_trials):
+
+            # In a particular angle/offset pair, opens the csv file
+            # corresponding with trial k
+            with open(each_runs_trial[i][k]) as csv_file:
+
+                csv_reader = csv.reader(csv_file, delimiter=',')
+
+                minimum_y = 0
+                maximum_y = 0
+
+                i = 0
+
+                for row in csv_reader:
+                    if i == 0:
+                        i = i + 1
+                    else:
+                        minimum_y = float(row[26])
+                        maximum_y = float(row[2])
+                        break
+
+                end_time = 50000
+
+                i = 0
+
+                for row in csv_reader:
+                    if i == 0:
+                        i = i + 1
+                    else:
+                        if float(row[2]) > maximum_y:
+                            maximum_y = float(row[2])
+                  
+                        if float(row[26]) < minimum_y:
+                            minimum_y = float(row[26])
+
+                        if maximum_y >= int(obst_position[1]):
+                            end_time = int(row[0])
+                            break
+
+                        if minimum_y <= int(obst_position[1]):
+                            end_time = int(row[0])
+                            break
+
+                print("Minimum y: " + str(minimum_y))
+                print("Maximum y: " + str(maximum_y))
+                print("Ending time: " + str(end_time))
+
+                if end_time < 50000:
+                    total = total + 1
+                    successful = successful + 1
+                else:
+                    total = total + 1
+
+                time_list.append(end_time)
+                
+
+                # print("Last row: " + last_row[0])
+
+                # if int(last_row[0]) <= number_of_while_runs:
+                #     total = total + 1
+                #     successful = successful + 1
+                #     time_list.append(last_row[0])
+                # else:
+                #     total = total + 1
+                #     time_list.append(last_row[0])
+
+        success_list.append(successful/total)
+    
+    return success_list, time_list
 
 def generate_circular_obstacle_course(world, n_obstacles, obstacle_size_range, course_radius):
     """

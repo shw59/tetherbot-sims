@@ -63,8 +63,10 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
     failed_trials = []
 
     log_file = "data/success_of_averaged_trials_of_obstacle_avoidance.csv"
+    log_file2 = "data/time_of_trials_of_obstacle_avoidance.csv"
 
     log_header = ["Offsets", "Rate of Success", "Trial success"]
+    log_header2 = ["Offsets", "Time"]
 
     # for t in range(number_of_trials):
     #     for a in angles_to_try:
@@ -76,17 +78,20 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
             list_of_file_in_a_trial = []
             avg_success = 0
             data = [str(o/UNSTRETCHED_TETHER_LENGTH)]
+            data2 = [str(o/UNSTRETCHED_TETHER_LENGTH)]
             mini_list = []
+            mini_time_list = []
             for t in range(number_of_trials):
-                file_name, trial_failed, while_loops = sim.obstacle_avoidance(n, o, a, stop = length_of_simulation, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position, a_weight=ANGLE_WEIGHT, s_weight=STRAIN_WEIGHT, g_weight=GRADIENT_WEIGHT, r_weight=REPULSION_WEIGHT)
+                file_name, trial_failed, while_loops = sim.new_obstacle_avoidance(n, o, a, stop = length_of_simulation, trial = t + 1, obst_radius=obst_radius, obst_pos = obst_position, a_weight=ANGLE_WEIGHT, s_weight=STRAIN_WEIGHT, g_weight=GRADIENT_WEIGHT, r_weight=REPULSION_WEIGHT)
                 if trial_failed:
                     print("TRIAL FAILED")
                     failed_trials.append(trial_failed)
                 else:
                     list_of_file_in_a_trial.append(file_name)
-                    success = sims_utils.obstacle_avoidance_success([file_name], 1, 1, while_loops, LOGGING_PERIOD, n, obst_position, obst_radius)[0]
-                    mini_list.append(success)
-                    avg_success = avg_success + success
+                    success, while_loops_ran = sims_utils.new_obstacle_avoidance_success([file_name], 1, 1, while_loops, LOGGING_PERIOD, n, obst_position, obst_radius)
+                    mini_list.append(success[0])
+                    mini_time_list.append(while_loops_ran[0])
+                    avg_success = avg_success + success[0]
 
             avg_success = avg_success/number_of_trials
 
@@ -97,6 +102,10 @@ def run_obstacle_simulations(sim_args, n, length_of_simulation, offsets, angles_
             data.append(mini_list)
 
             sims_utils.log_to_csv(log_file, data, header=log_header)
+
+            data2.append(mini_time_list)
+            sims_utils.log_to_csv(log_file2, data2, header=log_header2)
+
 
     # sims_utils.heat_map(number_of_trials, angles_to_try, offsets, LOGGING_PERIOD, obst_radius)
 
@@ -339,23 +348,85 @@ def main():
 
     # offsets = [0*UNSTRETCHED_TETHER_LENGTH]
 
-    # # offsets = [0, 10*UNSTRETCHED_TETHER_LENGTH]
+    # offsets = [2.5*UNSTRETCHED_TETHER_LENGTH, 10*UNSTRETCHED_TETHER_LENGTH]
     
-    run_obstacle_simulations((sim_args, False), 9, 20000, offsets, [0], 10, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+    # run_obstacle_simulations((sim_args, False), 9, 50000, offsets, [0], 10, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
 
     # sims_utils.make_3D_plot(["data/trial1_degree0_offset0.0.csv"], 9)
 
-    # trials = 7
+
+
+
+
+    trials = 10
     
     # for t in range(1, trials + 1):
-        # for i in not_sized_offsets:
-            # name = "data/trial" + str(t) + "_degree0_offset" + str(i*UNSTRETCHED_TETHER_LENGTH) + ".csv"
+    #     for i in not_sized_offsets:
+
+
+    log_file = "data/obstacleA/data.csv"
+
+    log_header = ['Offset', 'Trials Finished', 'Trials with Success', 'Percentage of Trials with Success', 'Average Time Steps of Successful Trials']
+    
+    for i in not_sized_offsets:
+        data = [str(i)]
+
+        trials_finished = 0
+        trials_with_success = 0
+        percent = 0
+        good_finish_times = []
+
+        for t in range(1, trials + 1):
+            name = "data/trial" + str(t) + "_degree0_offset" + str(i*UNSTRETCHED_TETHER_LENGTH) + ".csv"
+
+            print("Trial: " + str(t))
+            print("Offset: " + str(i))
+
+            try:
+                with open(name, "r") as file:
+                    result, timing = sims_utils.new_new_obstacle_avoidance_success([name], 1, 1, 10000, LOGGING_PERIOD, 9, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)
+                    print("Result: " + str(result[0]))
+                    print("Result time: " + str(timing[0]))
+                    print("\n")
+
+                    trials_finished = trials_finished + 1
+                    if result[0] == int(1):
+                        trials_with_success = trials_with_success + 1
+                        good_finish_times.append(timing[0])
+                    # sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], trials)
+                    # sims_utils.make_3D_plot([name], 9)
+            except FileNotFoundError:
+                print("The file does not exist.")
+
+        percent = round((trials_with_success/trials_finished)*100,2)
+
+        data.append(str(trials_finished))
+        data.append(str(trials_with_success))
+        data.append(str(percent) + "%")
+
+        finished = len(good_finish_times)
+        average = 0
+        if finished > 0:
+            for l in range(finished):
+                average = average + good_finish_times[l]
+            average = average/finished
+        data.append(str(average))
+
+        sims_utils.log_to_csv(log_file, data, header=log_header)
+
+
+
+
+    # sims_utils.make_3D_plot(["data/trial1_degree0_offset3.75.csv"], 9)
+
+
             # print("Trial: " + str(t))
             # print("Offset: " + str(i))
             # result = sims_utils.obstacle_avoidance_success([name], 1, 1, 10000, LOGGING_PERIOD, 9, [6,0], 4*UNSTRETCHED_TETHER_LENGTH)[0]
             # print("Result: " + str(result))
             # print("\n")
-    # sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], 9)
+            # # sims_utils.make_3D_plot(["data/8-26-26_to_9-3-25/trial5_degree0_offset1.5.csv"], 9)
+            # sims_utils.make_3D_plot([name], trials)
 
     # run_strain_test((sim_args, True), 500)
     # run_w_to_m((sim_args, False), 1500, 8)

@@ -770,6 +770,225 @@ class Simulation:
         return log_file, self.sim_failed, runs
 
 
+    def new_obstacle_avoidance(self, n, y_offset, angle_off_y, a_weight = 10, s_weight = 15, g_weight = 10, r_weight = 3, gradient = [100,0], obst_pos = [6,0], obst_radius = 1, obst_height = 1, obst_type = "hexagon", stop=2000, trial = 0):
+            """
+            Generates a very simple formation of agents in order to test the hysteresis.
+            """
+            self.reset_simulation()
+    
+            my_world = World(200, 200, self.time_step, gui_on=self.gui_on)
+    
+            my_world.set_gradient_source(gradient)
+    
+            Agent.set_weights([a_weight, s_weight, g_weight, r_weight])
+    
+            # start = [10.66435,2.61832,1.7178015867129035,11.69837,4.41912,0.008455429980073625,13.7678,5.06304,0.0026835581232114874,13.78616,7.08026,0.0011685954320433077,15.71217,6.6164,0.0009300594955369165,17.00229,8.24761,0.1086975315872433,17.82913,6.40982,0.009906272248240856,19.75934,6.63694,0.7376781911783291,22.06267,6.86474,0.21756226673416776]
+            
+            # sets = int(len(start)/3)
+    
+            # pos = []
+    
+            # for i in range(sets):
+            #     pos.append([start[i*3], start[(i*3)+1], 0])
+            
+            initial_agent_positions = sims_utils.angle_and_position_offset(n, angle_off_y, y_offset, self.unstretched_tether_length)
+    
+            # initial_agent_positions = pos
+    
+    
+            goals = []
+            for i in range(n):
+                if i == 0 or i == (n-1):
+                    goals.append(None)
+                else:
+                    goals.append(180)
+    
+            # populates the list of robot objects with agent objects
+            for i in range(n):
+                my_world.create_agent(initial_agent_positions[i], 0, radius = self.agent_radius, goal_delta = goals[i], 
+                                      mass=self.agent_mass, height=self.agent_height, color=(0.5, 0.5, 1, 1), mu_static=self.agent_static_mu,
+                                      mu_dynamic=self.agent_dynamic_mu, max_velocity=self.agent_max_speed, drive_power=self.agent_drive_power)
+    
+            # populates the list of tether objects with tether objects
+            for i in range(n-1):
+                my_world.create_and_anchor_tether(my_world.agent_list[i], my_world.agent_list[i+1], self.unstretched_tether_length, self.tether_youngs_modulus, self.tether_diameter, num_segments = 10)
+    
+            my_world.create_obstacle(obst_type, obst_pos, length=obst_radius, width=obst_radius, color=(1, 0, 1, 1), fixed=True, height=obst_height)
+    
+            # my_world.display_axis_labels()
+            
+            runs = 0
+    
+            agent_to_update_next = 0
+    
+            shuffled_list = random.sample(my_world.agent_list, k=len(my_world.agent_list))
+    
+            # log_file = str(angle_off_y) + "_degree_" + str(y_offset) + "_offset_.csv"
+            log_file = "data/trial" + str(trial) + "_degree" + str(angle_off_y) + "_offset" + str(y_offset) + ".csv"
+    
+            log_header = ['Timestep']
+    
+            for i in range(n):
+                log_header.append('agent_' + str(i) + '_x')
+                log_header.append('agent_' + str(i) + '_y')
+                log_header.append('agent_' + str(i) + '_velocity')
+
+            log_header.append('Success')
+    
+            set_up_runs = 1500
+            is_setting_up = True
+            prev_distance_sum = 0
+            check_distance_rate = 1000
+            distance_success = 0
+            
+            # main simulation loop
+            while (runs <= stop) and (my_world.id.isConnected()) and (not distance_success):
+                # set-up phase
+                while is_setting_up:
+                    # if keyboard.is_pressed('q'):
+                    my_world.id.getCameraImage(320,200)
+    
+                    # print(runs)
+    
+                    for agent in shuffled_list:
+                        # if agent.tethers[0] is not None:
+                            # print(agent.tethers[0].get_strain())
+                        # if agent.tethers[1] is not None:
+                            # print(agent.tethers[1].get_strain())
+                        if runs > Simulation.run_debounce and agent.is_tether_slack():
+                            self.debounce_count += 1
+    
+                        if runs%Simulation.run_debounce == 0:
+    
+                            if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                                self.sim_failed = True
+                                break
+    
+                            self.old_debounce_count = self.debounce_count
+                            
+                        agent.sense_gradient(my_world.gradient_source)
+                        agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+    
+                    if self.sim_failed:
+                        break
+    
+                    if runs % self.sensing_period == 0:
+                        print(runs)
+                        for i in range(len(shuffled_list)):
+                            if i == agent_to_update_next:
+                                shuffled_list[i].set_next_step_revised()
+                                if runs < set_up_runs:
+                                    for agent in my_world.agent_list:
+                                        agent.next_position = [agent.get_pose()[0][0], agent.next_position[1]]
+                                shuffled_list[i].move_to(shuffled_list[i].max_force)
+    
+                        agent_to_update_next = agent_to_update_next + 1
+    
+                        if agent_to_update_next >= len(shuffled_list):
+                            agent_to_update_next = 0
+    
+                    runs = runs + 1
+    
+                    if runs > set_up_runs:
+                        is_setting_up = False
+                        # set the experimental parameters
+                        Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
+    
+                        runs = 0
+                    
+                    my_world.step()
+    
+                # experiment starts
+                self.debounce_count = 0
+    
+                if runs%30:
+                    my_world.id.getCameraImage(320,200)
+    
+                for agent in shuffled_list:
+                    if runs > Simulation.run_debounce and agent.is_tether_slack():
+                        self.debounce_count += 1
+    
+                    if runs%Simulation.run_debounce == 0:
+    
+                        if self.old_debounce_count >= Simulation.debounce_threshold and self.debounce_count >= Simulation.debounce_threshold:
+                            self.sim_failed = True
+                            break
+    
+                        self.old_debounce_count = self.debounce_count
+    
+                    agent.sense_gradient(my_world.gradient_source)
+                    agent.sense_close_range(my_world.obj_list, sensing_mode=2)
+    
+                if runs % self.sensing_period == 0:
+                    print(runs)
+                    for i in range(len(shuffled_list)):
+                        if i == agent_to_update_next:
+                           shuffled_list[i].set_next_step()
+                    
+                    agent_to_update_next = agent_to_update_next + 1
+    
+                    if agent_to_update_next >= len(shuffled_list):
+                        agent_to_update_next = 0
+    
+                # stop_while_loop = False
+    
+                if runs % self.logging_period == 0:
+                    min_x = my_world.agent_list[0].get_pose()[0][0]
+                    data = [runs]
+                    minimum_y = my_world.agent_list[0].get_pose()[0][1]
+                    for agent in my_world.agent_list:
+                        data.append(round(agent.get_pose()[0][0], 5))
+                        data.append(round(agent.get_pose()[0][1], 5))
+                        data.append(agent.get_velocity())
+
+                        if agent.get_pose()[0][1] < minimum_y:
+                            minimum_y = agent.get_pose()[0][1]
+    
+                        # if agent.get_pose()[0][0] < min_x:
+                        #     min_x = agent.get_pose()[0][0]
+
+                    if minimum_y >= obst_pos[1]:
+                        distance_success = 1
+
+                    data.append(distance_success)
+
+                    # data.append(True)
+                
+                    sims_utils.log_to_csv(log_file, data, header=log_header)
+    
+                    # if min_x >= obst_pos[0]+obst_radius:
+                    #     stop_while_loop = True
+                
+                # if runs % check_distance_rate == 0:
+                #     distance = 0
+                #     for agent in my_world.agent_list:
+                #         distance = distance + np.sqrt(((round(agent.get_pose()[0][0], 5))**2)+((round(agent.get_pose()[0][1], 5))**2))
+                #     print("Distance: " + str(distance))
+                #     print("prev_distance_sum: " + str(prev_distance_sum))
+                #     print("2*self.agent_radius: " + str(2*self.agent_radius))
+                #     if np.abs(distance - prev_distance_sum) <= self.agent_radius:
+                #         stop_while_loop = True
+                #     else:
+                #         prev_distance_sum = distance
+    
+                if self.sim_failed:
+                    break
+    
+                # if stop_while_loop:
+                #     break
+    
+                # if runs % 1000 == 0:
+                #     sims_utils.screenshot_gui(ss_filename=f"data/recordings_valid/time_step_{runs}_obstacle_screenshot.png")
+    
+                runs = runs + 1
+                
+                my_world.step()
+    
+            my_world.id.disconnect()
+    
+            return log_file, self.sim_failed, runs
+
+
     def one_agent_follows_gradient(self):
         """
         """

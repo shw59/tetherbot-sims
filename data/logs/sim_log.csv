@@ -47,3 +47,6 @@ start time,simulation type,elapsed time (s),failed trials
 2025-09-13 22:34:57.064873,"object capture, maintain line False",23674.776767100004,[]
 2025-09-14 09:48:15.655682,storm drain,5639.77592166001,
 2025-09-18 22:55:42.211927,storm drain,5489.829784516245,
+2026-08-30 23:22:15.615591,obstacle avoidance,135590.94634375,"[True, True, True, True, True, True, True, True, True, True, True, True, True, True, True]"
+2026-09-07 11:13:22.871311,obstacle avoidance,902.3304249999928,[]
+2026-09-07 11:31:29.594508,obstacle avoidance,212490.254196667,"[True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True]"
