@@ -365,7 +365,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -484,8 +484,8 @@ class Simulation:
         while my_world.id.isConnected() and math.dist(my_world.agent_list[0].get_pose()[0], gradient) > 10:
             while is_setting_up:
                 # if keyboard.is_pressed('q'):
-                my_world.id.getCameraImage(320,200)
-                # print(runs)
+                # my_world.id.getCameraImage(320,200)
+                print(runs)
                 for agent in shuffled_list:
                     if runs > Simulation.run_debounce and agent.is_tether_slack():
                         self.debounce_count += 1
@@ -514,9 +514,9 @@ class Simulation:
                     is_setting_up = False
                     Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
                     runs = 0
-                my_world.id.stepSimulation()
-            my_world.id.getCameraImage(320,200)
-            # print(runs)
+                my_world.step()
+            # my_world.id.getCameraImage(320,200)
+            print(runs)
             self.debounce_count = 0
             # if runs % self.logging_period == 0:
             for agent in shuffled_list:
@@ -556,7 +556,7 @@ class Simulation:
             #     is_setting_up = False
             #     Agent.set_weights([self.weight_angle, self.weight_strain, self.weight_gradient, self.weight_repulsion])
             #     runs = 0
-            my_world.id.stepSimulation()
+            my_world.step()
         my_world.id.disconnect()
 
         return None
@@ -689,7 +689,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -808,7 +808,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -914,7 +914,7 @@ class Simulation:
 
                         runs = 0
                     
-                    my_world.id.stepSimulation()
+                    my_world.step()
             # if keyboard.is_pressed('q'):
             my_world.id.getCameraImage(320,200)
 
@@ -977,7 +977,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
         
         my_world.id.disconnect()
 
@@ -1089,7 +1089,7 @@ class Simulation:
 
                         runs = 0
                     
-                    my_world.id.stepSimulation()
+                    my_world.step()
             
             # actual experiment begins
             # if keyboard.is_pressed('q'): # step through simulation
@@ -1163,7 +1163,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -1253,7 +1253,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
 
         my_world.id.disconnect()
 
@@ -1328,7 +1328,7 @@ class Simulation:
 
             runs = runs + 1
             
-            my_world.id.stepSimulation()
+            my_world.step()
         
         my_world.id.disconnect()
 
